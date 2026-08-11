@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Drip Golf Recruiting — A Home for the Next Generation of Golf.</title>
+<meta name="description" content="Beautifully simple portfolio pages for junior golfers. Share your story, your swing, and your season — in one place." />
+
+<!-- Fonts: warm modern serif for display + clean humanist sans for body -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* ================================================================
+   Drip Golf Recruiting — Landing page
+   Warm, premium-casual lifestyle brand vibes.
+   ================================================================ */
+
+:root {
+  --cream:      #f4efe6;   /* main background */
+  --cream-2:    #ebe4d5;   /* soft warm second bg */
+  --ink:        #1a1f1a;   /* warm near-black */
+  --ink-soft:   #4a5049;
+  --muted:      #7a7469;
+  --sage:       #6b7f5c;   /* the sage green accent */
+  --sage-deep:  #3d4a35;
+  --rust:       #b25a3a;   /* warm pop accent */
+  --line:       #d8cfbe;
+  --card:       #fbf7ef;
+  --radius:     18px;
+  --radius-lg:  28px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--cream);
+  color: var(--ink);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+a { color: inherit; text-decoration: none; }
+img { max-width: 100%; display: block; }
+
+.serif {
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.02;
+}
+
+.container {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 clamp(1.2rem, 3vw, 2.5rem);
+}
+
+.eyebrow {
+  font-size: 0.78rem;
+  letter-spacing: 0.05em;
+  color: var(--sage);
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.eyebrow::before {
+  content: "◆";
+  font-size: 0.6rem;
+}
+
+/* ---------- Top bar ---------- */
+.announce {
+  background: var(--ink);
+  color: var(--cream);
+  font-size: 0.78rem;
+  text-align: center;
+  padding: 0.65rem 1rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.announce span { color: var(--rust); margin: 0 0.4rem; }
+
+/* ---------- Nav ---------- */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: rgba(244, 239, 230, 0.9);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line);
+}
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.1rem 0;
+}
+.brand {
+  font-family: "Fraunces", serif;
+  font-weight: 600;
+  font-size: 1.5rem;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+.brand-mark {
+  width: 22px; height: 22px;
+  background: var(--sage);
+  border-radius: 50%;
+  display: inline-block;
+}
+.nav-links {
+  display: flex;
+  gap: 2.2rem;
+  list-style: none;
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+.nav-links a { color: var(--ink-soft); transition: color 0.15s; }
+.nav-links a:hover { color: var(--ink); }
+.nav-cta {
+  padding: 0.65rem 1.3rem;
+  background: var(--ink);
+  color: var(--cream);
+  font-weight: 500;
+  font-size: 0.88rem;
+  border-radius: 999px;
+  transition: background 0.15s;
+}
+.nav-cta:hover { background: var(--sage-deep); }
+
+@media (max-width: 780px) {
+  .nav-links { display: none; }
+}
+
+/* ---------- Buttons ---------- */
+.btn {
+  padding: 0.95rem 1.7rem;
+  font-family: inherit;
+  font-weight: 500;
+  font-size: 0.95rem;
+  border: none;
+  cursor: pointer;
+  border-radius: 999px;
+  transition: transform 0.15s, background 0.15s, color 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.btn:hover { transform: translateY(-1px); }
+.btn-primary {
+  background: var(--ink);
+  color: var(--cream);
+}
+.btn-primary:hover { background: var(--sage-deep); }
+.btn-ghost {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--ink);
+}
+.btn-ghost:hover { background: var(--ink); color: var(--cream); }
+.btn-cream {
+  background: var(--cream);
+  color: var(--ink);
+}
+.btn-cream:hover { background: #fff; }
+
+/* ---------- Hero ---------- */
+.hero {
+  padding: clamp(3rem, 7vw, 5.5rem) 0 clamp(3rem, 6vw, 5rem);
+}
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 3rem;
+  align-items: center;
+}
+@media (min-width: 960px) {
+  .hero-grid { grid-template-columns: 1.15fr 1fr; gap: 4rem; }
+}
+.hero h1 {
+  font-family: "Fraunces", serif;
+  font-weight: 500;
+  font-size: clamp(3rem, 8vw, 6rem);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  margin: 1.4rem 0 1.6rem;
+}
+.hero h1 em {
+  font-style: italic;
+  font-weight: 400;
+  color: var(--sage);
+}
+.hero p.lede {
+  font-size: clamp(1.05rem, 1.2vw, 1.2rem);
+  color: var(--ink-soft);
+  max-width: 480px;
+  margin-bottom: 2.2rem;
+  line-height: 1.55;
+}
+.hero-cta {
+  display: flex;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.hero-cta .btn { padding: 1.05rem 1.9rem; }
+.hero-tiny {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-left: 0.5rem;
+}
+
+/* Hero visual — soft rounded prospect card */
+.hero-visual {
+  position: relative;
+}
+.prospect-card {
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  padding: 1.2rem;
+  box-shadow: 0 24px 60px -20px rgba(60, 50, 30, 0.18);
+  transform: rotate(-1.5deg);
+  transition: transform 0.4s;
+}
+.prospect-card:hover { transform: rotate(0deg); }
+.prospect-photo {
+  aspect-ratio: 4 / 5;
+  border-radius: var(--radius);
+  background:
+    radial-gradient(ellipse at 50% 100%, rgba(107,127,92,0.35), transparent 60%),
+    linear-gradient(160deg, #8ca47a 0%, #556b48 60%, #2f3b28 100%);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 1.2rem;
+}
+.prospect-photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 70% 30%, rgba(255,255,255,0.18), transparent 45%);
+}
+.prospect-tag {
+  position: absolute;
+  top: 1rem; left: 1rem;
+  background: var(--cream);
+  color: var(--ink);
+  padding: 0.35rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+.prospect-name {
+  font-family: "Fraunces", serif;
+  font-size: 1.5rem;
+  font-weight: 500;
+  margin-bottom: 0.15rem;
+  padding: 0 0.4rem;
+}
+.prospect-meta {
+  font-size: 0.85rem;
+  color: var(--muted);
+  padding: 0 0.4rem;
+  display: flex;
+  justify-content: space-between;
+}
+/* Little accent badge floating on the card */
+.card-badge {
+  position: absolute;
+  right: -14px;
+  top: 40px;
+  background: var(--rust);
+  color: var(--cream);
+  width: 82px; height: 82px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-family: "Fraunces", serif;
+  font-size: 0.78rem;
+  font-weight: 500;
+  line-height: 1.1;
+  transform: rotate(12deg);
+  box-shadow: 0 8px 20px -6px rgba(178, 90, 58, 0.5);
+}
+
+/* ---------- Trust strip ---------- */
+.trust {
+  background: var(--cream-2);
+  padding: 1.6rem 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.trust-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+.trust-inner p {
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+  font-style: italic;
+}
+.trust-logos {
+  display: flex;
+  gap: 2.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.trust-logos span {
+  font-family: "Fraunces", serif;
+  font-size: 1.1rem;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+
+/* ---------- Section ---------- */
+section { padding: clamp(4rem, 8vw, 6.5rem) 0; }
+.section-head {
+  max-width: 720px;
+  margin-bottom: 3.2rem;
+}
+.section-head h2 {
+  font-family: "Fraunces", serif;
+  font-weight: 500;
+  font-size: clamp(2.2rem, 5vw, 3.8rem);
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  margin: 0.8rem 0 1rem;
+}
+.section-head h2 em { font-style: italic; color: var(--sage); font-weight: 400; }
+.section-head p {
+  color: var(--ink-soft);
+  font-size: 1.05rem;
+  max-width: 540px;
+}
+
+/* ---------- Features (editorial grid) ---------- */
+.features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.4rem;
+}
+.feature {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 2rem 1.8rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.feature:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 40px -20px rgba(60, 50, 30, 0.2);
+}
+.feature-icon {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: var(--cream-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.4rem;
+  font-size: 1.3rem;
+}
+.feature h3 {
+  font-family: "Fraunces", serif;
+  font-weight: 500;
+  font-size: 1.4rem;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.01em;
+}
+.feature p {
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+}
+
+/* ---------- How it works ---------- */
+.how {
+  background: var(--cream-2);
+}
+.steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 2.2rem;
+}
+.step {
+  position: relative;
+}
+.step .step-num {
+  font-family: "Fraunces", serif;
+  font-size: 3.5rem;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--sage);
+  line-height: 1;
+  margin-bottom: 1rem;
+}
+.step h4 {
+  font-family: "Fraunces", serif;
+  font-weight: 500;
+  font-size: 1.5rem;
+  margin-bottom: 0.6rem;
+  letter-spacing: -0.01em;
+}
+.step p {
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+}
+
+/* ---------- Featured prospect ---------- */
+.featured-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 3rem;
+  align-items: center;
+}
+@media (min-width: 900px) {
+  .featured-grid { grid-template-columns: 1fr 1fr; gap: 4.5rem; }
+}
+.featured h2 {
+  font-family: "Fraunces", serif;
+  font-weight: 500;
+  font-size: clamp(2.4rem, 5vw, 4.2rem);
+  line-height: 1;
+  letter-spacing: -0.025em;
+  margin: 1rem 0 1.4rem;
+}
+.featured h2 em { font-style: italic; color: var(--sage); font-weight: 400; }
+.featured p {
+  color: var(--ink-soft);
+  margin-bottom: 2rem;
+  max-width: 460px;
+  font-size: 1.05rem;
+}
+.featured-quote {
+  border-left: 2px solid var(--sage);
+  padding: 0.4rem 0 0.4rem 1.2rem;
+  margin: 1.6rem 0 2rem;
+  font-family: "Fraunces", serif;
+  font-style: italic;
+  font-size: 1.15rem;
+  color: var(--ink);
+}
+.featured-quote cite {
+  display: block;
+  font-style: normal;
+  font-family: "Inter", sans-serif;
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-top: 0.6rem;
+}
+.showcase {
+  aspect-ratio: 4 / 5;
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(ellipse at 30% 90%, rgba(107,127,92,0.4), transparent 60%),
+    linear-gradient(170deg, #a8bd93 0%, #556b48 50%, #2f3b28 100%);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 30px 60px -25px rgba(60, 50, 30, 0.3);
+}
+.showcase::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 65% 25%, rgba(255,255,255,0.2), transparent 50%);
+}
+.showcase-label {
+  position: absolute;
+  bottom: 1.6rem;
+  left: 1.6rem;
+  right: 1.6rem;
+  color: var(--cream);
+  font-family: "Fraunces", serif;
+  z-index: 1;
+}
+.showcase-label .who {
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  font-weight: 500;
+  line-height: 1;
+  margin-bottom: 0.4rem;
+}
+.showcase-label .info {
+  font-family: "Inter", sans-serif;
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+/* ---------- Pricing ---------- */
+.tiers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+.tier {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 2.2rem 2rem;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid transparent;
+}
+.tier:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px -20px rgba(60, 50, 30, 0.2);
+}
+.tier.popular {
+  background: var(--ink);
+  color: var(--cream);
+  position: relative;
+}
+.tier.popular::before {
+  content: "Most Loved";
+  position: absolute;
+  top: -12px; left: 50%;
+  transform: translateX(-50%);
+  background: var(--rust);
+  color: var(--cream);
+  padding: 0.3rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+.tier .name {
+  font-family: "Fraunces", serif;
+  font-weight: 500;
+  font-size: 1.35rem;
+  margin-bottom: 0.4rem;
+}
+.tier .price {
+  font-family: "Fraunces", serif;
+  font-size: 3rem;
+  font-weight: 500;
+  line-height: 1;
+  margin: 0.8rem 0 0.3rem;
+  letter-spacing: -0.02em;
+}
+.tier .price small {
+  font-size: 0.9rem;
+  color: var(--muted);
+  font-weight: 400;
+  font-family: "Inter", sans-serif;
+}
+.tier.popular .price small { color: rgba(244,239,230,0.6); }
+.tier ul {
+  list-style: none;
+  margin: 1.6rem 0 2rem;
+  flex-grow: 1;
+}
+.tier li {
+  padding: 0.6rem 0;
+  font-size: 0.92rem;
+  color: var(--ink-soft);
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+}
+.tier.popular li { color: rgba(244,239,230,0.85); }
+.tier li::before {
+  content: "✓";
+  color: var(--sage);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.tier.popular li::before { color: var(--rust); }
+.tier .btn { width: 100%; justify-content: center; }
+
+/* ---------- CTA band ---------- */
+.cta-band {
+  background: var(--sage-deep);
+  color: var(--cream);
+  padding: clamp(4rem, 8vw, 6rem) 0;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.cta-band::before {
+  content: "";
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at 20% 30%, rgba(255,255,255,0.08), transparent 50%);
+}
+.cta-band-inner { position: relative; z-index: 1; }
+.cta-band h2 {
+  font-family: "Fraunces", serif;
+  font-weight: 500;
+  font-size: clamp(2.4rem, 6vw, 4.5rem);
+  line-height: 1;
+  letter-spacing: -0.025em;
+  margin-bottom: 1.2rem;
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.cta-band h2 em { font-style: italic; opacity: 0.85; font-weight: 400; }
+.cta-band p {
+  font-size: 1.05rem;
+  opacity: 0.85;
+  margin-bottom: 2.2rem;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ---------- Footer ---------- */
+footer {
+  padding: 4rem 0 2rem;
+  background: var(--cream);
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  border-top: 1px solid var(--line);
+}
+.foot-grid {
+  display: grid;
+  grid-template-columns: 1.4fr repeat(3, 1fr);
+  gap: 2rem;
+  margin-bottom: 3rem;
+}
+@media (max-width: 720px) {
+  .foot-grid { grid-template-columns: 1fr 1fr; }
+}
+.foot-grid h5 {
+  font-family: "Fraunces", serif;
+  font-weight: 500;
+  font-size: 1rem;
+  color: var(--ink);
+  margin-bottom: 1rem;
+}
+.foot-grid a { display: block; padding: 0.3rem 0; }
+.foot-grid a:hover { color: var(--sage); }
+.foot-tag {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin-top: 0.8rem;
+  max-width: 260px;
+  line-height: 1.5;
+}
+.foot-bottom {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--line);
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+</style>
+</head>
+<body>
+
+<!-- ========== Announcement bar ========== -->
+<div class="announce">Now welcoming the Class of 2028 <span>◆</span> Free to start</div>
+
+<!-- ========== Nav ========== -->
+<nav class="nav">
+  <div class="container nav-inner">
+    <a href="#" class="brand"><span class="brand-mark"></span>Drip Golf Recruiting</a>
+    <ul class="nav-links">
+      <li><a href="#roster">Roster</a></li>
+      <li><a href="#pricing">Pricing</a></li>
+    </ul>
+    <a href="#pricing" class="nav-cta">Start Free</a>
+  </div>
+</nav>
+
+<!-- ========== Hero ========== -->
+<header class="hero">
+  <div class="container hero-grid">
+    <div>
+      <span class="eyebrow">A home for junior golf</span>
+      <h1>
+        Your game,<br />
+        beautifully <em>told.</em>
+      </h1>
+      <p class="lede">
+        A simple, gorgeous portfolio for the next generation of golfers.
+        Share your story, your swing, and your season — all in one place
+        coaches and sponsors actually want to visit.
+      </p>
+      <div class="hero-cta">
+        <a href="#pricing" class="btn btn-primary">Build Your Page</a>
+        <a href="#roster" class="btn btn-ghost">See an Example</a>
+        <span class="hero-tiny">Free forever · No card</span>
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <div class="prospect-card">
+        <div class="prospect-photo">
+          <span class="prospect-tag">Class of '28</span>
+        </div>
+        <div class="prospect-name">Luke Thomas Selzer</div>
+        <div class="prospect-meta">
+          <span>Scottsdale, AZ</span>
+          <span>+2.4 HDCP</span>
+        </div>
+      </div>
+      <div class="card-badge">New<br />Prospect</div>
+    </div>
+  </div>
+</header>
+
+<!-- ========== Trust strip ========== -->
+<div class="trust">
+  <div class="container trust-inner">
+    <p>Loved by juniors, parents, and coaches from —</p>
+    <div class="trust-logos">
+      <span>AJGA</span>
+      <span>Hurricane Jr.</span>
+      <span>US Kids</span>
+      <span>PGA Jr.</span>
+      <span>SCPGA</span>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- ========== Featured prospect ========== -->
+<section id="roster">
+  <div class="container featured-grid">
+    <div>
+      <span class="eyebrow">Featured prospect</span>
+      <h2>Meet Luke<br /><em>Thomas Selzer.</em></h2>
+      <p>
+        Class of '28. Scratch player out of Arizona. A repeatable swing,
+        a growing tournament resume, and a page that shows it all off with the care it deserves.
+      </p>
+      <div class="featured-quote">
+        "It's the first time my recruiting stuff has actually felt like <em>mine</em>."
+        <cite>— Luke, junior golfer</cite>
+      </div>
+      <a href="../luke-site/ltselzer-portfolio.html" class="btn btn-primary">Visit Luke's Page →</a>
+    </div>
+    <div class="showcase">
+      <div class="showcase-label">
+        <div class="who">Luke Selzer</div>
+        <div class="info">Class of 2028 · +2.4 HDCP · Scottsdale, AZ</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== Pricing ========== -->
+<section id="pricing" class="how">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow">Pricing</span>
+      <h2>Simple plans.<br /><em>Fair prices.</em></h2>
+      <p>Start free, upgrade when you're ready. Cancel anytime.</p>
+    </div>
+
+    <div class="tiers">
+      <div class="tier">
+        <div class="name">Rookie</div>
+        <div class="price">$0<small> / month</small></div>
+        <ul>
+          <li>Beautiful profile page</li>
+          <li>3 swing uploads</li>
+          <li>Tournament log</li>
+          <li>Drip Golf Recruiting subdomain</li>
+        </ul>
+        <a href="#" class="btn btn-ghost">Start Free</a>
+      </div>
+
+      <div class="tier popular">
+        <div class="name">Prospect</div>
+        <div class="price">$19<small> / month</small></div>
+        <ul>
+          <li>Everything in Rookie</li>
+          <li>Unlimited swing vault</li>
+          <li>PDF recruit resume</li>
+          <li>Custom colors & theme</li>
+          <li>Viewer analytics</li>
+        </ul>
+        <a href="#" class="btn btn-cream">Get Prospect</a>
+      </div>
+
+      <div class="tier">
+        <div class="name">Pro</div>
+        <div class="price">$49<small> / month</small></div>
+        <ul>
+          <li>Everything in Prospect</li>
+          <li>Your own domain</li>
+          <li>Sponsor media kit</li>
+          <li>Priority support</li>
+          <li>Featured on the Roster</li>
+        </ul>
+        <a href="#" class="btn btn-ghost">Go Pro</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== CTA band ========== -->
+<section class="cta-band">
+  <div class="container cta-band-inner">
+    <h2>Your story<br /><em>starts here.</em></h2>
+    <p>Join the next generation of junior golfers building a home for their game.</p>
+    <a href="#pricing" class="btn btn-cream">Build Your Page</a>
+  </div>
+</section>
+
+<!-- ========== Footer ========== -->
+<footer>
+  <div class="container">
+    <div class="foot-grid">
+      <div>
+        <div class="brand" style="margin-bottom: 0.6rem;">
+          <span class="brand-mark"></span>Drip Golf Recruiting
+        </div>
+        <p class="foot-tag">A beautifully simple home for the next generation of golf.</p>
+      </div>
+      <div>
+        <h5>Product</h5>
+        <a href="#pricing">Pricing</a>
+        <a href="#roster">Roster</a>
+      </div>
+      <div>
+        <h5>Company</h5>
+        <a href="#">About</a>
+        <a href="#">Contact</a>
+        <a href="#">Careers</a>
+      </div>
+      <div>
+        <h5>Follow</h5>
+        <a href="#">Instagram</a>
+        <a href="#">TikTok</a>
+        <a href="#">YouTube</a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <span>© 2025 Drip Golf Recruiting. Made for junior golfers.</span>
+      <span>Scottsdale, AZ</span>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
