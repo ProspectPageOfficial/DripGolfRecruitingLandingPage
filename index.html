@@ -20,7 +20,7 @@
 :root {
   --cream:      #f4efe6;   /* main background */
   --cream-2:    #ebe4d5;   /* soft warm second bg */
-  --ink:        #1a1f1a;   /* warm near-black */
+  --ink:        #0a0a0a;   /* pure editorial black — matches logo ink */
   --ink-soft:   #4a5049;
   --muted:      #7a7469;
   --sage:       #6b7f5c;   /* the sage green accent */
@@ -59,11 +59,15 @@ img { max-width: 100%; display: block; }
   padding: 0 clamp(1.2rem, 3vw, 2.5rem);
 }
 
+/* Eyebrows read as magazine-style section labels: uppercase, tracked out,
+   pure ink. Matches the wide tracking on the DRIP GOLF wordmark and
+   drops all the green that used to fight the logo's monochrome vibe. */
 .eyebrow {
-  font-size: 0.78rem;
-  letter-spacing: 0.05em;
-  color: var(--sage);
-  font-weight: 500;
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink);
+  font-weight: 600;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -83,7 +87,7 @@ img { max-width: 100%; display: block; }
   font-weight: 500;
   letter-spacing: 0.02em;
 }
-.announce span { color: var(--rust); margin: 0 0.4rem; }
+.announce span { color: rgba(244, 239, 230, 0.55); margin: 0 0.4rem; }
 
 /* ---------- Nav ---------- */
 .nav {
@@ -168,7 +172,7 @@ img { max-width: 100%; display: block; }
   border-radius: 999px;
   transition: background 0.15s;
 }
-.nav-cta:hover { background: var(--sage-deep); }
+.nav-cta:hover { background: #000; }
 
 @media (max-width: 780px) {
   .nav-links { display: none; }
@@ -178,8 +182,10 @@ img { max-width: 100%; display: block; }
 .btn {
   padding: 0.95rem 1.7rem;
   font-family: inherit;
-  font-weight: 500;
-  font-size: 0.95rem;
+  font-weight: 600;
+  font-size: 0.88rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   border: none;
   cursor: pointer;
   border-radius: 999px;
@@ -193,7 +199,7 @@ img { max-width: 100%; display: block; }
   background: var(--ink);
   color: var(--cream);
 }
-.btn-primary:hover { background: var(--sage-deep); }
+.btn-primary:hover { background: #000; }
 .btn-ghost {
   background: transparent;
   color: var(--ink);
@@ -230,7 +236,7 @@ img { max-width: 100%; display: block; }
 .hero h1 em {
   font-style: italic;
   font-weight: 400;
-  color: var(--sage);
+  color: var(--ink);
 }
 .hero p.lede {
   font-size: clamp(1.05rem, 1.2vw, 1.2rem);
@@ -346,7 +352,7 @@ img { max-width: 100%; display: block; }
   position: absolute;
   right: -14px;
   top: 40px;
-  background: var(--rust);
+  background: var(--ink);
   color: var(--cream);
   width: 82px; height: 82px;
   border-radius: 50%;
@@ -359,7 +365,7 @@ img { max-width: 100%; display: block; }
   font-weight: 500;
   line-height: 1.1;
   transform: rotate(12deg);
-  box-shadow: 0 8px 20px -6px rgba(178, 90, 58, 0.5);
+  box-shadow: 0 8px 20px -6px rgba(10, 10, 10, 0.5);
 }
 
 /* ---------- Trust strip ---------- */
@@ -408,7 +414,7 @@ section { padding: clamp(4rem, 8vw, 6.5rem) 0; }
   letter-spacing: -0.025em;
   margin: 0.8rem 0 1rem;
 }
-.section-head h2 em { font-style: italic; color: var(--sage); font-weight: 400; }
+.section-head h2 em { font-style: italic; color: var(--ink); font-weight: 400; }
 .section-head p {
   color: var(--ink-soft);
   font-size: 1.05rem;
@@ -504,7 +510,7 @@ section { padding: clamp(4rem, 8vw, 6.5rem) 0; }
   letter-spacing: -0.025em;
   margin: 1rem 0 1.4rem;
 }
-.featured h2 em { font-style: italic; color: var(--sage); font-weight: 400; }
+.featured h2 em { font-style: italic; color: var(--ink); font-weight: 400; }
 .featured p {
   color: var(--ink-soft);
   margin-bottom: 2rem;
@@ -512,7 +518,7 @@ section { padding: clamp(4rem, 8vw, 6.5rem) 0; }
   font-size: 1.05rem;
 }
 .featured-quote {
-  border-left: 2px solid var(--sage);
+  border-left: 3px solid var(--ink);
   padding: 0.4rem 0 0.4rem 1.2rem;
   margin: 1.6rem 0 2rem;
   font-family: "Fraunces", serif;
@@ -593,12 +599,15 @@ section { padding: clamp(4rem, 8vw, 6.5rem) 0; }
   position: absolute;
   top: -12px; left: 50%;
   transform: translateX(-50%);
-  background: var(--rust);
-  color: var(--cream);
-  padding: 0.3rem 0.9rem;
+  background: var(--cream);
+  color: var(--ink);
+  padding: 0.35rem 1rem;
   border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 500;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border: 1px solid var(--ink);
 }
 .tier .name {
   font-family: "Fraunces", serif;
@@ -637,16 +646,18 @@ section { padding: clamp(4rem, 8vw, 6.5rem) 0; }
 .tier.popular li { color: rgba(244,239,230,0.85); }
 .tier li::before {
   content: "✓";
-  color: var(--sage);
+  color: var(--ink);
   font-weight: 600;
   flex-shrink: 0;
 }
-.tier.popular li::before { color: var(--rust); }
+.tier.popular li::before { color: var(--cream); }
 .tier .btn { width: 100%; justify-content: center; }
 
 /* ---------- CTA band ---------- */
+/* Big black slab — echoes the logo's ink-on-cream contrast at the end
+   of the page. Was sage-deep (dark green) before the aesthetic re-tune. */
 .cta-band {
-  background: var(--sage-deep);
+  background: var(--ink);
   color: var(--cream);
   padding: clamp(4rem, 8vw, 6rem) 0;
   text-align: center;
@@ -705,7 +716,7 @@ footer {
   margin-bottom: 1rem;
 }
 .foot-grid a { display: block; padding: 0.3rem 0; }
-.foot-grid a:hover { color: var(--sage); }
+.foot-grid a:hover { color: var(--ink); }
 .foot-tag {
   font-size: 0.9rem;
   color: var(--muted);
