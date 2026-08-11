@@ -1,0 +1,30 @@
+# Netlify config for Drip Golf Recruiting landing page.
+#
+# The repo is a single static index.html (no build step), so Netlify just
+# publishes the repo root as-is. Locking `publish` here means nobody can
+# accidentally break the site by fat-fingering the "Publish directory"
+# field in the Netlify dashboard.
+
+[build]
+  publish = "."
+
+# ---------------- Cache headers ----------------
+# Mobile Safari + a flaky connection = the worst-case caching scenario.
+# Even though Netlify's defaults for HTML are reasonable, iOS in
+# particular will happily serve a stale cached page for hours/days
+# unless we EXPLICITLY say "always check with the server first."
+#
+# `no-cache` is a name-trap: it does NOT mean "don't store." It means
+# "you may store this, but you MUST revalidate with the server before
+# using it." That gives us instant deploys without burning bandwidth
+# on full re-downloads when nothing has changed (304 Not Modified).
+
+[[headers]]
+  for = "/"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
