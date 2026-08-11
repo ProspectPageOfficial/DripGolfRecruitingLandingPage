@@ -110,19 +110,45 @@ img { max-width: 100%; display: block; }
   align-items: center;
   gap: 0.55rem;
 }
-/* Brand mark = a droplet ("Drip") pocked with golf-ball dimples ("Golf").
-   Rendered as inline SVG via <use href="#drip-logo"> so the geometry lives
-   in exactly ONE place (see the <symbol> at the top of <body>). Color is
-   driven by `color` on this element because the SVG uses fill=currentColor,
-   which means we can drop the same mark on any background and just change
-   `color` in a wrapping selector — no need to duplicate the SVG. */
+/* Official Drip Golf wordmark (sketchy golf-tee + "DRIP GOLF" text).
+   Same image file used in the nav, hero, and footer — size is the only
+   thing that changes per placement. `height: auto` on width-constrained
+   instances keeps the aspect ratio locked so the logo can never squish. */
 .brand-mark {
-  width: 28px;
-  height: 28px;
-  color: var(--sage);
+  height: 40px;
+  width: auto;
   flex-shrink: 0;
   display: inline-block;
   vertical-align: middle;
+}
+/* "Recruiting" subtitle next to the wordmark. The logo itself already
+   says DRIP GOLF, so we DON'T duplicate that in text next to it — that
+   would be the classic redundant-wordmark anti-pattern. "Recruiting" is
+   the service-line modifier and it earns its keep next to the mark. */
+.brand-subline {
+  font-family: "Fraunces", serif;
+  font-weight: 400;
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  padding-left: 0.7rem;
+  margin-left: 0.7rem;
+  border-left: 1px solid var(--line);
+  line-height: 1;
+}
+/* Big hero logo — the "prominent" placement. Sits above the eyebrow so
+   visitors see the brand at first glance before reading the H1. Max-width
+   keeps it from dominating on desktop while still feeling like a header. */
+.hero-logo {
+  display: block;
+  width: 100%;
+  max-width: 260px;
+  height: auto;
+  margin: 0 0 1.6rem;
+}
+@media (max-width: 640px) {
+  .hero-logo { max-width: 200px; }
 }
 .nav-links {
   display: flex;
@@ -701,36 +727,16 @@ footer {
 </head>
 <body>
 
-<!-- ==========================================================
-     Drip Golf logo — defined ONCE as an SVG <symbol> and reused
-     everywhere on the page via <use href="#drip-logo"/>. Change
-     the geometry here and every logo mark on the page updates.
-
-     The mark is a teardrop ("Drip") with four golf-ball dimples
-     ("Golf"). fill="currentColor" so callers can just set `color`
-     to recolor the mark against different backgrounds. The wrapper
-     <svg> is display:none so it doesn't render itself — it exists
-     only to hold the reusable <symbol>.
-     ========================================================== -->
-<svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true" focusable="false">
-  <symbol id="drip-logo" viewBox="0 0 32 32">
-    <!-- Teardrop body. Point at top, rounded bulb at bottom. -->
-    <path d="M16 2 C 16 2, 5 14, 5 20 a 11 11 0 0 0 22 0 C 27 14, 16 2, 16 2 Z" fill="currentColor"/>
-    <!-- Golf-ball dimples, subtle so the silhouette stays legible even at nav size. -->
-    <circle cx="12" cy="19" r="1.4" fill="#ffffff" opacity="0.55"/>
-    <circle cx="17" cy="17" r="1.4" fill="#ffffff" opacity="0.55"/>
-    <circle cx="20" cy="21" r="1.4" fill="#ffffff" opacity="0.55"/>
-    <circle cx="14" cy="23" r="1.4" fill="#ffffff" opacity="0.55"/>
-  </symbol>
-</svg>
-
 <!-- ========== Announcement bar ========== -->
 <div class="announce">Now welcoming the Class of 2028 <span>◆</span> Built for serious players</div>
 
 <!-- ========== Nav ========== -->
 <nav class="nav">
   <div class="container nav-inner">
-    <a href="#" class="brand"><svg class="brand-mark" aria-hidden="true" focusable="false"><use href="#drip-logo"/></svg>Drip Golf Recruiting</a>
+    <a href="#" class="brand">
+      <img class="brand-mark" src="drip-golf-logo.png" alt="Drip Golf" />
+      <span class="brand-subline">Recruiting</span>
+    </a>
     <ul class="nav-links">
       <li><a href="#roster">Roster</a></li>
       <li><a href="#pricing">Pricing</a></li>
@@ -743,6 +749,10 @@ footer {
 <header class="hero">
   <div class="container hero-grid">
     <div>
+      <!-- Prominent hero logo. Sits above the eyebrow so the brand is
+           the first thing visitors register in the hero. See .hero-logo
+           in the stylesheet for sizing. -->
+      <img class="hero-logo" src="drip-golf-logo.png" alt="Drip Golf Recruiting" />
       <span class="eyebrow">A home for junior golf</span>
       <h1>
         Your game,<br />
@@ -883,7 +893,8 @@ footer {
     <div class="foot-grid">
       <div>
         <div class="brand" style="margin-bottom: 0.6rem;">
-          <svg class="brand-mark" aria-hidden="true" focusable="false"><use href="#drip-logo"/></svg>Drip Golf Recruiting
+          <img class="brand-mark" src="drip-golf-logo.png" alt="Drip Golf" />
+          <span class="brand-subline">Recruiting</span>
         </div>
         <p class="foot-tag">A beautifully simple home for the next generation of golf.</p>
       </div>
