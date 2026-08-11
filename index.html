@@ -251,14 +251,36 @@ img { max-width: 100%; display: block; }
 /* Actual player photo. Absolutely positioned so it sits on top of the
    gradient background (which acts as a graceful fallback if the image
    ever 404s or is slow to load). object-fit: cover keeps the composition
-   nice regardless of the source image's aspect ratio. */
-.prospect-photo img {
+   nice regardless of the source image's aspect ratio.
+
+   The same treatment applies to .showcase in the featured section below —
+   both are photo-fill containers with an overlay label. DRY: one selector
+   list, one rule. */
+.prospect-photo img,
+.showcase img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
+  z-index: 0;
+}
+/* Dark bottom-to-top scrim on the featured showcase so the cream label
+   stays readable regardless of what's in Luke's actual photo. Kept off
+   the hero prospect-card because its label sits outside the photo. */
+.showcase::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(31, 42, 36, 0.85) 0%,
+    rgba(31, 42, 36, 0.15) 45%,
+    transparent 70%
+  );
+  z-index: 1;
+  pointer-events: none;
 }
 .prospect-tag {
   position: absolute;
@@ -494,7 +516,7 @@ section { padding: clamp(4rem, 8vw, 6.5rem) 0; }
   right: 1.6rem;
   color: var(--cream);
   font-family: "Fraunces", serif;
-  z-index: 1;
+  z-index: 2;
 }
 .showcase-label .who {
   font-size: clamp(1.6rem, 3vw, 2.2rem);
@@ -710,17 +732,19 @@ footer {
     <div class="hero-visual">
       <div class="prospect-card">
         <div class="prospect-photo">
-          <!-- Live URL of Luke's profile photo, pulled from his portfolio's
-               Supabase-hosted photo record. If Luke swaps his photo, grab
-               the new URL from https://lukethomasselzer.com/api/personal
-               and paste it here. -->
-          <img src="https://ejxjzygcbrtpvwknmogx.supabase.co/storage/v1/object/public/photos/1780368459791-71255d30.jpg" alt="Luke Thomas Selzer — Class of 2028" loading="lazy" />
-          <span class="prospect-tag">Class of '28</span>
+          <!-- Hero prospect card. The img src, class-year pill, name, and
+               meta line are all live-populated from Luke's portfolio API
+               (see the script tag at the bottom of the body). The values
+               baked into the HTML act as a fallback in case the API is
+               slow or unreachable — the page still looks correct on first
+               paint and if the fetch fails. -->
+          <img id="luke-hero-photo" src="https://ejxjzygcbrtpvwknmogx.supabase.co/storage/v1/object/public/photos/1780368459791-71255d30.jpg" alt="Featured prospect photo" loading="lazy" />
+          <span class="prospect-tag" id="luke-hero-class">Class of 2031</span>
         </div>
-        <div class="prospect-name">Luke Thomas Selzer</div>
+        <div class="prospect-name" id="luke-hero-name">Luke Thomas Selzer</div>
         <div class="prospect-meta">
-          <span>Scottsdale, AZ</span>
-          <span>+2.4 HDCP</span>
+          <span id="luke-hero-city">Charlotte, NC</span>
+          <span id="luke-hero-meta2">Age 13</span>
         </div>
       </div>
       <div class="card-badge">New<br />Prospect</div>
@@ -749,10 +773,10 @@ footer {
   <div class="container featured-grid">
     <div>
       <span class="eyebrow">Featured prospect</span>
-      <h2>Meet Luke<br /><em>Thomas Selzer.</em></h2>
-      <p>
-        Class of '28. Scratch player out of Arizona. A repeatable swing,
-        a growing tournament resume, and a page that shows it all off with the care it deserves.
+      <h2>Meet <span id="luke-feat-first">Luke</span><br /><em id="luke-feat-rest">Thomas Selzer.</em></h2>
+      <p id="luke-feat-blurb">
+        Class of 2031. From Charlotte, NC. A page that shows it all off
+        with the care it deserves.
       </p>
       <div class="featured-quote">
         "It's the first time my recruiting stuff has actually felt like <em>mine</em>."
@@ -761,9 +785,12 @@ footer {
       <a href="https://lukethomasselzer.com" target="_blank" rel="noopener" class="btn btn-primary">Visit Luke's Page →</a>
     </div>
     <div class="showcase">
+      <!-- Same photo as the hero card, filled in from Luke's portfolio API.
+           See the script at the bottom of the body. -->
+      <img id="luke-feat-photo" src="https://ejxjzygcbrtpvwknmogx.supabase.co/storage/v1/object/public/photos/1780368459791-71255d30.jpg" alt="Featured prospect photo" loading="lazy" />
       <div class="showcase-label">
-        <div class="who">Luke Selzer</div>
-        <div class="info">Class of 2028 · +2.4 HDCP · Scottsdale, AZ</div>
+        <div class="who" id="luke-feat-who">Luke Thomas Selzer</div>
+        <div class="info" id="luke-feat-info">Class of 2031 · Charlotte, NC · Age 13</div>
       </div>
     </div>
   </div>
@@ -863,6 +890,104 @@ footer {
     </div>
   </div>
 </footer>
+
+<!-- =========================================================
+     Live data from Luke's portfolio (single source of truth).
+
+     Everything the hero prospect card and the featured showcase
+     show about Luke — photo, name, class year, hometown, age —
+     is fetched from https://lukethomasselzer.com/api/personal on
+     page load and swapped into the DOM. If Luke updates his
+     portfolio, this landing page updates automatically. DRY win.
+
+     The HTML above contains fallback values baked in, so:
+       - First paint always shows something correct (no flash of
+         empty content).
+       - If the fetch fails (network, CORS, API down), the page
+         quietly stays on the fallbacks. No error UI needed.
+
+     Luke's API is CORS-open (Access-Control-Allow-Origin: *) so
+     no proxy is required.
+     ========================================================= -->
+<script>
+(function () {
+  var API = "https://lukethomasselzer.com/api/personal";
+
+  // Small DOM helpers so the update code below reads like a spec.
+  function setText(id, value) {
+    var el = document.getElementById(id);
+    if (el && value) el.textContent = value;
+  }
+  function setSrc(id, value) {
+    var el = document.getElementById(id);
+    if (el && value) el.src = value;
+  }
+
+  // Luke's portfolio stores age as e.g. "Age: 13". Strip the label
+  // so we can compose our own consistent "Age 13" formatting.
+  function normalizeAge(raw) {
+    if (!raw) return "";
+    var stripped = String(raw).replace(/^age:\s*/i, "").trim();
+    return stripped ? "Age " + stripped : "";
+  }
+
+  // Split a full name into first word + everything else so the
+  // "Meet <first><br><em><rest></em>" heading structure still works
+  // no matter how many name parts Luke has.
+  function splitName(full) {
+    if (!full) return { first: "", rest: "" };
+    var parts = String(full).trim().split(/\s+/);
+    var first = parts.shift() || "";
+    var rest  = parts.join(" ");
+    return { first: first, rest: rest ? rest + "." : "" };
+  }
+
+  fetch(API, { cache: "no-store" })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (d) {
+      if (!d) return;
+
+      var ageLabel = normalizeAge(d.age);
+      var nameBits = splitName(d.name);
+
+      // Hero prospect card
+      setSrc("luke-hero-photo",  d.photo);
+      setText("luke-hero-class", d.class_year);
+      setText("luke-hero-name",  d.name);
+      setText("luke-hero-city",  d.hometown);
+      setText("luke-hero-meta2", ageLabel);
+
+      // Featured section — H2 split so italic styling on the last
+      // portion still applies.
+      setText("luke-feat-first", nameBits.first);
+      setText("luke-feat-rest",  nameBits.rest);
+
+      // Compose a paragraph from real fields + a product-marketing
+      // closer. The marketing sentence stays hardcoded because it's
+      // DripGolf's pitch, not data about Luke.
+      var factBits = [d.class_year, d.hometown && "From " + d.hometown, ageLabel]
+        .filter(Boolean);
+      if (factBits.length) {
+        setText(
+          "luke-feat-blurb",
+          factBits.join(". ") +
+          ". A page that shows it all off with the care it deserves."
+        );
+      }
+
+      // Showcase overlay label
+      setSrc("luke-feat-photo", d.photo);
+      setText("luke-feat-who",  d.name);
+      var infoBits = [d.class_year, d.hometown, ageLabel].filter(Boolean);
+      if (infoBits.length) setText("luke-feat-info", infoBits.join(" · "));
+    })
+    .catch(function () {
+      // Silent fallback to the hardcoded HTML values above. Landing
+      // pages should never surface a scary error to a visitor just
+      // because a background enrichment fetch failed.
+    });
+})();
+</script>
 
 </body>
 </html>
