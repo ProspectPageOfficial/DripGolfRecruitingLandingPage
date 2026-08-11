@@ -246,6 +246,19 @@ img { max-width: 100%; display: block; }
   position: absolute;
   inset: 0;
   background: radial-gradient(circle at 70% 30%, rgba(255,255,255,0.18), transparent 45%);
+  pointer-events: none;
+}
+/* Actual player photo. Absolutely positioned so it sits on top of the
+   gradient background (which acts as a graceful fallback if the image
+   ever 404s or is slow to load). object-fit: cover keeps the composition
+   nice regardless of the source image's aspect ratio. */
+.prospect-photo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 .prospect-tag {
   position: absolute;
@@ -697,6 +710,11 @@ footer {
     <div class="hero-visual">
       <div class="prospect-card">
         <div class="prospect-photo">
+          <!-- Live URL of Luke's profile photo, pulled from his portfolio's
+               Supabase-hosted photo record. If Luke swaps his photo, grab
+               the new URL from https://lukethomasselzer.com/api/personal
+               and paste it here. -->
+          <img src="https://ejxjzygcbrtpvwknmogx.supabase.co/storage/v1/object/public/photos/1780368459791-71255d30.jpg" alt="Luke Thomas Selzer — Class of 2028" loading="lazy" />
           <span class="prospect-tag">Class of '28</span>
         </div>
         <div class="prospect-name">Luke Thomas Selzer</div>
