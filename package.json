@@ -1,0 +1,12 @@
+{
+  "name": "dripgolf-profile-demo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Drip Golf Recruiting - College Best Fit demo, reading one golfer's live site.",
+  "scripts": {
+    "test": "node tests/fit.test.mjs",
+    "serve": "python serve.py 8080",
+    "sync": "python _ref/gen_luke.py"
+  }
+}

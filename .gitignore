@@ -1,0 +1,14 @@
+# Local dev server output -- regenerated on every run, never reviewed.
+server.log
+
+# Python bytecode from serve.py / the _ref tooling.
+__pycache__/
+*.pyc
+
+# Node lives here only to run the test suite; nothing is bundled or shipped.
+node_modules/
+
+# OS noise.
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Drip Golf — Feature Mockup (Profile · Fit Score · Playbook)</title>
+<meta name="robots" content="noindex, nofollow" />
+<meta name="description" content="Internal design mockup. Not for public release." />
+
+<!-- Same font stack as the live landing page so this mockup renders in
+     Drip's actual editorial voice. Do NOT diverge here — the whole point
+     of the mockup is to test the concept inside the existing brand. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* ================================================================
+   Drip Golf — Feature Mockup stylesheet.
+
+   Reuses the design tokens from index.html so this file renders in
+   the exact same brand. Once (and only if) this direction is
+   approved, the shared tokens + base typography SHOULD be extracted
+   into a common styles.css that both files import. Doing that now
+   would be YAGNI-violating premature refactoring while the concept
+   is still being validated.
+   ================================================================ */
+
+:root {
+  --cream:      #f4efe6;
+  --cream-2:    #ebe4d5;
+  --ink:        #0a0a0a;
+  --ink-soft:   #4a5049;
+  --muted:      #7a7469;
+  --sage:       #6b7f5c;
+  --sage-deep:  #3d4a35;
+  --rust:       #b25a3a;
+  --line:       #d8cfbe;
+  --card:       #fbf7ef;
+  --radius:     18px;
+  --radius-lg:  28px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--cream);
+  color: var(--ink);
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+a { color: inherit; text-decoration: none; }
+
+.serif {
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.container {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 clamp(1.2rem, 3vw, 2.5rem);
+}
+
+.eyebrow {
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.eyebrow::before { content: "◆"; font-size: 0.6rem; }
+
+/* ---------- Mockup banner ----------
+   Rust color chosen deliberately — it's the one accent in Drip's
+   palette that reads as "attention, this is different." Keeps the
+   mockup unmistakable so nobody screenshots it thinking it's live. */
+.mockup-banner {
+  background: var(--rust);
+  color: var(--cream);
+  text-align: center;
+  padding: 0.7rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.mockup-banner strong { font-weight: 700; }
+
+/* ---------- Nav (minimal — this is a design review, not a real page) ---------- */
+.nav {
+  background: var(--cream);
+  border-bottom: 1px solid var(--line);
+}
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.1rem 0;
+}
+.brand {
+  font-family: "Fraunces", serif;
+  font-weight: 600;
+  font-size: 1.4rem;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+.brand-mark { height: 38px; width: auto; }
+.brand-subline {
+  font-family: "Fraunces", serif;
+  font-weight: 400;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  padding-left: 0.7rem;
+  margin-left: 0.7rem;
+  border-left: 1px solid var(--line);
+}
+.nav-note {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+/* ---------- Buttons (subset of the live styles we actually use here) ---------- */
+.btn {
+  padding: 0.85rem 1.5rem;
+  font-weight: 600;
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: none;
+  cursor: pointer;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: transform 0.15s, background 0.15s, color 0.15s;
+}
+.btn:hover { transform: translateY(-1px); }
+.btn-primary { background: var(--ink); color: var(--cream); }
+.btn-ghost   { background: transparent; color: var(--ink); border: 1px solid var(--ink); }
+.btn-ghost:hover { background: var(--ink); color: var(--cream); }
+
+/* ---------- Section shell ---------- */
+section { padding: clamp(3rem, 6vw, 5rem) 0; }
+.section-head { max-width: 720px; margin-bottom: 2.5rem; }
+.section-head h2 {
+  font-family: "Fraunces", serif;
+  font-weight: 500;
+  font-size: clamp(2rem, 4.5vw, 3.2rem);
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  margin: 0.8rem 0 0.9rem;
+}
+.section-head h2 em { font-style: italic; font-weight: 400; }
+.section-head p {
+  color: var(--ink-soft);
+  font-size: 1.02rem;
+  max-width: 560px;
+}
+
+/* Alternating warm background for rhythm — same pattern the live
+   page uses between hero → trust → featured. */
+.tinted { background: var(--cream-2); }
+
+/* ---------- Feature intro hero ---------- */
+.intro {
+  padding: clamp(3rem, 6vw, 5rem) 0 clamp(2rem, 4vw, 3rem);
+  border-bottom: 1px solid var(--line);
+}
+.intro h1 {
+  font-family: "Fraunces", serif;
+  font-weight: 500;
+  font-size: clamp(2.4rem, 6vw, 4.4rem);
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  margin: 1.2rem 0 1.2rem;
+  max-width: 12ch;
+}
+.intro h1 em { font-style: italic; font-weight: 400; }
+.intro p.lede {
+  color: var(--ink-soft);
+  font-size: clamp(1rem, 1.15vw, 1.15rem);
+  max-width: 560px;
+  margin-bottom: 1.6rem;
+}
+.intro-jump {
+  display: flex;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+.intro-jump a {
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+.intro-jump a:hover { background: var(--ink); color: var(--cream); border-color: var(--ink); }
+
+/* ---------- Profile summary card ---------- */
+.profile-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2.5rem;
+}
+@media (min-width: 900px) {
+  .profile-grid { grid-template-columns: 1.05fr 1fr; gap: 3.5rem; align-items: start; }
+}
+.profile-card {
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  box-shadow: 0 20px 50px -25px rgba(60, 50, 30, 0.2);
+}
+.profile-card h3 {
+  font-family: "Fraunces", serif;
+  font-weight: 500;
+  font-size: 1.6rem;
+  letter-spacing: -0.015em;
+  margin-bottom: 0.15rem;
+}
+.profile-card .sub {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin-bottom: 1.6rem;
+}
+/* Two-column stat block. Uses a definition-list because that's what
+   it semantically is — labeled values. Zen: explicit > implicit. */
+.stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.4rem 2rem;
+  border-top: 1px solid var(--line);
+  padding-top: 1.4rem;
+}
+.stat-grid dt {
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.25rem;
+}
+.stat-grid dd {
+  font-family: "Fraunces", serif;
+  font-size: 1.55rem;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+}
+.profile-side p {
+  color: var(--ink-soft);
+  font-size: 1rem;
+  margin-bottom: 1.4rem;
+}
+.profile-side ul {
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+.profile-side li {
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  font-size: 0.94rem;
+  color: var(--ink-soft);
+}
+.profile-side li strong { color: var(--ink); font-weight: 500; }
+.profile-side li .when { font-size: 0.8rem; color: var(--muted); }
+
+/* ---------- Fit Score, editorial treatment ----------
+   The differentiator vs. Nexus. Same math (Athletic + Academic,
+   0–100) but rendered as a magazine callout rather than a dashboard
+   tile. Big Fraunces number, warm cream card, thin sub-score bars. */
+.fit-hero {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  background: var(--card);
+  border-radius: var(--radius-lg);
+  padding: clamp(1.8rem, 3vw, 2.6rem);
+  box-shadow: 0 20px 50px -25px rgba(60, 50, 30, 0.2);
+}
+@media (min-width: 820px) {
+  .fit-hero { grid-template-columns: 1fr 1.1fr; gap: 3rem; align-items: center; }
+}
+.fit-number {
+  font-family: "Fraunces", serif;
+  font-weight: 500;
+  font-size: clamp(7rem, 18vw, 12rem);
+  line-height: 0.9;
+  letter-spacing: -0.04em;
+  color: var(--ink);
+}
+.fit-number small {
+  font-size: 0.22em;
+  color: var(--muted);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  margin-left: 0.4rem;
+}
+.fit-headline .eyebrow { margin-bottom: 0.8rem; }
+.fit-school {
+  font-family: "Fraunces", serif;
+  font-weight: 500;
+  font-size: clamp(1.6rem, 2.2vw, 2rem);
+  letter-spacing: -0.015em;
+  margin-bottom: 0.3rem;
+}
+.fit-tier {
+  display: inline-block;
+  padding: 0.32rem 0.85rem;
+  border-radius: 999px;
+  background: var(--sage);
+  color: var(--cream);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 1.2rem;
+}
+.fit-tier.reach  { background: var(--rust); }
+.fit-tier.target { background: var(--sage-deep); }
+
+/* Sub-score row — kept intentionally thin so the number stays the
+   star of the composition. Bars use a percentage width driven by
+   an inline --v custom property, so each row is one line of markup. */
+.subscore { margin-top: 0.4rem; }
+.subscore-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.6rem 1rem;
+  align-items: baseline;
+  padding-bottom: 0.4rem;
+}
+.subscore-row + .subscore-row { margin-top: 1.1rem; }
+.subscore-row .label {
+  font-family: "Fraunces", serif;
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+.subscore-row .value {
+  font-family: "Fraunces", serif;
+  font-size: 1.35rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+.subscore-row .why {
+  grid-column: 1 / -1;
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 0.55rem;
+}
+.bar {
+  grid-column: 1 / -1;
+  height: 3px;
+  background: var(--line);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.bar > span {
+  display: block;
+  height: 100%;
+  width: var(--v, 0%);
+  background: var(--ink);
+  border-radius: inherit;
+}
+
+/* ---------- Fit shortlist ---------- */
+.shortlist {
+  margin-top: 3rem;
+  border-top: 1px solid var(--line);
+  padding-top: 2rem;
+}
+.shortlist h4 {
+  font-family: "Fraunces", serif;
+  font-weight: 500;
+  font-size: 1.4rem;
+  margin-bottom: 1.2rem;
+  letter-spacing: -0.01em;
+}
+.shortlist ul { list-style: none; }
+.shortlist li {
+  display: grid;
+  grid-template-columns: 3.2rem 1fr auto auto;
+  gap: 1.2rem;
+  align-items: center;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.shortlist li:last-child { border-bottom: none; }
+.shortlist .n {
+  font-family: "Fraunces", serif;
+  font-size: 2rem;
+  font-weight: 500;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.shortlist .school {
+  font-family: "Fraunces", serif;
+  font-size: 1.15rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+.shortlist .school small {
+  display: block;
+  font-family: "Inter", sans-serif;
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-weight: 400;
+  margin-top: 0.15rem;
+}
+.shortlist .chip {
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 600;
+  padding: 0.28rem 0.7rem;
+  border-radius: 999px;
+  background: var(--cream-2);
+  color: var(--ink-soft);
+}
+.shortlist .chip.scholarship { background: var(--sage);      color: var(--cream); }
+.shortlist .chip.target      { background: var(--sage-deep); color: var(--cream); }
+.shortlist .chip.reach       { background: var(--rust);      color: var(--cream); }
+.shortlist .go {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  border-bottom: 1px solid transparent;
+}
+.shortlist .go:hover { border-color: var(--ink-soft); }
+
+/* Tier legend under the shortlist so the chips are decodable at a
+   glance without hovering. Mirrors Nexus's three-tier vocabulary. */
+.tier-legend {
+  display: flex;
+  gap: 1.4rem;
+  flex-wrap: wrap;
+  margin-top: 1.6rem;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+.tier-legend span::before {
+  content: "";
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  margin-right: 0.45rem;
+  vertical-align: middle;
+}
+.tier-legend .s::before { background: var(--sage); }
+.tier-legend .t::before { background: var(--sage-deep); }
+.tier-legend .r::before { background: var(--rust); }
+
+/* ---------- Playbook (clean checklist) ----------
+   Per Dylan's direction: utilitarian checklist look, not the weekly-
+   letter treatment. Warm palette keeps it in Drip's aesthetic even
+   though the layout is functional. */
+.playbook-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.4rem;
+}
+@media (min-width: 780px) {
+  .playbook-grid { grid-template-columns: repeat(3, 1fr); }
+}
+.playbook-col {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 1.8rem 1.6rem;
+  display: flex;
+  flex-direction: column;
+}
+.playbook-col h4 {
+  font-family: "Fraunces", serif;
+  font-weight: 500;
+  font-size: 1.3rem;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.15rem;
+}
+.playbook-col .col-sub {
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin-bottom: 1.2rem;
+}
+.playbook-col ul { list-style: none; }
+.playbook-col li {
+  padding: 0.85rem 0;
+  border-top: 1px solid var(--line);
+  display: grid;
+  grid-template-columns: 1.1rem 1fr;
+  gap: 0.7rem;
+  align-items: flex-start;
+}
+.playbook-col li:last-child { border-bottom: 1px solid var(--line); }
+/* Checkbox that's actually a checkbox — semantic + accessible. We
+   never fake this with a div because keyboard/screen-reader users
+   deserve real form controls. */
+.playbook-col input[type="checkbox"] {
+  margin-top: 0.35rem;
+  accent-color: var(--sage-deep);
+  width: 1rem;
+  height: 1rem;
+}
+.playbook-col li .task {
+  font-size: 0.94rem;
+  color: var(--ink);
+  line-height: 1.45;
+}
+.playbook-col li .meta {
+  display: flex;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  margin-top: 0.4rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.playbook-col li .pill {
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: var(--cream-2);
+  color: var(--ink-soft);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+.playbook-col li .pill.hi   { background: var(--rust);      color: var(--cream); }
+.playbook-col li .pill.quick{ background: var(--sage);      color: var(--cream); }
+.playbook-col li .pill.time { background: var(--sage-deep); color: var(--cream); }
+/* Struck-through completed task — pure CSS, driven by the real
+   checkbox state. Zero JS needed for this micro-interaction. */
+.playbook-col li input:checked + .task { color: var(--muted); text-decoration: line-through; }
+
+.playbook-progress {
+  margin-top: auto;
+  padding-top: 1.4rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+/* ---------- Connective flow ("how the three fit together") ---------- */
+.flow {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.6rem;
+}
+@media (min-width: 780px) {
+  .flow { grid-template-columns: repeat(3, 1fr); gap: 1.2rem; }
+}
+.flow-step {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 1.8rem 1.6rem;
+  position: relative;
+}
+.flow-step .num {
+  font-family: "Fraunces", serif;
+  font-size: 2.6rem;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--sage);
+  line-height: 1;
+  margin-bottom: 0.6rem;
+}
+.flow-step h4 {
+  font-family: "Fraunces", serif;
+  font-weight: 500;
+  font-size: 1.35rem;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.01em;
+}
+.flow-step p { color: var(--ink-soft); font-size: 0.94rem; }
+
+/* ---------- Design notes footer (for Dylan, not for visitors) ---------- */
+.notes {
+  background: var(--ink);
+  color: var(--cream);
+  padding: clamp(3rem, 6vw, 4.5rem) 0;
+}
+.notes h3 {
+  font-family: "Fraunces", serif;
+  font-weight: 500;
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+  letter-spacing: -0.02em;
+  margin-bottom: 1.4rem;
+}
+.notes ul { list-style: none; max-width: 780px; }
+.notes li {
+  padding: 0.9rem 0;
+  border-top: 1px solid rgba(244, 239, 230, 0.15);
+  font-size: 0.98rem;
+  line-height: 1.55;
+  color: rgba(244, 239, 230, 0.88);
+}
+.notes li:last-child { border-bottom: 1px solid rgba(244, 239, 230, 0.15); }
+.notes li strong { color: var(--cream); font-weight: 600; }
+.notes .kicker {
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(244, 239, 230, 0.55);
+  margin-bottom: 0.4rem;
+}
+</style>
+</head>
+<body>
+
+<!-- ============================================================
+     Mockup banner. Loud on purpose. If this file ever accidentally
+     gets deployed to prod, this banner is the failsafe that stops
+     a visitor from mistaking it for the real product.
+     ============================================================ -->
+<div class="mockup-banner">
+  <strong>Mockup</strong> · Internal design review · Not deployed · Not indexed
+</div>
+
+<!-- ============================================================ Nav -->
+<nav class="nav">
+  <div class="container nav-inner">
+    <a href="index.html" class="brand">
+      <img class="brand-mark" src="assets/logo.png" alt="Drip Golf" />
+      <span class="brand-subline">Recruiting</span>
+    </a>
+    <span class="nav-note">Feature mockup — Profile · Fit Score · Playbook</span>
+  </div>
+</nav>
+
+<!-- ============================================================ Intro -->
+<header class="intro">
+  <div class="container">
+    <span class="eyebrow">What we're exploring</span>
+    <h1>Three pieces,<br /><em>one story.</em></h1>
+    <p class="lede">
+      The portfolio you already build with Drip becomes the source of truth
+      for two new features: a <strong>College Fit Score</strong> that tells you
+      where you actually stack up, and a <strong>Playbook</strong> that turns
+      the score into the next thing you should do this week. Same profile,
+      three views.
+    </p>
+    <div class="intro-jump">
+      <a href="#profile">1. Profile</a>
+      <a href="#fit">2. Fit Score</a>
+      <a href="#playbook">3. Playbook</a>
+      <a href="#flow">How they connect</a>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================ Profile -->
+<section id="profile">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow">1 · Profile</span>
+      <h2>The workspace<br /><em>behind the page.</em></h2>
+      <p>
+        Everything a coach sees on your public Drip page — and everything the
+        Fit Score and Playbook need to work — lives in one profile. Update it
+        once, and the rest of the product reflows automatically.
+      </p>
+    </div>
+
+    <div class="profile-grid">
+      <!-- Left: the actual "profile card." Uses definition-list markup
+           because these are labeled key/value pairs — that's what dl is
+           literally for. Screen readers thank us. -->
+      <div class="profile-card">
+        <h3>Sample Prospect</h3>
+        <div class="sub">Class of 2027 · Charlotte, NC · Right-handed</div>
+        <dl class="stat-grid">
+          <div><dt>Scoring average</dt><dd>72.4</dd></div>
+          <div><dt>Personal best</dt><dd>67</dd></div>
+          <div><dt>National rank</dt><dd>#312</dd></div>
+          <div><dt>GPA</dt><dd>3.82</dd></div>
+          <div><dt>SAT</dt><dd>1340</dd></div>
+          <div><dt>Events this season</dt><dd>11</dd></div>
+        </dl>
+      </div>
+
+      <!-- Right: what feeds the profile. Framed as "what you keep up to
+           date" so the value proposition — one source of truth — is
+           obvious. -->
+      <div class="profile-side">
+        <p>
+          You keep the profile fresh. Drip keeps everything downstream fresh
+          for you — your public page, your fit scores at 1,100+ programs, and
+          the next action on your playbook.
+        </p>
+        <ul>
+          <li><strong>Latest tournament</strong> <span class="when">2 days ago</span></li>
+          <li><strong>Swing-down-the-line video</strong> <span class="when">last week</span></li>
+          <li><strong>Transcript upload</strong> <span class="when">this month</span></li>
+          <li><strong>Coach outreach log</strong> <span class="when">3 sent, 1 replied</span></li>
+          <li><strong>Public page views</strong> <span class="when">148 this month</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ Fit Score -->
+<section id="fit" class="tinted">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow">2 · College Fit Score</span>
+      <h2>One number.<br /><em>The full picture.</em></h2>
+      <p>
+        A 0–100 score for every program in the country. Two dimensions:
+        can you compete on the roster, and do your grades match the school?
+        Every school gets its own — so you always know where you stand.
+      </p>
+    </div>
+
+    <!-- Featured fit card. The giant Fraunces number carries the whole
+         composition — everything else is deliberately quiet so the
+         editorial rhythm survives. -->
+    <div class="fit-hero">
+      <div>
+        <span class="eyebrow">Featured fit</span>
+        <div class="fit-school" style="margin-top: 0.9rem;">Wake Forest University</div>
+        <div class="sub" style="color: var(--muted); font-size: 0.9rem; margin-bottom: 1rem;">D1 · #12 nationally · ACC</div>
+        <span class="fit-tier target">Target</span>
+        <div class="fit-number">87<small>/100</small></div>
+      </div>
+
+      <!-- Sub-scores. Two dimensions, four inputs, mirroring Nexus's
+           math so the number is directly comparable to what junior
+           golfers are already seeing on competitor tools. -->
+      <div class="subscore">
+        <div class="subscore-row">
+          <span class="label">Athletic Fit</span>
+          <span class="value">92</span>
+          <span class="why">Your scoring average and national rank vs. where this roster's players were when they were recruited.</span>
+          <div class="bar"><span style="--v: 92%;"></span></div>
+        </div>
+        <div class="subscore-row">
+          <span class="label">Academic Fit</span>
+          <span class="value">85</span>
+          <span class="why">Your GPA and SAT vs. the school's incoming-class averages.</span>
+          <div class="bar"><span style="--v: 85%;"></span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Curated shortlist. Editorial ranking, not a scrollable
+         spreadsheet — this is the Drip differentiator vs. Nexus's
+         "compare 1,100 programs" firehose. -->
+    <div class="shortlist">
+      <h4>Your top 5, this week</h4>
+      <ul>
+        <li>
+          <span class="n">94</span>
+          <div class="school">Furman University <small>D1 · #48 · SoCon</small></div>
+          <span class="chip scholarship">Scholarship</span>
+          <a href="#" class="go">View →</a>
+        </li>
+        <li>
+          <span class="n">91</span>
+          <div class="school">Elon University <small>D1 · #67 · CAA</small></div>
+          <span class="chip scholarship">Scholarship</span>
+          <a href="#" class="go">View →</a>
+        </li>
+        <li>
+          <span class="n">87</span>
+          <div class="school">Wake Forest University <small>D1 · #12 · ACC</small></div>
+          <span class="chip target">Target</span>
+          <a href="#" class="go">View →</a>
+        </li>
+        <li>
+          <span class="n">82</span>
+          <div class="school">UNC Chapel Hill <small>D1 · #22 · ACC</small></div>
+          <span class="chip target">Target</span>
+          <a href="#" class="go">View →</a>
+        </li>
+        <li>
+          <span class="n">74</span>
+          <div class="school">Stanford University <small>D1 · #3 · Pac-12</small></div>
+          <span class="chip reach">Reach</span>
+          <a href="#" class="go">View →</a>
+        </li>
+      </ul>
+      <div class="tier-legend">
+        <span class="s">Scholarship — strong odds</span>
+        <span class="t">Target — realistic</span>
+        <span class="r">Reach — stretch</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ Playbook -->
+<section id="playbook">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow">3 · Playbook</span>
+      <h2>What to do<br /><em>this week.</em></h2>
+      <p>
+        Your Fit Score tells you where you stand. Your Playbook tells you the
+        next move. A live checklist that changes as your profile changes —
+        prioritized, dated, and honest about what actually moves the needle.
+      </p>
+    </div>
+
+    <div class="playbook-grid">
+      <!-- This week -->
+      <div class="playbook-col">
+        <h4>This week</h4>
+        <div class="col-sub">2 of 4 done</div>
+        <ul>
+          <li>
+            <input type="checkbox" checked />
+            <div>
+              <div class="task">Email Coach Jennings at Furman with your fall schedule.</div>
+              <div class="meta"><span class="pill hi">High impact</span><span>Due Fri</span></div>
+            </div>
+          </li>
+          <li>
+            <input type="checkbox" checked />
+            <div>
+              <div class="task">Add your Texas State Junior Am 68 to the tournament log.</div>
+              <div class="meta"><span class="pill quick">Quick win</span><span>Done</span></div>
+            </div>
+          </li>
+          <li>
+            <input type="checkbox" />
+            <div>
+              <div class="task">Record a swing-down-the-line video and add to your profile.</div>
+              <div class="meta"><span class="pill hi">High impact</span><span>Due Sun</span></div>
+            </div>
+          </li>
+          <li>
+            <input type="checkbox" />
+            <div>
+              <div class="task">Follow up with UNC — coach hasn't replied in 7 days.</div>
+              <div class="meta"><span class="pill time">Time-sensitive</span><span>Due Sat</span></div>
+            </div>
+          </li>
+        </ul>
+        <div class="playbook-progress">Refreshes every Monday.</div>
+      </div>
+
+      <!-- This month -->
+      <div class="playbook-col">
+        <h4>This month</h4>
+        <div class="col-sub">3 open</div>
+        <ul>
+          <li>
+            <input type="checkbox" />
+            <div>
+              <div class="task">Compete in two AJGA-ranked events by June 30.</div>
+              <div class="meta"><span class="pill hi">High impact</span><span>Due Jun 30</span></div>
+            </div>
+          </li>
+          <li>
+            <input type="checkbox" />
+            <div>
+              <div class="task">Book one official visit — Elon or Furman first.</div>
+              <div class="meta"><span>Due Jun 15</span></div>
+            </div>
+          </li>
+          <li>
+            <input type="checkbox" />
+            <div>
+              <div class="task">Retake the SAT — a 60-point bump moves Wake Forest from Target to Scholarship.</div>
+              <div class="meta"><span class="pill quick">Quick win</span><span>Due Jun 30</span></div>
+            </div>
+          </li>
+        </ul>
+        <div class="playbook-progress">Updates as your fit scores shift.</div>
+      </div>
+
+      <!-- Long term -->
+      <div class="playbook-col">
+        <h4>Long term</h4>
+        <div class="col-sub">3 open</div>
+        <ul>
+          <li>
+            <input type="checkbox" />
+            <div>
+              <div class="task">Lower scoring average to 71.0 by end of season.</div>
+              <div class="meta"><span>Goal · Aug 1</span></div>
+            </div>
+          </li>
+          <li>
+            <input type="checkbox" />
+            <div>
+              <div class="task">Get inside the national top 250.</div>
+              <div class="meta"><span>Goal · Fall</span></div>
+            </div>
+          </li>
+          <li>
+            <input type="checkbox" />
+            <div>
+              <div class="task">Send verbal to your #1 choice before November 1 Early Signing.</div>
+              <div class="meta"><span class="pill time">Time-sensitive</span><span>Nov 1</span></div>
+            </div>
+          </li>
+        </ul>
+        <div class="playbook-progress">Anchored to the recruiting calendar.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ Flow -->
+<section id="flow" class="tinted">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow">How they connect</span>
+      <h2>One profile.<br /><em>Everything downstream.</em></h2>
+      <p>
+        The three features aren't three separate products — they're three
+        views of the same profile. Update your stats once; everything else
+        re-computes.
+      </p>
+    </div>
+
+    <div class="flow">
+      <div class="flow-step">
+        <div class="num">i.</div>
+        <h4>You update your profile</h4>
+        <p>New tournament round, new SAT score, new swing video. One place.</p>
+      </div>
+      <div class="flow-step">
+        <div class="num">ii.</div>
+        <h4>Fit scores re-rank</h4>
+        <p>Every one of 1,100+ programs re-scores overnight. Your shortlist updates.</p>
+      </div>
+      <div class="flow-step">
+        <div class="num">iii.</div>
+        <h4>Playbook rewrites itself</h4>
+        <p>New moves surface based on what changed. Old ones drop off. No stale checklists.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     Design notes for Dylan. Rendered as a real section so we can
+     talk about it in the review without switching to a doc. This
+     block gets stripped before anything ships to production.
+     ============================================================ -->
+<section class="notes">
+  <div class="container">
+    <div class="kicker">Notes for review · not shipping copy</div>
+    <h3>What this mockup is (and isn't).</h3>
+    <ul>
+      <li><strong>Is:</strong> concept art in Drip's real design tokens. Three feature sections you can click through and evaluate as a story.</li>
+      <li><strong>Isn't:</strong> a working product. No live data, no login, no fetches. Every number is illustrative.</li>
+      <li><strong>Aesthetic call:</strong> we borrowed Nexus's Fit Score <em>math</em> (Athletic + Academic → 0–100, tiered Scholarship / Target / Reach) but rejected their dashboard aesthetic. Ours reads like a magazine callout, not a Bloomberg terminal — that's your differentiator.</li>
+      <li><strong>Playbook voice:</strong> clean checklist per your call, not the editorial "weekly letter" alternative. Kept the warm palette so it still feels like Drip.</li>
+      <li><strong>Profile framing:</strong> deliberately positioned as "one source of truth" for the whole product. Fits DRY, fits the Zen of Python's "one obvious way," and gives us a real story about why the three features belong together.</li>
+      <li><strong>Next pass if approved:</strong> extract shared CSS tokens into <code style="background: rgba(244,239,230,0.12); padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.9em;">styles.css</code>, wire real data into the profile card the same way the live page hydrates Luke's info, and decide whether Fit Score lives inside the paid tier or as a free lead-magnet.</li>
+      <li><strong>What we did NOT do:</strong> touch index.html, edit netlify.toml, add a build step, or push anything. Standalone file. Zero risk to prod.</li>
+    </ul>
+  </div>
+</section>
+
+</body>
+</html>

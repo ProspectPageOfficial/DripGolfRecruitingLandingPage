@@ -1,0 +1,54 @@
+/* ================================================================
+   Drip Golf — design tokens.
+   THE single source of truth for brand values. Lifted verbatim from
+   DripGolfRecruitingLandingPage/index.html so the app and the marketing
+   site can never drift apart.
+
+   Rule: no raw hex codes anywhere else in the stylesheet. If you need a
+   new colour, name it here first. DRY isn't a suggestion.
+   ================================================================ */
+
+:root {
+  /* ---- brand palette ---- */
+  --cream:      #f4efe6;
+  --cream-2:    #ebe4d5;
+  --ink:        #0a0a0a;
+  --ink-soft:   #4a5049;
+  --muted:      #7a7469;
+  --sage:       #6b7f5c;
+  --sage-deep:  #3d4a35;
+  --rust:       #b25a3a;
+  --line:       #d8cfbe;
+  --card:       #fbf7ef;
+
+  /* ---- semantic fit tiers ----
+     Derived from brand colours, never invented. Sage = go, rust = stretch. */
+  --tier-likely:     var(--sage);
+  --tier-likely-bg:  #e6ecdf;
+  --tier-target:     #8a7b3f;
+  --tier-target-bg:  #f0e9d2;
+  --tier-reach:      var(--rust);
+  --tier-reach-bg:   #f4e2da;
+
+  /* ---- geometry ---- */
+  --radius:     18px;
+  --radius-lg:  28px;
+  --radius-sm:  10px;
+
+  /* ---- type ---- */
+  --font-display: "Fraunces", Georgia, serif;
+  --font-body:    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* ---- spacing scale (t-shirt sizes beat magic numbers) ---- */
+  --s-1: 0.35rem;
+  --s-2: 0.6rem;
+  --s-3: 1rem;
+  --s-4: 1.5rem;
+  --s-5: 2.25rem;
+  --s-6: 3.5rem;
+
+  /* ---- elevation ---- */
+  --shadow-sm: 0 1px 2px rgba(10, 10, 10, 0.05);
+  --shadow:    0 4px 16px rgba(10, 10, 10, 0.07);
+  --shadow-lg: 0 18px 48px rgba(10, 10, 10, 0.13);
+}

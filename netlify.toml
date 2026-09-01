@@ -1,23 +1,19 @@
-# Netlify config for Drip Golf Recruiting landing page.
+# Netlify config for Drip Golf Recruiting.
 #
-# The repo is a single static index.html (no build step), so Netlify just
-# publishes the repo root as-is. Locking `publish` here means nobody can
-# accidentally break the site by fat-fingering the "Publish directory"
-# field in the Netlify dashboard.
+# The site is a no-build static app: hand-written ES modules loaded straight
+# from js/, styled by css/, with index.html as the only entry point. Netlify
+# publishes the repo root as-is. Locking `publish` here means nobody can break
+# the site by fat-fingering the "Publish directory" field in the dashboard.
 
 [build]
   publish = "."
 
 # ---------------- Cache headers ----------------
-# Mobile Safari + a flaky connection = the worst-case caching scenario.
-# Even though Netlify's defaults for HTML are reasonable, iOS in
-# particular will happily serve a stale cached page for hours/days
-# unless we EXPLICITLY say "always check with the server first."
-#
-# `no-cache` is a name-trap: it does NOT mean "don't store." It means
-# "you may store this, but you MUST revalidate with the server before
-# using it." That gives us instant deploys without burning bandwidth
-# on full re-downloads when nothing has changed (304 Not Modified).
+# `no-cache` is a name-trap: it does NOT mean "don't store." It means "you may
+# store this, but you MUST revalidate with the server before using it." That
+# buys instant deploys without re-downloading unchanged files (304 Not
+# Modified). Mobile Safari in particular will serve a stale page for days
+# unless we explicitly say "always check first."
 
 [[headers]]
   for = "/"
@@ -28,3 +24,58 @@
   for = "/*.html"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
+
+# The JS and CSS MUST revalidate too, and this is the part that is easy to get
+# wrong. A bundler fingerprints filenames (app.4f3a9c.js), so a changed file is
+# a changed URL and can be cached forever. We have no bundler: js/main.js keeps
+# that name for the life of the project. If a browser is allowed to cache it,
+# a deploy silently does nothing for anyone who visited yesterday -- the code on
+# disk is correct, the tests pass, and the reviewer is looking at last week's
+# build while being told they are wrong. Same reason serve.py sends no-store
+# locally.
+
+[[headers]]
+  for = "/js/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/css/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# Images are the exception: assets/logo.png is content, not code. If it ever
+# changes it will change name, so a long cache is free speed.
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+# ---------------- Not published ----------------
+# The test harness and the local dev server are committed on purpose (they are
+# how you verify a change) but there is no reason to serve them to the public.
+# Netlify has no "exclude" for a static publish dir, so we 404 them explicitly.
+
+[[redirects]]
+  from = "/tests/*"
+  to = "/index.html"
+  status = 404
+
+[[redirects]]
+  from = "/serve.py"
+  to = "/index.html"
+  status = 404
+
+# mockup.html is an internal design study, already marked noindex. Committed so
+# the concept work is not lost, 404'd so it is not mistaken for the product.
+
+[[redirects]]
+  from = "/mockup.html"
+  to = "/index.html"
+  status = 404
+
+# NOTE: there is deliberately no SPA catch-all (/* -> /index.html) here.
+# Routing is hash-based (#/fit, #/dashboard), and a fragment is never sent to
+# the server -- every request is already for a real file. Adding the usual
+# rewrite would only mask genuine 404s.

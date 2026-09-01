@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Fit Engine - Test Runner</title>
+<link rel="icon" href="../assets/logo.png" />
+<link rel="stylesheet" href="../css/tokens.css" />
+<link rel="stylesheet" href="../css/app.css" />
+<style>
+  .case { display:flex; gap:.8rem; align-items:flex-start; padding:.55rem .8rem;
+          border-bottom:1px solid var(--line); font-size:.87rem; }
+  .case:last-child { border-bottom:none; }
+  .case .mark { font-weight:700; width:3.2rem; flex:none; font-size:.72rem;
+                letter-spacing:.08em; text-transform:uppercase; }
+  .case.pass .mark { color: var(--sage); }
+  .case.fail .mark { color: var(--rust); }
+  .case pre { margin-top:.35rem; font-size:.76rem; color:var(--rust);
+              white-space:pre-wrap; }
+</style>
+</head>
+<body>
+<div class="container section-tight">
+  <span class="eyebrow">Fit engine</span>
+  <h1 class="serif" style="font-size:2.2rem;margin:.5rem 0">Test runner</h1>
+  <p class="muted" style="font-size:.88rem">
+    Same cases as <code>npm test</code>, executed in the browser because this
+    machine has no Node installed. Open via a local server, not file://.
+  </p>
+  <div id="summary" style="margin:1.2rem 0"></div>
+  <div class="card card-flat" id="results"></div>
+</div>
+
+<script type="module">
+/**
+ * Hand-rolled assert exposing exactly the four methods tests/cases.js uses.
+ * Deliberately not a library -- the interface is four functions wide.
+ */
+const assert = {
+  ok(value, message = "expected truthy") {
+    if (!value) throw new Error(message);
+  },
+  equal(actual, expected, message) {
+    if (actual !== expected) {
+      throw new Error(message ?? `expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}`);
+    }
+  },
+  notEqual(actual, expected, message) {
+    if (actual === expected) {
+      throw new Error(message ?? `expected value to differ from ${JSON.stringify(expected)}`);
+    }
+  },
+  deepEqual(actual, expected, message) {
+    const a = JSON.stringify(actual), b = JSON.stringify(expected);
+    if (a !== b) throw new Error(message ?? `expected ${b}, got ${a}`);
+  },
+};
+
+const { cases } = await import("./cases.js");
+
+// AWAITED, and sequential rather than .map(). An async case returns a promise;
+// a runner that does not await it records a pass the instant the function is
+// called, so a rejecting test reports green. node:test awaits by default, which
+// is exactly how the two runners could have silently disagreed.
+const results = [];
+for (const c of cases) {
+  try {
+    await c.run(assert);
+    results.push({ name: c.name, pass: true });
+  } catch (err) {
+    results.push({ name: c.name, pass: false, error: err.message });
+  }
+}
+
+const passed = results.filter((r) => r.pass).length;
+const failed = results.length - passed;
+
+document.getElementById("summary").innerHTML = failed
+  ? `<div class="alert alert-error"><b>${failed} failing</b> / ${results.length} cases</div>`
+  : `<div class="alert alert-ok"><b>All ${passed} cases passing.</b></div>`;
+
+document.getElementById("results").innerHTML = results
+  .map(
+    (r) => `
+    <div class="case ${r.pass ? "pass" : "fail"}">
+      <span class="mark">${r.pass ? "pass" : "fail"}</span>
+      <div>
+        <div>${r.name}</div>
+        ${r.error ? `<pre>${r.error.replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c]))}</pre>` : ""}
+      </div>
+    </div>`
+  )
+  .join("");
+</script>
+</body>
+</html>
