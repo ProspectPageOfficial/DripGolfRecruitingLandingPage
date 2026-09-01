@@ -42,14 +42,46 @@ const SESSION_KEY = "dg.demo.session";
 
 // --- tiny storage helpers ---------------------------------------------------
 
-const read = (key, fallback) => {
-  try {
-    return JSON.parse(localStorage.getItem(key)) ?? fallback;
-  } catch {
-    return fallback;
-  }
-};
-const write = (key, value) => localStorage.setItem(key, JSON.stringify(value));
+/**
+ * One accessor, two backings. Written as a factory rather than two near-copies
+ * of the same try/catch, because the only thing that differs is *how long the
+ * data should outlive the visitor*.
+ */
+const storeFor = (backing) => ({
+  read(key, fallback) {
+    try {
+      return JSON.parse(backing.getItem(key)) ?? fallback;
+    } catch {
+      return fallback;
+    }
+  },
+  write(key, value) {
+    backing.setItem(key, JSON.stringify(value));
+  },
+  remove(key) {
+    backing.removeItem(key);
+  },
+});
+
+/**
+ * The account outlives the visit; the session must not.
+ *
+ * `users` is localStorage because the provisioned owner account is a fact about
+ * this browser, not about this visit -- re-seeding it on every load would be
+ * pointless churn.
+ *
+ * `sessions` is sessionStorage because SIGNED OUT IS THE DEFAULT. This is the
+ * front door of a public site: the first thing a stranger sees must be the
+ * landing page and the pricing, never somebody else's dashboard. A session in
+ * localStorage survives closing the browser, so a single sign-in three weeks
+ * ago silently turns the marketing page into a private cockpit forever.
+ *
+ * sessionStorage is scoped to the tab, which lands exactly where we want: a
+ * refresh mid-session keeps you signed in (reloading is not logging out), while
+ * a new visitor, a new tab, or a reopened browser all start signed out.
+ */
+const users = storeFor(localStorage);
+const sessions = storeFor(sessionStorage);
 
 const ok = (data) => ({ data, error: null });
 const fail = (message) => ({ data: null, error: { message } });
@@ -74,8 +106,7 @@ export const auth = {
   /** Mirrors supabase.auth.signInWithPassword. */
   async signInWithPassword({ email, password }) {
     const mail = normalizeEmail(email);
-    const users = read(USERS_KEY, {});
-    const user = users[mail];
+    const user = users.read(USERS_KEY, {})[mail];
 
     // Same error message for "no such user" and "wrong password" on purpose —
     // otherwise the login form doubles as an account-enumeration oracle.
@@ -87,21 +118,20 @@ export const auth = {
   },
 
   async signOut() {
-    localStorage.removeItem(SESSION_KEY);
+    sessions.remove(SESSION_KEY);
     emit("SIGNED_OUT", null);
     return { error: null };
   },
 
   /** Mirrors supabase.auth.getUser() — always `{ data: { user }, error }`. */
   async getUser() {
-    const session = read(SESSION_KEY, null);
+    const session = sessions.read(SESSION_KEY, null);
     if (!session) return { data: { user: null }, error: null };
     if (Date.now() > session.expires_at) {
       await this.signOut();
       return { data: { user: null }, error: null };
     }
-    const users = read(USERS_KEY, {});
-    const user = users[session.email];
+    const user = users.read(USERS_KEY, {})[session.email];
     if (!user) {
       await this.signOut();
       return { data: { user: null }, error: null };
@@ -124,10 +154,10 @@ export const auth = {
   async updateUser({ meta }) {
     const { data } = await this.getUser();
     if (!data.user) return fail("Not signed in.");
-    const users = read(USERS_KEY, {});
-    const record = users[data.user.email];
+    const table = users.read(USERS_KEY, {});
+    const record = table[data.user.email];
     record.user_metadata = { ...record.user_metadata, ...meta };
-    write(USERS_KEY, users);
+    users.write(USERS_KEY, table);
     emit("USER_UPDATED", null);
     return ok({ user: publicUser(record) });
   },
@@ -135,11 +165,14 @@ export const auth = {
   _startSession(user) {
     const session = {
       email: user.email,
-      // 7 days. A real session cookie would be HttpOnly + Secure + SameSite,
-      // which localStorage fundamentally cannot be. Another reason this is a demo.
-      expires_at: Date.now() + 7 * 24 * 60 * 60 * 1000,
+      // A second, independent guard. sessionStorage already ends the session
+      // when the tab does, but "restore my tabs" can resurrect one, so an
+      // absolute deadline still earns its keep. A real session cookie would be
+      // HttpOnly + Secure + SameSite, which web storage fundamentally cannot
+      // be. Another reason this is a demo.
+      expires_at: Date.now() + 12 * 60 * 60 * 1000,
     };
-    write(SESSION_KEY, session);
+    sessions.write(SESSION_KEY, session);
     const safe = publicUser(user);
     emit("SIGNED_IN", session);
     return ok({ user: safe, session });
@@ -171,13 +204,13 @@ function publicUser(user) {
  */
 export async function seedOwnerAccount({ email, password, golferId, name }) {
   const mail = normalizeEmail(email);
-  const existing = read(USERS_KEY, {});
+  const existing = users.read(USERS_KEY, {});
   const keys = Object.keys(existing);
   if (keys.length === 1 && existing[mail]?.id === golferId) return;
 
   // Anything else in here is a leftover. Dropping it also invalidates its
   // session for free -- getUser() signs out any session whose email is gone.
-  write(USERS_KEY, {
+  users.write(USERS_KEY, {
     [mail]: {
       id: golferId,
       email: mail,

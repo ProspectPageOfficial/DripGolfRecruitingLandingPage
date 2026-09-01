@@ -150,6 +150,14 @@ async function boot() {
   localStorage.removeItem("dg.demo.profiles");
   localStorage.removeItem("dg.demo.golfer");
 
+  // Sessions moved to sessionStorage so that signed out is the default (see
+  // auth/store.js). A localStorage session written by an older build would
+  // outlive the browser and keep dropping a returning visitor straight into
+  // the dashboard -- the exact behaviour that change removes. Sweeping the old
+  // key here is what actually retires it: shipping the new store without this
+  // leaves every existing visitor on the old one, signed in, forever.
+  localStorage.removeItem("dg.demo.session");
+
   await seedOwnerAccount(DEMO_LOGIN);
 
   // Read the golfer's own website. Never throws; on failure the snapshot
@@ -162,9 +170,19 @@ async function boot() {
   await router();
 }
 
-/** Escape hatch for reviewers who have mangled the demo data. */
+/**
+ * Escape hatch for reviewers who have mangled the demo data.
+ *
+ * Clears both backings for every key. The session lives in sessionStorage and
+ * everything else in localStorage, but a reset that has to remember which is
+ * which is a reset that eventually forgets -- and the one key it forgets is the
+ * one keeping you signed in.
+ */
 window.resetDripGolfDemo = () => {
-  STORAGE_KEYS.forEach((k) => localStorage.removeItem(k));
+  STORAGE_KEYS.forEach((k) => {
+    localStorage.removeItem(k);
+    sessionStorage.removeItem(k);
+  });
   location.hash = "#/";
   location.reload();
 };
