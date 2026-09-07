@@ -2,7 +2,7 @@
  * views/landing.js — the signed-out front door.
  * Explains the two things the account unlocks, then gets out of the way.
  */
-import { html, raw, extLink } from "../lib/dom.js";
+import { html, raw } from "../lib/dom.js";
 import { colleges } from "../data/colleges.js";
 import { PUBLIC_SITE } from "../config.js";
 
@@ -101,8 +101,7 @@ export function landing() {
           backed by numbers instead of vibes.
         </p>
         <div class="hero-actions row">
-          ${raw(extLink(PUBLIC_SITE.url, "See the page", "btn"))}
-          <a class="btn btn-ghost" href="#/login">Sign in to edit</a>
+          <a class="btn" href="#/login">Sign in to edit</a>
         </div>
       </section>
 
