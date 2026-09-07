@@ -9,6 +9,10 @@ import { html, raw, initials, isExternal, extLink } from "./dom.js";
 import { PUBLIC_SITE } from "../config.js";
 
 export function nav(user, golfer, active) {
+  // Signed-out visitors get no nav links — the "Sign in" button below is the
+  // only affordance they need. Anything else (like a "The Page" tab) is noise
+  // for someone who hasn't opted in yet, and duplicating "Sign In" here would
+  // just repeat the button rendered a few lines down.
   const links = user
     ? [
         ["#/dashboard", "Dashboard", "dashboard"],
@@ -16,10 +20,7 @@ export function nav(user, golfer, active) {
         // No "Edit": this app reads the golfer's site, it does not write to it.
         [PUBLIC_SITE.url, "My Page", "profile"],
       ]
-    : [
-        [PUBLIC_SITE.url, "The Page", "profile"],
-        ["#/login", "Sign In", "login"],
-      ];
+    : [];
 
   return html`
     <div class="announce">
