@@ -105,6 +105,13 @@ export const schoolLogo = (school, tier = "target", size = 128) => html`
  * moment the golfer edits the real site, and refreshing it means a build step
  * this demo deliberately does not have.
  *
+ * `previewUrl` (falling back to `url`) exists so the frame can land in the
+ * coach's-eye view rather than the site's first-visit chooser gate. The
+ * distinction matters: the golfer is signing in here to see WHAT A COACH SEES,
+ * and the chooser is a screen a coach picks past, not a screen they linger on.
+ * The buttons next to the frame still point at the plain `url`, because a link
+ * a golfer sends out should behave exactly like the link a coach clicks.
+ *
  * Hardening, in order of how much it matters:
  *   sandbox      — no `allow-top-navigation`, so the framed site cannot steal
  *                  this tab. Scripts stay on so the page renders as coaches see
@@ -113,11 +120,11 @@ export const schoolLogo = (school, tier = "target", size = 128) => html`
  *   tabindex=-1  — keyboard users never get trapped in a 40%-scale viewport.
  *   no-referrer  — the public site has no business knowing about this app.
  *
- * @param {{url:string, host:string}} site
+ * @param {{url:string, host:string, previewUrl?:string}} site
  */
 export const sitePreview = (site) => html`
   <div class="site-thumb">
-    <iframe src="${site.url}" title="Preview of ${site.host}"
+    <iframe src="${site.previewUrl || site.url}" title="Preview of ${site.host}"
             sandbox="allow-scripts allow-same-origin"
             referrerpolicy="no-referrer"
             aria-hidden="true" tabindex="-1" loading="lazy" scrolling="no"></iframe>

@@ -53,8 +53,23 @@ export const logoUrl = (domain, size = 128) =>
  * change the domain here and the nav, the preview caption and the landing copy
  * all follow.
  */
+/**
+ * `previewUrl` is what the dashboard thumbnail actually frames, and it is a
+ * DIFFERENT url from the one a coach clicks.
+ *
+ * The public site opens on an owner/visitor chooser gate on first visit, which
+ * is right for a coach (they get to pick) and wrong for a preview (the golfer
+ * signing in wants to see what a coach sees, not the chooser). Passing
+ * `?role=visitor` asks the site to skip straight to visitor mode. That URL
+ * param can only DOWNGRADE privilege -- owner still requires the password --
+ * so this is a preview convenience, not an auth bypass.
+ *
+ * The buttons ("Open my page", "Edit on my site") deliberately do NOT use this
+ * variant: a real link should behave like a real link.
+ */
 export const PUBLIC_SITE = Object.freeze({
   url: "https://lukethomasselzer.com",
+  previewUrl: "https://lukethomasselzer.com/?role=visitor",
   host: "lukethomasselzer.com",
   repo: "https://github.com/ProspectPageOfficial/LukeThomasSelzer.com",
 });
