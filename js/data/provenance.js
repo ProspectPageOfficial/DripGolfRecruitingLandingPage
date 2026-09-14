@@ -35,6 +35,12 @@ export const PROVENANCE = Object.freeze([
   {
     group: "Golfer profile",
     status: "real",
+    what: "GPA and SAT/ACT (whenever the site publishes them)",
+    source: "FETCHED LIVE from /api/personal. Free-form strings ('3.85 / 4.0', '31 ACT') parsed into a numeric GPA and an SAT-equivalent via the College Board / ACT concordance. Absent for Luke on purpose - he is 13",
+  },
+  {
+    group: "Golfer profile",
+    status: "real",
     what: "All 29 tournament results, 56 rounds, 2024-2026",
     source: "PORTFOLIO_DATA on the live page -> _ref/gen_luke.py. Snapshot: that page sends no CORS header, so a browser cannot read it directly",
   },

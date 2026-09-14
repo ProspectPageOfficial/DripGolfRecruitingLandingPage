@@ -37,8 +37,14 @@
  * hand-copied stats rot in silence, because the person who would notice is
  * looking at the website, not at this repo.
  *
- *   gpa / sat     ABSENT, on purpose. Luke is 13. The Fit engine drops missing
- *                 academic inputs rather than scoring them as zero.
+ *   gpa / sat     LIVE when the site publishes them, otherwise ABSENT. The
+ *                 site now carries GPA and SAT/ACT as owner-editable fields
+ *                 on /api/personal, and data/live.js parses them into the
+ *                 numeric shape the fit engine wants. Luke, at 13, publishes
+ *                 neither -- so the snapshot below still lists neither, and
+ *                 the Fit engine drops missing academic inputs rather than
+ *                 scoring them as zero. The moment he sits a test and puts
+ *                 the number on his site, Academic Fit lights up here.
  */
 
 import { lukeSeason, lukePublished } from "./luke-season.js";

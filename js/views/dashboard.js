@@ -197,17 +197,20 @@ const topPick = ({ school, fit }) => html`
 // pick says the same thing, in the place the number actually is.
 
 /**
- * No button. There is deliberately nowhere to send anyone: this app cannot
- * edit, and the site's own /api/personal has no gpa or sat field either. A
- * call-to-action pointing at a form that does not exist is worse than none.
+ * The site now owns GPA and SAT/ACT fields, so the notice points at the
+ * place a golfer can actually fill them in. Same rule as the profile: this
+ * app does not edit -- it reads. Publish on the site, refresh here.
  */
 const academicsNotice = () => html`
-  <div class="banner-demo">
+  <div class="banner-demo row row-between">
     <span>
       <b>Academic Fit is not scored yet.</b> No GPA or test score is published
       for you &mdash; which is right, at 13. The athletic half is scored on its
       own and the academic weight is redistributed rather than counted as zero.
+      Add them on your site when you have them and every fit re-weights
+      automatically.
     </span>
+    ${raw(extLink(PUBLIC_SITE.url, "Add on my site", "btn btn-sm btn-sage"))}
   </div>
 `;
 

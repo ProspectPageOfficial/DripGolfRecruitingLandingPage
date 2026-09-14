@@ -9,13 +9,16 @@
  * the site publishes and the one recomputed from the results it also publishes.
  * If those ever diverge, every fit score is built on the disagreement.
  */
-import { hasAcademics, graduationYear } from "../js/lib/fit.js";
+import { hasAcademics, graduationYear, scoreSchool } from "../js/lib/fit.js";
 import { rollingScoringAvg, RANKING_WINDOW_EVENTS } from "../js/lib/trend.js";
 import {
   normalizeLive,
   isPlaceholder,
   stripLabel,
   fetchLiveProfile,
+  parseGpa,
+  parseSat,
+  ACT_TO_SAT,
 } from "../js/data/live.js";
 import { colleges } from "../js/data/colleges.js";
 import { GOLFER_SNAPSHOT, buildGolfer } from "../js/data/golfer.js";
@@ -104,6 +107,114 @@ export const dataCases = [
       assert.deepEqual(Object.keys(clean), ["name"]);
       assert.deepEqual(normalizeLive(null), {});
       assert.deepEqual(normalizeLive("nope"), {});
+    },
+  },
+  {
+    name: "parseGpa reads whatever a golfer might type into the field",
+    run: (assert) => {
+      // The site accepts free-form strings; the parser has to survive them.
+      assert.equal(parseGpa("3.85"), 3.85);
+      assert.equal(parseGpa("3.85 / 4.0"), 3.85);
+      assert.equal(parseGpa("GPA: 3.9"), 3.9);
+      assert.equal(parseGpa("4.2 weighted"), 4.2, "weighted GPAs pass through as typed");
+      assert.equal(parseGpa("  3.7  "), 3.7);
+    },
+  },
+  {
+    name: "parseGpa returns null rather than inventing a GPA",
+    run: (assert) => {
+      // Every one of these must fail cleanly so hasAcademics() drops the
+      // input instead of scoring nonsense.
+      assert.equal(parseGpa(""), null);
+      assert.equal(parseGpa(null), null);
+      assert.equal(parseGpa("N/A"), null);
+      assert.equal(parseGpa("no GPA yet"), null);
+      assert.equal(parseGpa("0"), null, "zero is not a real GPA");
+      assert.equal(parseGpa("42"), null, "way out of range");
+    },
+  },
+  {
+    name: "parseSat prefers an explicit SAT number when present",
+    run: (assert) => {
+      assert.equal(parseSat("1420"), 1420);
+      assert.equal(parseSat("1420 SAT"), 1420);
+      assert.equal(parseSat("SAT: 1500"), 1500);
+      // Mixed SAT + ACT -- SAT wins because it is the axis the engine uses.
+      assert.equal(parseSat("1420 / 31"), 1420);
+      assert.equal(parseSat("SAT 1500 (ACT 34)"), 1500);
+    },
+  },
+  {
+    name: "parseSat converts a bare ACT via the concordance",
+    run: (assert) => {
+      assert.equal(parseSat("31 ACT"), ACT_TO_SAT[31]);
+      assert.equal(parseSat("ACT: 24"), ACT_TO_SAT[24]);
+      // A bare "36" cannot be an SAT (below the 400 floor) but is a valid
+      // perfect ACT, so the concordance takes over.
+      assert.equal(parseSat("36"), ACT_TO_SAT[36]);
+      // Sanity-check that the concordance is monotone -- a higher ACT never
+      // maps to a lower SAT. A typo here would silently rearrange fit scores.
+      const acts = Object.keys(ACT_TO_SAT).map(Number).sort((a, b) => a - b);
+      for (let i = 1; i < acts.length; i += 1) {
+        assert.ok(
+          ACT_TO_SAT[acts[i]] > ACT_TO_SAT[acts[i - 1]],
+          `concordance not monotone at ACT ${acts[i]}`
+        );
+      }
+    },
+  },
+  {
+    name: "parseSat refuses to invent a score outside the concordance",
+    run: (assert) => {
+      assert.equal(parseSat(""), null);
+      assert.equal(parseSat("no score"), null);
+      assert.equal(parseSat("8 ACT"), null, "concordance stops at 9");
+      assert.equal(parseSat("1700"), null, "above the SAT ceiling");
+      assert.equal(parseSat("200"), null, "below the SAT floor and above ACT");
+    },
+  },
+  {
+    name: "normalizeLive translates the site's free-form academics into numbers",
+    run: (assert) => {
+      const clean = normalizeLive({ gpa: "3.85 / 4.0", test_scores: "31 ACT" });
+      assert.equal(clean.gpa, 3.85, "GPA is a number, not the raw string");
+      assert.equal(clean.sat, ACT_TO_SAT[31], "ACT was concorded to SAT for the engine");
+      assert.equal("test_scores" in clean, false,
+        "raw label field must not leak into the profile");
+    },
+  },
+  {
+    name: "normalizeLive drops academics it cannot parse rather than scoring zero",
+    run: (assert) => {
+      // Unknown and bad are different facts. An unparseable string must
+      // vanish so hasAcademics() answers "not on file", not "grades of 0".
+      const clean = normalizeLive({ gpa: "coming soon", test_scores: "TBD" });
+      assert.equal("gpa" in clean, false);
+      assert.equal("sat" in clean, false);
+      assert.equal("test_scores" in clean, false);
+    },
+  },
+  {
+    name: "live academics reach the fit engine and light up Academic Fit",
+    run: (assert) => {
+      // End-to-end: what the site publishes -> what the engine scores.
+      const golfer = {
+        scoringAvg: 74,
+        nationalRank: 200,
+        ...normalizeLive({ gpa: "3.9", test_scores: "1400 SAT" }),
+      };
+      assert.equal(hasAcademics(golfer), true);
+      const school = {
+        teamScoringAvg: 74.5, recruitRank: 250,
+        avgGPA: 3.7, avgSAT: 1350,
+      };
+      const fit = scoreSchool(golfer, school);
+      assert.equal(fit.academicKnown, true);
+      assert.ok(fit.academic > 0, "academics should score above zero when GPA/SAT clear the bar");
+      // Components must include gpa and testing rows now.
+      const keys = fit.components.map((c) => c.key);
+      assert.ok(keys.includes("gpa"), "gpa component missing from scored fit");
+      assert.ok(keys.includes("testing"), "testing component missing from scored fit");
     },
   },
   {
