@@ -26,6 +26,8 @@ import {
   yearsToGraduation,
   graduationYear,
   rankVerdict,
+  gpaVerdict,
+  satVerdict,
   TIERS,
   ACADEMIC_GATE,
 } from "../js/lib/fit.js";
@@ -393,6 +395,63 @@ export const fitCases = [
       const roster = fit.components.find((c) => c.key === "roster-rank");
       assert.ok(roster.detail.includes("behind"));
       assert.ok(roster.detail.includes("HS-senior"));
+    },
+  },
+  {
+    name: "gpaVerdict() reports delta as ahead / behind / level",
+    run: (assert) => {
+      const ahead = gpaVerdict(3.9, 3.7);
+      assert.equal(ahead.direction, "ahead");
+      assert.equal(ahead.delta, 0.2);
+      assert.ok(ahead.phrase.includes("+0.20"));
+      assert.ok(ahead.phrase.toLowerCase().includes("above"));
+
+      const behind = gpaVerdict(3.2, 3.85);
+      assert.equal(behind.direction, "behind");
+      assert.ok(behind.phrase.includes("0.65"));
+      assert.ok(behind.phrase.toLowerCase().includes("below"));
+
+      // Inside the noise threshold -> level, no misleading "+0.01" claim.
+      assert.equal(gpaVerdict(3.51, 3.50).direction, "level");
+
+      // Junk inputs must not throw or lie.
+      assert.equal(gpaVerdict(3.5, null).phrase, "");
+      assert.equal(gpaVerdict(undefined, 3.5).direction, "level");
+    },
+  },
+  {
+    name: "satVerdict() reports delta as ahead / behind / level",
+    run: (assert) => {
+      const ahead = satVerdict(1450, 1300);
+      assert.equal(ahead.direction, "ahead");
+      assert.equal(ahead.delta, 150);
+      assert.ok(ahead.phrase.includes("+150"));
+
+      const behind = satVerdict(1100, 1400);
+      assert.equal(behind.direction, "behind");
+      assert.ok(behind.phrase.includes("300"));
+      assert.ok(behind.phrase.toLowerCase().includes("below"));
+
+      // Within ten points is inside the noise threshold.
+      assert.equal(satVerdict(1355, 1350).direction, "level");
+
+      assert.equal(satVerdict(1400, null).phrase, "");
+      assert.equal(satVerdict(NaN, 1400).direction, "level");
+    },
+  },
+  {
+    name: "gpa + testing component details borrow the verdict wording",
+    run: (assert) => {
+      // Same DRY guarantee as the roster-rank component: the sentence on
+      // screen matches the verdict on the versus block.
+      const fit = scoreSchool(
+        { nationalRank: 100, gpa: 3.9, sat: 1450 },
+        { avgRosterSeniorJgsRank: 200, avgGPA: 3.7, avgSAT: 1300 }
+      );
+      const gpa = fit.components.find((c) => c.key === "gpa");
+      const testing = fit.components.find((c) => c.key === "testing");
+      assert.ok(gpa.detail.toLowerCase().includes("above"));
+      assert.ok(testing.detail.includes("+150"));
     },
   },
   {

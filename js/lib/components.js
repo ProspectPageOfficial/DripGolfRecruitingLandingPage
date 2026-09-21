@@ -6,7 +6,7 @@
  * thickness" being a one-line edit and a three-file scavenger hunt.
  */
 import { html, raw, commas } from "./dom.js";
-import { TIER_COPY, rankVerdict } from "./fit.js";
+import { TIER_COPY, rankVerdict, gpaVerdict, satVerdict } from "./fit.js";
 
 const TIER_STROKE = {
   likely: "var(--tier-likely)",
@@ -59,36 +59,81 @@ export const tierPill = (tier) =>
   html`<span class="pill pill-${tier}">${TIER_COPY[tier].label}</span>`;
 
 /**
- * Head-to-head rank comparison. Shows the golfer's JGS rank next to the
- * roster's average senior-year JGS rank so the fit isn't just a summary
- * number -- the two inputs that produced it are on screen too.
+ * Head-to-head comparison of any stat where a golfer has one number and a
+ * benchmark (roster / school average) has another. "Ahead" always means the
+ * golfer is doing better, whether the underlying metric rewards LOWER (rank)
+ * or HIGHER (GPA, SAT) numbers -- so the CSS tint reads correctly across
+ * all three stats.
+ *
+ * The tier-typed wrappers below (`rankVersus`, `gpaVersus`, `satVersus`)
+ * hide the display-formatting bits, so callers just pass raw numbers.
  *
  * @param {Object}  opts
- * @param {number}  opts.yourRank
- * @param {number}  opts.rosterRank
- * @param {string} [opts.tier="target"] tints the roster number so it reads as
- *   the target the golfer is measured against, using the same likely/target/
- *   reach palette as the rest of the score.
- * @param {"sm"|"md"} [opts.size="md"] `sm` fits inside the dashboard top-pick;
- *   `md` is the fit-page hero treatment.
+ * @param {string}  opts.label      what the right-hand number represents
+ * @param {string}  opts.yourDisplay pre-formatted string for the golfer's value
+ * @param {string}  opts.theirDisplay pre-formatted string for the benchmark
+ * @param {string}  opts.direction  "ahead" | "behind" | "level"
+ * @param {string}  opts.phrase     one-line verdict shown under the pair
+ * @param {string} [opts.tier="target"]
+ * @param {"sm"|"md"} [opts.size="md"]
  */
-export function rankVersus({ yourRank, rosterRank, tier = "target", size = "md" }) {
-  const { direction, phrase } = rankVerdict(yourRank, rosterRank);
-  const cls = `rank-versus rank-versus-${size}`;
+export function statVersus({
+  label,
+  yourDisplay,
+  theirDisplay,
+  direction,
+  phrase,
+  tier = "target",
+  size = "md",
+}) {
+  const cls = `stat-versus stat-versus-${size}`;
   return html`
     <div class="${cls}" data-direction="${direction}">
-      <div class="rank-versus-side">
-        <span class="rank-versus-label">You</span>
-        <b class="rank-versus-num">#${commas(yourRank)}</b>
+      <div class="stat-versus-side">
+        <span class="stat-versus-label">You</span>
+        <b class="stat-versus-num">${yourDisplay}</b>
       </div>
-      <span class="rank-versus-vs" aria-hidden="true">vs</span>
-      <div class="rank-versus-side">
-        <span class="rank-versus-label">Roster HS-senior avg</span>
-        <b class="rank-versus-num" style="color:var(--tier-${tier})">#${commas(rosterRank)}</b>
+      <span class="stat-versus-vs" aria-hidden="true">vs</span>
+      <div class="stat-versus-side">
+        <span class="stat-versus-label">${label}</span>
+        <b class="stat-versus-num" style="color:var(--tier-${tier})">${theirDisplay}</b>
       </div>
-      ${raw(phrase ? html`<p class="rank-versus-phrase">${phrase}</p>` : "")}
+      ${raw(phrase ? html`<p class="stat-versus-phrase">${phrase}</p>` : "")}
     </div>
   `;
+}
+
+/** JGS rank versus the roster's average senior-year JGS rank. */
+export function rankVersus({ yourRank, rosterRank, tier = "target", size = "md" }) {
+  const { direction, phrase } = rankVerdict(yourRank, rosterRank);
+  return statVersus({
+    label: "Roster HS-senior avg",
+    yourDisplay: `#${commas(yourRank)}`,
+    theirDisplay: `#${commas(rosterRank)}`,
+    direction, phrase, tier, size,
+  });
+}
+
+/** GPA versus the school's admitted average. */
+export function gpaVersus({ yourGpa, schoolGpa, tier = "target", size = "md" }) {
+  const { direction, phrase } = gpaVerdict(yourGpa, schoolGpa);
+  return statVersus({
+    label: "School avg GPA",
+    yourDisplay: Number(yourGpa).toFixed(2),
+    theirDisplay: Number(schoolGpa).toFixed(2),
+    direction, phrase, tier, size,
+  });
+}
+
+/** SAT versus the school's admitted average. */
+export function satVersus({ yourSat, schoolSat, tier = "target", size = "md" }) {
+  const { direction, phrase } = satVerdict(yourSat, schoolSat);
+  return statVersus({
+    label: "School avg SAT",
+    yourDisplay: commas(yourSat),
+    theirDisplay: commas(schoolSat),
+    direction, phrase, tier, size,
+  });
 }
 
 /** Empty-state block. Better than rendering nothing and looking broken. */

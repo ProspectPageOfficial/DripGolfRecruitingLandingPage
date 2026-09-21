@@ -8,7 +8,15 @@
  */
 import { html, raw, money, commas, extLink } from "../lib/dom.js";
 import { PUBLIC_SITE } from "../config.js";
-import { dial, meter, tierPill, empty, rankVersus } from "../lib/components.js";
+import {
+  dial,
+  meter,
+  tierPill,
+  empty,
+  rankVersus,
+  gpaVersus,
+  satVersus,
+} from "../lib/components.js";
 import { schoolLogo } from "../lib/thumbs.js";
 import {
   rankSchools,
@@ -151,12 +159,7 @@ function summaryCard(profile, best) {
             ${school.division} &middot; #${school.nationalRank} &middot;
             ${school.conference} &middot; ${school.region}
           </p>
-          ${raw(fit.rankKnown ? rankVersus({
-            yourRank: profile.nationalRank,
-            rosterRank: school.avgRosterSeniorJgsRank,
-            tier: fit.tier,
-            size: "md",
-          }) : "")}
+          ${raw(versusStack(profile, school, fit, "md"))}
           <div class="grid grid-2" style="margin-top:.5rem">
             ${raw(meter("Athletic fit", fit.athletic, "Where you rank vs the roster's HS-senior average."))}
             ${raw(
@@ -302,12 +305,7 @@ function schoolRow({ school, fit }, profile) {
 
 function detailBody(school, fit, profile) {
   return html`
-    ${raw(fit.rankKnown ? rankVersus({
-      yourRank: profile.nationalRank,
-      rosterRank: school.avgRosterSeniorJgsRank,
-      tier: fit.tier,
-      size: "md",
-    }) : "")}
+    ${raw(versusStack(profile, school, fit, "md"))}
     <div class="grid grid-2">
       ${raw(fit.components.map((c) => meter(c.label, c.score, c.detail)).join(""))}
     </div>
@@ -349,6 +347,55 @@ function incompleteState(missing) {
         </p>
         <div>${raw(extLink(PUBLIC_SITE.url, "Open my site", "btn"))}</div>
       </div>
+    </div>
+  `;
+}
+
+/**
+ * Render the trio of head-to-head comparisons that back the fit score:
+ * rank vs roster average, GPA vs school average, SAT vs school average.
+ *
+ * Each block only appears when its inputs are on file -- rank without
+ * academics still gets a rank block; academics without rank get GPA and SAT.
+ * Nothing is invented to fill an empty slot, which is the same rule the
+ * scoring engine follows for those inputs.
+ */
+function versusStack(profile, school, fit, size) {
+  const rank = fit.rankKnown
+    ? rankVersus({
+        yourRank: profile.nationalRank,
+        rosterRank: school.avgRosterSeniorJgsRank,
+        tier: fit.tier,
+        size,
+      })
+    : "";
+
+  const gpa = fit.academicKnown
+    ? gpaVersus({
+        yourGpa: profile.gpa,
+        schoolGpa: school.avgGPA,
+        tier: fit.tier,
+        size,
+      })
+    : "";
+
+  const sat = fit.academicKnown
+    ? satVersus({
+        yourSat: profile.sat,
+        schoolSat: school.avgSAT,
+        tier: fit.tier,
+        size,
+      })
+    : "";
+
+  if (!rank && !gpa && !sat) return "";
+
+  return html`
+    <div class="versus-stack">
+      ${raw(rank)}
+      ${raw(gpa || sat
+        ? html`<div class="versus-stack-academics">${raw(gpa)}${raw(sat)}</div>`
+        : "")}
     </div>
   `;
 }

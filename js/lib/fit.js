@@ -104,16 +104,30 @@ const round = (n, dp = 1) => {
 // Component scores — each returns { score, detail }
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Verdict helpers
+// ---------------------------------------------------------------------------
+//
+// Each verdict turns two numbers into a plain-English direction ("ahead",
+// "behind", or "level") plus a phrase suitable for showing under a visual
+// comparison. "Ahead" always means "the golfer is doing better than the
+// benchmark", regardless of whether the underlying metric rewards lower
+// (rank) or higher (GPA, SAT) numbers. That is what lets one CSS tint colour
+// the whole comparison block correctly across three different stats.
+//
+// These live in fit.js so BOTH the scoring engine (as a component `detail`
+// string) and the UI (as the label under a visual pair) can share them. One
+// source of truth stops the number on screen from disagreeing with the
+// sentence next to it.
+
 /**
- * Compare a golfer's rank to a roster's average senior-year rank in plain
- * English. Pure so it can be used both by the scoring engine (as a component
- * `detail` string) and by the UI (as the label under a visual comparison).
- * One source of truth stops the number on screen from disagreeing with the
- * sentence next to it.
+ * Compare a golfer's rank to a roster's average senior-year rank. Ratio-based
+ * because ranks span orders of magnitude and a "3.2\u00d7 behind" reads far
+ * better than a raw delta of "10,217 places behind".
  *
  * @param {number} golferRank
  * @param {number} rosterRank
- * @returns {{ratio:number, direction:"ahead"|"behind"|"level",
+ * @returns {{ratio:?number, direction:"ahead"|"behind"|"level",
  *            multiple:number, phrase:string}}
  */
 export function rankVerdict(golferRank, rosterRank) {
@@ -137,6 +151,60 @@ export function rankVerdict(golferRank, rosterRank) {
   return { ratio, direction, multiple, phrase };
 }
 
+/**
+ * Compare a golfer's GPA to a school's admitted average. Delta-based -- GPA
+ * lives on a 0-4 scale, so "+0.15" is the language admissions counsellors
+ * actually use. A ratio would be nonsense on a bounded scale.
+ *
+ * @param {number} golferGpa
+ * @param {number} schoolGpa
+ * @returns {{delta:?number, direction:"ahead"|"behind"|"level", phrase:string}}
+ */
+export function gpaVerdict(golferGpa, schoolGpa) {
+  if (!Number.isFinite(golferGpa) || !Number.isFinite(schoolGpa)) {
+    return { delta: null, direction: "level", phrase: "" };
+  }
+  const delta = Math.round((golferGpa - schoolGpa) * 100) / 100;
+  // 0.03 GPA points is inside the noise of a single quarter's grades. Calling
+  // that a difference implies a precision the input does not have.
+  if (Math.abs(delta) < 0.03) {
+    return { delta, direction: "level",
+      phrase: "Your GPA is roughly level with the school's average." };
+  }
+  const direction = delta > 0 ? "ahead" : "behind";
+  const magnitude = Math.abs(delta).toFixed(2);
+  const phrase = direction === "ahead"
+    ? `Your GPA sits +${magnitude} above the school's average.`
+    : `Your GPA sits ${magnitude} below the school's average.`;
+  return { delta, direction, phrase };
+}
+
+/**
+ * Compare a golfer's SAT to a school's admitted average. Delta-based on the
+ * ~400-1600 scale; SAT sub-scores aren't linearly meaningful below ten points
+ * or so, which is why the level threshold sits there.
+ *
+ * @param {number} golferSat
+ * @param {number} schoolSat
+ * @returns {{delta:?number, direction:"ahead"|"behind"|"level", phrase:string}}
+ */
+export function satVerdict(golferSat, schoolSat) {
+  if (!Number.isFinite(golferSat) || !Number.isFinite(schoolSat)) {
+    return { delta: null, direction: "level", phrase: "" };
+  }
+  const delta = Math.round(golferSat - schoolSat);
+  if (Math.abs(delta) < 10) {
+    return { delta, direction: "level",
+      phrase: "Your SAT is roughly level with the school's average." };
+  }
+  const direction = delta > 0 ? "ahead" : "behind";
+  const magnitude = Math.abs(delta);
+  const phrase = direction === "ahead"
+    ? `Your SAT sits +${magnitude} above the school's average.`
+    : `Your SAT sits ${magnitude} below the school's average.`;
+  return { delta, direction, phrase };
+}
+
 function rosterRankComponent(golfer, school) {
   const ratio = golfer.nationalRank / school.avgRosterSeniorJgsRank;
   const score = scale(ratio, BANDS.rankBest, BANDS.rankWorst);
@@ -151,14 +219,19 @@ function rosterRankComponent(golfer, school) {
 function gpaComponent(golfer, school) {
   const delta = golfer.gpa - school.avgGPA;
   const score = scale(delta, BANDS.gpaBest, BANDS.gpaWorst);
-  const detail = `Your ${golfer.gpa.toFixed(2)} GPA vs the school's ${school.avgGPA.toFixed(2)} average.`;
+  const { phrase } = gpaVerdict(golfer.gpa, school.avgGPA);
+  const detail =
+    `Your ${golfer.gpa.toFixed(2)} GPA vs the school's ${school.avgGPA.toFixed(2)} average. ` +
+    phrase;
   return { score, detail };
 }
 
 function testingComponent(golfer, school) {
   const delta = golfer.sat - school.avgSAT;
   const score = scale(delta, BANDS.satBest, BANDS.satWorst);
-  const detail = `Your ${golfer.sat} SAT vs the school's ${school.avgSAT} average.`;
+  const { phrase } = satVerdict(golfer.sat, school.avgSAT);
+  const detail =
+    `Your ${golfer.sat} SAT vs the school's ${school.avgSAT} average. ` + phrase;
   return { score, detail };
 }
 
