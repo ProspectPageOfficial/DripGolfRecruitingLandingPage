@@ -10,7 +10,6 @@ import { html, raw, money, commas, extLink } from "../lib/dom.js";
 import { PUBLIC_SITE } from "../config.js";
 import {
   dial,
-  meter,
   tierPill,
   empty,
   rankVersus,
@@ -142,9 +141,15 @@ function trendCard(trend) {
   `;
 }
 
+/**
+ * The summary card is now just the identity of the school plus the trio of
+ * head-to-head comparisons that produced its score. No meters, no scalar
+ * stats, no banners: any of those describe the fit ABOUT the numbers, which
+ * is what the user asked to strip out. The versus blocks show the two
+ * numbers themselves, which is the whole point.
+ */
 function summaryCard(profile, best) {
   const { fit, school } = best;
-  const academicsKnown = fit.academicKnown;
   return html`
     <div class="card">
       <div class="fit-hero">
@@ -160,42 +165,8 @@ function summaryCard(profile, best) {
             ${school.conference} &middot; ${school.region}
           </p>
           ${raw(versusStack(profile, school, fit, "md"))}
-          <div class="grid grid-2" style="margin-top:.5rem">
-            ${raw(meter("Athletic fit", fit.athletic, "Where you rank vs the roster's HS-senior average."))}
-            ${raw(
-              academicsKnown
-                ? meter("Academic fit", fit.academic, "Do your grades match the school?")
-                : html`<div class="meter">
-                    <div class="meter-top"><span>Academic fit</span><b>&mdash;</b></div>
-                    <div class="meter-bar"></div>
-                    <span class="field-hint">Not scored yet &mdash; no GPA or test score on file.</span>
-                  </div>`
-            )}
-          </div>
         </div>
       </div>
-      <div class="grid grid-4" style="margin-top:1.4rem">
-        <div class="stat">
-          <div class="val">#${commas(profile.nationalRank)}</div>
-          <div class="lbl">Your JGS rank</div>
-        </div>
-        <div class="stat">
-          <div class="val">${profile.scoringAvg ?? "\u2014"}</div>
-          <div class="lbl">Scoring avg</div>
-        </div>
-        <div class="stat"><div class="val">${academicsKnown ? Number(profile.gpa).toFixed(2) : "\u2014"}</div><div class="lbl">GPA</div></div>
-        <div class="stat"><div class="val">${academicsKnown ? profile.sat : "\u2014"}</div><div class="lbl">SAT</div></div>
-      </div>
-      ${raw(
-        academicsKnown
-          ? ""
-          : html`<div class="banner-demo" style="margin:1.2rem 0 0">
-              <b>Athletic fit only.</b> These scores reflect your JGS rank, not
-              your grades. Add a GPA and test score when you have them and
-              every number here re-weights automatically. We will not guess
-              them for you.
-            </div>`
-      )}
     </div>
   `;
 }
@@ -303,27 +274,15 @@ function schoolRow({ school, fit }, profile) {
   `;
 }
 
+/**
+ * The expanded description of a fit is the same three head-to-head
+ * comparisons and nothing else. Component meters, capped-fit alerts and
+ * roster/tuition stats all described the fit; they did not SHOW the two
+ * numbers being compared. That is what the versus blocks are for, and the
+ * detail body is now those blocks only.
+ */
 function detailBody(school, fit, profile) {
-  return html`
-    ${raw(versusStack(profile, school, fit, "md"))}
-    <div class="grid grid-2">
-      ${raw(fit.components.map((c) => meter(c.label, c.score, c.detail)).join(""))}
-    </div>
-    ${raw(
-      fit.capped
-        ? html`<div class="alert alert-error" style="margin-top:.9rem">
-            Overall score capped: academic fit is the limiting factor here, not
-            your golf. Lifting GPA or test scores unlocks this program.
-          </div>`
-        : ""
-    )}
-    <div class="grid grid-4" style="margin-top:1rem">
-      <div class="stat"><div class="val">#${commas(school.avgRosterSeniorJgsRank)}</div><div class="lbl">Roster HS avg rank</div></div>
-      <div class="stat"><div class="val">${school.acceptRate}%</div><div class="lbl">Accept rate</div></div>
-      <div class="stat"><div class="val">${school.roster}</div><div class="lbl">Roster size</div></div>
-      <div class="stat"><div class="val">${money(school.tuition)}</div><div class="lbl">Tuition / yr</div></div>
-    </div>
-  `;
+  return versusStack(profile, school, fit, "md");
 }
 
 function incompleteState(missing) {
