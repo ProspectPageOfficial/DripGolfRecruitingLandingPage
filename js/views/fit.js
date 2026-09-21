@@ -23,8 +23,7 @@ import {
   TIER_COPY,
   yearsToGraduation,
 } from "../lib/fit.js";
-import { measureTrend } from "../lib/trend.js";
-import { colleges, DIVISIONS, REGIONS } from "../data/colleges.js";
+import { colleges } from "../data/colleges.js";
 import { provenanceDetails } from "./provenance.js";
 
 const TIER_ORDER = ["likely", "target", "reach"];
@@ -45,7 +44,6 @@ export function fitView(profile, prefs = {}) {
   if (missing.length) return incompleteState(missing);
 
   const years = yearsToGraduation(profile);
-  const trend = measureTrend(profile.tournaments);
 
   const ranked = rankSchools(profile, colleges, prefs);
   const groups = groupByTier(ranked);
@@ -66,15 +64,10 @@ export function fitView(profile, prefs = {}) {
 
       ${raw(years != null ? enrolmentNote(years) : "")}
       ${raw(best ? summaryCard(profile, best) : "")}
-      ${raw(trendCard(trend))}
-      ${raw(filterBar(prefs))}
+      ${raw(searchBar(prefs))}
 
       <div id="fit-results" class="stack-sm">
-        ${raw(
-          ranked.length
-            ? TIER_ORDER.map((tier) => tierBlock(tier, groups[tier], profile)).join("")
-            : empty("No programs match those filters. Loosen one and try again.")
-        )}
+        ${raw(renderResults(ranked, groups, profile))}
       </div>
 
       ${raw(provenanceDetails())}
@@ -100,42 +93,6 @@ function enrolmentNote(years) {
         Your JGS rank today is compared against the AVERAGE senior-year JGS
         rank of each roster's current players &mdash; a rank-vs-rank comparison
         so a 13-year-old is not being measured against 22-year-olds.
-      </p>
-    </div>
-  `;
-}
-
-/** What the golfer's own rounds actually say. Facts, not forecasts. */
-function trendCard(trend) {
-  if (!trend || trend.measurable === false) return "";
-
-  const dir = trend.strokesPerYear < 0 ? "-" : "+";
-  return html`
-    <div class="card card-flat">
-      <span class="eyebrow">Your measured trend</span>
-      <div class="row" style="gap:.6rem;align-items:baseline;margin-top:.6rem">
-        <span class="pill ${trend.reliable ? "pill-likely" : "pill-plain"}">
-          ${dir}${Math.abs(trend.strokesPerYear)} strokes / yr
-        </span>
-        ${raw(trend.reliable ? "" : html`<span class="pill pill-target">Noisy</span>`)}
-      </div>
-      <p class="field-hint" style="margin-top:.4rem">${trend.note}</p>
-      <div class="grid grid-4" style="margin-top:.8rem">
-        ${raw(
-          trend.seasons
-            .map(
-              (s) => html`<div class="stat">
-                <div class="val" style="font-size:1.3rem">${s.avg}</div>
-                <div class="lbl">${s.season} &middot; ${s.rounds} rounds</div>
-              </div>`
-            )
-            .join("")
-        )}
-      </div>
-      <p class="field-hint" style="margin-top:.6rem">
-        Shown as context, not fed into the fit score. The engine now compares
-        your JGS rank against each roster's senior-year JGS rank instead of
-        chasing a strokes-per-year projection.
       </p>
     </div>
   `;
@@ -171,57 +128,29 @@ function summaryCard(profile, best) {
   `;
 }
 
-function filterBar(prefs) {
-  const options = (list, selected) =>
-    list
-      .map((v) => html`<option value="${v}" ${raw(selected === v ? "selected" : "")}>${v}</option>`)
-      .join("");
-
+/**
+ * A single school-name search input. Live filtering happens in bindFit --
+ * this function only paints the initial input, so a typed query survives an
+ * accidental refresh (the value is pulled from the incoming prefs).
+ *
+ * The old dropdown filter form (division / region / tuition / public) went
+ * away with this change. Anyone who wants those back should un-strip the
+ * previous `filterBar` in git history rather than layering both.
+ */
+function searchBar(prefs) {
+  const initial = typeof prefs.search === "string" ? prefs.search : "";
   return html`
     <div class="card card-flat">
-      <span class="eyebrow" style="margin-bottom:.8rem;display:flex">Preferences</span>
-      <form id="fit-filters" class="filters">
-        <div class="field">
-          <label for="p-div">Division</label>
-          <select id="p-div" name="division">
-            <option value="">Any division</option>
-            ${raw(options(DIVISIONS, prefs.divisions?.[0]))}
-          </select>
-        </div>
-        <div class="field">
-          <label for="p-reg">Region</label>
-          <select id="p-reg" name="region">
-            <option value="">Anywhere</option>
-            ${raw(options(REGIONS, prefs.regions?.[0]))}
-          </select>
-        </div>
-        <div class="field">
-          <label for="p-tui">Max tuition</label>
-          <select id="p-tui" name="maxTuition">
-            <option value="">No limit</option>
-            ${raw(
-              [15000, 30000, 45000, 65000]
-                .map(
-                  (v) =>
-                    html`<option value="${v}" ${raw(Number(prefs.maxTuition) === v ? "selected" : "")}>
-                      Under ${money(v)}
-                    </option>`
-                )
-                .join("")
-            )}
-          </select>
-        </div>
-        <div class="field">
-          <label for="p-pub">School type</label>
-          <select id="p-pub" name="publicOnly">
-            <option value="">Any</option>
-            <option value="1" ${raw(prefs.publicOnly ? "selected" : "")}>Public only</option>
-          </select>
-        </div>
-      </form>
-      <p class="field-hint" style="margin-top:.7rem">
-        Preferences filter the list; they never inflate a score. Mixing "what I
-        want" into "where I fit" gives you a number that means neither.
+      <label for="p-search" class="eyebrow" style="display:block;margin-bottom:.6rem">
+        Search schools
+      </label>
+      <input id="p-search" name="search" type="search" autocomplete="off"
+             spellcheck="false" placeholder="Stanford, ACC, ..."
+             value="${initial}"
+             class="search-input" />
+      <p class="field-hint" style="margin-top:.5rem">
+        Matches school names and conferences. Filters the list &mdash; scores
+        do not move.
       </p>
     </div>
   `;
@@ -237,6 +166,18 @@ function tierBlock(tier, rows, profile) {
     </div>
     <div class="stack-sm">${raw(rows.map((r) => schoolRow(r, profile)).join(""))}</div>
   `;
+}
+
+/**
+ * Paint the tiered results (or an empty state). Extracted from `fitView` so
+ * the live-search handler in bindFit can re-render just this container on
+ * every keystroke without disturbing the search input's focus or caret.
+ */
+function renderResults(ranked, groups, profile) {
+  if (!ranked.length) {
+    return empty("No schools match that search. Clear it to see the full list.");
+  }
+  return TIER_ORDER.map((tier) => tierBlock(tier, groups[tier], profile)).join("");
 }
 
 function schoolRow({ school, fit }, profile) {
@@ -255,7 +196,7 @@ function schoolRow({ school, fit }, profile) {
           </div>
           <div class="school-versus">
             <span class="school-versus-side">
-              <span class="school-versus-lbl">You</span>
+              <span class="school-versus-lbl">Your JGS rank</span>
               <b>#${commas(profile.nationalRank)}</b>
             </span>
             <span class="school-versus-vs">vs</span>
@@ -359,21 +300,32 @@ function versusStack(profile, school, fit, size) {
   `;
 }
 
-/** Wire filters + row expansion. Called after the view lands in the DOM. */
-export function bindFit(root, { onPrefsChange }) {
-  const form = root.querySelector("#fit-filters");
+/**
+ * Wire search + row expansion.
+ *
+ * The search input runs LOCALLY: on every keystroke we recompute the tiered
+ * result list and swap the `#fit-results` container's contents. A full route
+ * re-render would blow away the input's focus and caret, which is exactly
+ * the frustration a live-search field is supposed to avoid.
+ *
+ * @param {HTMLElement} root  the app container
+ * @param {Object} opts
+ * @param {Object} opts.profile  the golfer whose numbers score the schools.
+ *   Required, because live search re-runs `rankSchools` on every keystroke.
+ */
+export function bindFit(root, { profile }) {
+  const searchEl = root.querySelector("#p-search");
+  const resultsEl = root.querySelector("#fit-results");
 
-  const emit = () => {
-    const f = form ? Object.fromEntries(new FormData(form).entries()) : {};
-    onPrefsChange({
-      divisions: f.division ? [f.division] : [],
-      regions: f.region ? [f.region] : [],
-      maxTuition: f.maxTuition ? Number(f.maxTuition) : null,
-      publicOnly: Boolean(f.publicOnly),
-    });
+  const applySearch = () => {
+    if (!resultsEl) return;
+    const prefs = { search: searchEl?.value ?? "" };
+    const ranked = rankSchools(profile, colleges, prefs);
+    const groups = groupByTier(ranked);
+    resultsEl.innerHTML = renderResults(ranked, groups, profile);
   };
 
-  form?.addEventListener("change", emit);
+  searchEl?.addEventListener("input", applySearch);
 
   const toggle = (rowEl) => {
     const id = rowEl.dataset.school;
@@ -385,6 +337,8 @@ export function bindFit(root, { onPrefsChange }) {
     rowEl.setAttribute("aria-expanded", String(open));
   };
 
+  // Event delegation on `root` survives the innerHTML swap in applySearch,
+  // which would detach any listener attached directly to a row element.
   root.addEventListener("click", (e) => {
     const row = e.target.closest(".school-row");
     if (row) toggle(row);

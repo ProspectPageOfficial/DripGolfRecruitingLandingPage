@@ -45,8 +45,12 @@ const STORAGE_KEYS = [
  * `live` holds the last successful read of /api/personal. It is fetched once at
  * boot rather than per route: navigating between two screens is not new
  * evidence that the golfer's hometown changed.
+ *
+ * The `prefs` slot that used to live here went away with the Fit-view filter
+ * form. Search now runs locally inside bindFit and does not need to survive a
+ * route change; if a persistent pref lands back on the roadmap, put it here.
  */
-const ui = { prefs: {}, live: {}, liveOk: false };
+const ui = { live: {}, liveOk: false };
 
 // ---------------------------------------------------------------------------
 // Route table. Declarative beats a switch statement nobody wants to touch.
@@ -64,7 +68,7 @@ const ROUTES = [
   // hold is not a refactor, it is breaking someone else's bookmark.
   { path: /^\/page$/,      key: "profile",   redirect: PUBLIC_SITE.url },
   { path: /^\/dashboard$/, key: "dashboard", auth: true, render: (ctx) => dashboardView(ctx.golfer, ctx.liveOk) },
-  { path: /^\/fit$/,       key: "fit",       auth: true, render: (ctx) => fitView(ctx.golfer, ui.prefs) },
+  { path: /^\/fit$/,       key: "fit",       auth: true, render: (ctx) => fitView(ctx.golfer) },
 
   // #/edit is gone: there is nothing in this app left to edit. Anyone landing
   // on a stale link goes to the site, which is the only place editing happens.
@@ -123,13 +127,10 @@ function bindFor(key) {
   }
 
   if (key === "fit") {
-    bindFit(root, {
-      prefs: ui.prefs,
-      onPrefsChange: (prefs) => {
-        ui.prefs = prefs;
-        router();
-      },
-    });
+    // The Fit view now filters locally as-you-type; there is no pref that has
+    // to survive a route change, so nothing round-trips through main.js's ui
+    // state. That is why `onPrefsChange` is gone from the payload.
+    bindFit(root, { profile: buildGolfer(ui.live) });
   }
 }
 

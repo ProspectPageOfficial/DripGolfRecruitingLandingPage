@@ -97,6 +97,27 @@ export const viewCases = [
     },
   },
   {
+    name: "fit view labels the golfer's rank as 'Your JGS rank'",
+    run: (assert) => {
+      // Guards against the label sliding back to a bare "You" -- which reads
+      // ambiguously when three head-to-head blocks are stacked.
+      const out = fitView(luke, {});
+      assert.ok(out.includes("Your JGS rank"),
+        "rank versus block must label its left side 'Your JGS rank'");
+    },
+  },
+  {
+    name: "fit view ships a search input and no measured-trend card",
+    run: (assert) => {
+      const out = fitView(luke, {});
+      assert.ok(out.includes('id="p-search"'), "search input missing from fit view");
+      assert.ok(!out.includes("Your measured trend"),
+        "measured trend card should not be rendered any more");
+      assert.ok(!out.includes("Preferences"),
+        "old preferences form should not be rendered any more");
+    },
+  },
+  {
     name: "fit view falls back to the incomplete state when rank is missing",
     run: (assert) => {
       const noRank = { ...luke, nationalRank: undefined };

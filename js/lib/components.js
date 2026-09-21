@@ -74,11 +74,15 @@ export const tierPill = (tier) =>
  * @param {string}  opts.theirDisplay pre-formatted string for the benchmark
  * @param {string}  opts.direction  "ahead" | "behind" | "level"
  * @param {string}  opts.phrase     one-line verdict shown under the pair
+ * @param {string} [opts.yourLabel="You"] label above the golfer's number. Each
+ *   stat wrapper below sets this to the specific stat ("Your JGS rank", "Your
+ *   GPA", "Your SAT") so "You" never appears without context.
  * @param {string} [opts.tier="target"]
  * @param {"sm"|"md"} [opts.size="md"]
  */
 export function statVersus({
   label,
+  yourLabel = "You",
   yourDisplay,
   theirDisplay,
   direction,
@@ -90,7 +94,7 @@ export function statVersus({
   return html`
     <div class="${cls}" data-direction="${direction}">
       <div class="stat-versus-side">
-        <span class="stat-versus-label">You</span>
+        <span class="stat-versus-label">${yourLabel}</span>
         <b class="stat-versus-num">${yourDisplay}</b>
       </div>
       <span class="stat-versus-vs" aria-hidden="true">vs</span>
@@ -108,6 +112,7 @@ export function rankVersus({ yourRank, rosterRank, tier = "target", size = "md" 
   const { direction, phrase } = rankVerdict(yourRank, rosterRank);
   return statVersus({
     label: "Roster HS-senior avg",
+    yourLabel: "Your JGS rank",
     yourDisplay: `#${commas(yourRank)}`,
     theirDisplay: `#${commas(rosterRank)}`,
     direction, phrase, tier, size,
@@ -119,6 +124,7 @@ export function gpaVersus({ yourGpa, schoolGpa, tier = "target", size = "md" }) 
   const { direction, phrase } = gpaVerdict(yourGpa, schoolGpa);
   return statVersus({
     label: "School avg GPA",
+    yourLabel: "Your GPA",
     yourDisplay: Number(yourGpa).toFixed(2),
     theirDisplay: Number(schoolGpa).toFixed(2),
     direction, phrase, tier, size,
@@ -130,6 +136,7 @@ export function satVersus({ yourSat, schoolSat, tier = "target", size = "md" }) 
   const { direction, phrase } = satVerdict(yourSat, schoolSat);
   return statVersus({
     label: "School avg SAT",
+    yourLabel: "Your SAT",
     yourDisplay: commas(yourSat),
     theirDisplay: commas(schoolSat),
     direction, phrase, tier, size,

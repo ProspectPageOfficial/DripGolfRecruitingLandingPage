@@ -387,11 +387,19 @@ export function scoreSchool(golfer, school) {
  * "where I fit" produces a number that means neither thing.
  */
 export function matchesPrefs(school, prefs = {}) {
-  const { divisions, regions, maxTuition, publicOnly } = prefs;
+  const { divisions, regions, maxTuition, publicOnly, search } = prefs;
   if (divisions?.length && !divisions.includes(school.division)) return false;
   if (regions?.length && !regions.includes(school.region)) return false;
   if (maxTuition && school.tuition > maxTuition) return false;
   if (publicOnly && school.type !== "Public") return false;
+  // Text search across name + conference. Case-insensitive substring: "stan"
+  // finds Stanford, "acc" finds every ACC school. Whitespace-only input is
+  // treated as no filter -- a stray space should not empty the list.
+  if (typeof search === "string" && search.trim()) {
+    const q = search.trim().toLowerCase();
+    const haystack = `${school.name} ${school.conference || ""}`.toLowerCase();
+    if (!haystack.includes(q)) return false;
+  }
   return true;
 }
 

@@ -411,11 +411,18 @@ table.data tbody tr:hover { background: var(--cream-2); }
   margin-top: -6px;
 }
 
-.filters {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: var(--s-3);
+/* Single-input school search replaced the multi-select filter form. Same
+   visual treatment as `.field input` so it does not read as a new species
+   of control, but full-width because it is the only thing in the card. */
+.search-input {
+  width: 100%;
+  padding: 0.7rem 0.95rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--cream);
+  font-size: 0.95rem;
 }
+.search-input:focus { outline: 2px solid var(--sage); outline-offset: 1px; }
 
 .tier-head {
   display: flex;

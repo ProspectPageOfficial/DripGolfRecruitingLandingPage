@@ -222,6 +222,32 @@ export const fitCases = [
     },
   },
   {
+    name: "matchesPrefs search matches name + conference, case-insensitive",
+    run: (assert) => {
+      // Substring on name.
+      assert.equal(matchesPrefs(stanford, { search: "stan" }), true);
+      assert.equal(matchesPrefs(stanford, { search: "STAN" }), true);
+      // Substring on conference.
+      assert.equal(matchesPrefs(stanford, { search: stanford.conference }), true);
+      // No match -> filtered out.
+      assert.equal(matchesPrefs(stanford, { search: "xyzzy" }), false);
+      // Empty / whitespace-only search must not empty the list.
+      assert.equal(matchesPrefs(stanford, { search: "" }), true);
+      assert.equal(matchesPrefs(stanford, { search: "   " }), true);
+    },
+  },
+  {
+    name: "search filter integrates through rankSchools and drops non-matches",
+    run: (assert) => {
+      const filtered = rankSchools(mid, colleges, { search: "stan" });
+      assert.ok(filtered.length >= 1, "expected Stanford in results");
+      assert.ok(
+        filtered.every((r) => /stan/i.test(r.school.name) || /stan/i.test(r.school.conference || "")),
+        "search leaked a non-matching school into the results"
+      );
+    },
+  },
+  {
     name: "impossible filter combos return empty, not garbage",
     run: (assert) => {
       const none = rankSchools(mid, colleges, { divisions: ["D1"], maxTuition: 1 });
