@@ -2,9 +2,9 @@
  * views/dashboard.js — what a golfer sees straight after signing in.
  *
  * Laid out as a DUAL: the left panel is what coaches see today (a live frame of
- * the real public page), the right is where the golfer could go (fit tiles).
- * Present state and future state, side by side, because the whole point of the
- * product is the gap between them.
+ * the real public page), the right is where the golfer could go (one fit
+ * recommendation). Present state and future state, side by side, because the
+ * whole point of the product is the gap between them.
  *
  * A hub, not a destination. Every panel ends in a link somewhere more useful.
  */
@@ -15,11 +15,8 @@ import {
   rankSchools,
   pickHighlight,
   hasAcademics,
-  projectGolfer,
-  yearsToGraduation,
-  IMPROVEMENT,
+  isScorable,
 } from "../lib/fit.js";
-import { scenarioByKey, DEFAULT_SCENARIO } from "../lib/trend.js";
 import { colleges } from "../data/colleges.js";
 import { PUBLIC_SITE } from "../config.js";
 
@@ -28,32 +25,17 @@ import { PUBLIC_SITE } from "../config.js";
  * here. They went with the editor: this app has no way to fill a gap in, so
  * nagging about one would be pointing at a door with no handle. The website
  * owns those fields and is where they get finished.
+ *
+ * The strokes-per-year projection banner that used to live here went the same
+ * way when the Fit engine switched to a rank-vs-rank comparison. The new
+ * athletic metric compares a junior's JGS rank against the AVERAGE senior-year
+ * JGS rank of the roster's current players -- age-normalized by construction,
+ * so no what-if is needed to score a 13-year-old fairly.
  */
 export function dashboardView(profile, liveOk = true) {
-  const scorable = ["scoringAvg", "nationalRank"].every((k) => profile?.[k] != null);
-
-  // This used to score against today's rosters with no projection at all, on
-  // the principle that a dashboard should not assume anything. In practice that
-  // produced a headline of "Carnegie Mellon, fit 3, Reach" for a 13-year-old --
-  // technically unassuming and completely useless. Refusing to state an
-  // assumption did not remove the assumption; it just hid the fact that
-  // comparing a middle schooler to a current college roster IS one.
-  //
-  // So the dashboard now uses the SAME default scenario the Fit screen opens
-  // on, imported rather than redeclared, and says so on screen. One default,
-  // one place, and the golfer can change it in the planner.
-  const scenario = scenarioByKey(DEFAULT_SCENARIO);
-  const projection = projectGolfer(profile, { strokesPerYear: scenario.strokesPerYear });
-  // ONE recommendation, not six. A grid of tiles asks the golfer to do the
-  // comparing; a dashboard is supposed to have already done it. The full list
-  // is one click away and that is where comparing belongs.
-  const ranked = scorable ? rankSchools(projection.golfer, colleges) : [];
+  const ranked = isScorable(profile) ? rankSchools(profile, colleges) : [];
   const highlight = pickHighlight(ranked);
   const academics = hasAcademics(profile);
-  // Kept ONLY to suppress the academics nag. A golfer this far out has not sat
-  // the SAT and asking for one is noise, not a prompt.
-  const years = yearsToGraduation(profile);
-  const earlyDays = years != null && years >= IMPROVEMENT.minYears;
 
   return html`
     <div class="container section-tight stack">
@@ -68,10 +50,10 @@ export function dashboardView(profile, liveOk = true) {
 
       <div class="dual">
         ${raw(myPagePanel(liveOk))}
-        ${raw(collegePanel(highlight, projection, scenario, academics))}
+        ${raw(collegePanel(highlight, academics))}
       </div>
 
-      ${raw(academics || !scorable || earlyDays ? "" : academicsNotice())}
+      ${raw(academics || !isScorable(profile) ? "" : academicsNotice())}
 
     </div>
   `;
@@ -113,22 +95,15 @@ const offlineNotice = () => html`
     <span>
       <b>Could not reach ${PUBLIC_SITE.host}.</b> Your name, hometown and class
       year are the last known values, so they may be out of date. Fit scores are
-      unaffected &mdash; they run on your tournament results.
+      unaffected &mdash; they run on your JGS rank.
     </span>
     ${raw(extLink(PUBLIC_SITE.url, "Check the site", "btn btn-sm btn-sage"))}
   </div>
 `;
 
-/**
- * What the fit number does NOT account for. An unqualified score is a promise,
- * and this product is in no position to make one.
- */
-const caveat = (projection, academics) =>
-  projection.projected ? "projected" : academics ? "" : "athletic only";
-
 /** Right half: where the golfer is going. One name, not a shortlist. */
-const collegePanel = (highlight, projection, scenario, academics) => {
-  const note = caveat(projection, academics);
+const collegePanel = (highlight, academics) => {
+  const note = academics ? "" : "athletic only";
   return html`
     <div class="card">
       <div class="row row-between">
@@ -139,10 +114,8 @@ const collegePanel = (highlight, projection, scenario, academics) => {
       ${raw(
         highlight
           ? topPick(highlight)
-          : empty("Add your scoring average and national rank to unlock fit scores.")
+          : empty("Add your JGS national rank to unlock fit scores.")
       )}
-
-      ${raw(highlight ? assumption(projection, scenario) : "")}
 
       <p class="field-hint panel-foot">
         Logos belong to the schools and are served from their own sites. The
@@ -154,24 +127,6 @@ const collegePanel = (highlight, projection, scenario, academics) => {
 };
 
 /**
- * The assumption, stated where the number is -- not buried in a tooltip.
- *
- * A projected score with the projection hidden is just a wrong score. Naming
- * the rate and linking to the control that changes it is the difference between
- * a forecast and a fib.
- */
-const assumption = (projection, scenario) =>
-  projection.projected
-    ? html`<p class="field-hint">
-        Assumes <b>${scenario.label.toLowerCase()}</b> &mdash;
-        ${scenario.blurb} That puts you around
-        <b>${projection.projectedScoringAvg}</b> in ${projection.years} years,
-        when you enrol. <a href="#/fit" style="text-decoration:underline">Change
-        the assumption</a>.
-      </p>`
-    : "";
-
-/**
  * The single recommendation. Big enough to read as an answer rather than as
  * the first row of a table the golfer is expected to scan.
  */
@@ -181,20 +136,14 @@ const topPick = ({ school, fit }) => html`
     <span class="top-pick-body">
       <b class="top-pick-name">${school.name}</b>
       <span class="thumb-meta">
-        ${school.division} &middot; ${school.conference} &middot; team avg
-        ${school.teamScoringAvg}
+        ${school.division} &middot; ${school.conference} &middot; roster avg HS
+        rank #${school.avgRosterSeniorJgsRank}
       </span>
       <span class="row" style="gap:.4rem;margin-top:.35rem">${raw(tierPill(fit.tier))}</span>
     </span>
     <b class="top-pick-score" style="color:var(--tier-${fit.tier})">${fit.overall}</b>
   </a>
 `;
-
-// The "you are N years from enrolling, these are today's numbers" banner used
-// to live here. It was removed when the panel started projecting: it announced
-// the opposite of what the panel now does, and a screen that contradicts itself
-// costs more trust than the banner ever bought. The assumption line under the
-// pick says the same thing, in the place the number actually is.
 
 /**
  * The site now owns GPA and SAT/ACT fields, so the notice points at the

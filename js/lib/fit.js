@@ -16,15 +16,28 @@
  * MODEL
  *   Fit = weighted blend of Athletic Fit and Academic Fit, each 0-100.
  *
- *   Athletic Fit
- *     - scoring   : golfer scoring average vs the team's average
- *     - ranking   : golfer national rank vs the rank the program typically recruits
+ *   Athletic Fit  (one signal, age-normalized on purpose)
+ *     - roster rank : golfer's current JGS national rank vs the AVERAGE
+ *                     senior-year JGS rank of the players currently on the
+ *                     roster. Rank-vs-rank is apples-to-apples in a way that a
+ *                     junior's scoring average vs a college roster's scoring
+ *                     average never is: both numbers were produced by teenage
+ *                     golfers competing under the same ranking system.
  *   Academic Fit
  *     - gpa       : golfer GPA vs the school's average admitted GPA
  *     - testing   : golfer SAT vs the school's average admitted SAT
  *
  * Golf outweighs grades because this is a golf recruiting product, but
  * academics are a hard gate at selective schools — see ACADEMIC_GATE.
+ *
+ * WHY THE OLD SCORING-AVERAGE COMPONENT IS GONE
+ *   Comparing a junior's 18-hole scoring average to a college roster's team
+ *   average punished younger golfers by construction and needed a projection
+ *   layer to compensate. Projection meant either inventing a strokes-per-year
+ *   rate or asking the golfer to pick one, both of which parked a made-up
+ *   number at the centre of the score. The roster's senior-year JGS rank is a
+ *   real historical fact about real players and does not need a projection to
+ *   be fair to a 13-year-old.
  */
 
 // ---------------------------------------------------------------------------
@@ -34,19 +47,15 @@
 export const WEIGHTS = Object.freeze({
   athletic: 0.62,
   academic: 0.38,
-  // within athletic
-  scoring: 0.68,
-  ranking: 0.32,
   // within academic
   gpa: 0.55,
   testing: 0.45,
 });
 
 export const BANDS = Object.freeze({
-  /** Strokes better(-)/worse(+) than the team average that map to 100/0. */
-  scoringBest: -1.5,
-  scoringWorst: 6.0,
-  /** Ratio of golferRank / programRecruitRank that maps to 100/0. */
+  /** Ratio of golferRank / avgRosterSeniorJgsRank that maps to 100/0.
+   *  0.5 = you rank twice as high as the average roster player was as a HS
+   *  senior (a stone-cold fit). 3.0 = you are three times worse (a stretch). */
   rankBest: 0.5,
   rankWorst: 3.0,
   /** GPA points above/below the school average that map to 100/0. */
@@ -60,34 +69,6 @@ export const BANDS = Object.freeze({
 export const TIERS = Object.freeze({
   likely: 78,
   target: 58,
-});
-
-/**
- * Bounds on any forward projection.
- *
- * WHY PROJECTION EXISTS AT ALL
- * Comparing a 13-year-old's scoring average against a CURRENT college roster is
- * meaningless -- he does not arrive on campus for five years. Scored raw, Luke
- * Selzer lands on 0/100 at 24 of 27 programs. That is not insight, it is a
- * child being told he is worthless at golf.
- *
- * WHY THE RATE IS NOT DEFINED HERE
- * This module used to carry `strokesPerYear: 1.6`. That number was invented,
- * and Luke's 29 real events measured his actual trend at +0.11 strokes/year --
- * flat, with round-to-round noise larger than any annual signal. A fabricated
- * constant buried in the engine is exactly the kind of confident-and-wrong that
- * this whole file is supposed to avoid.
- *
- * So the rate is now an ARGUMENT, chosen by the golfer from SCENARIOS in
- * lib/trend.js and labelled in the UI as a what-if. See README.
- */
-export const IMPROVEMENT = Object.freeze({
-  /** Nobody projects below this. Keeps the maths from promising a 12-year-old a 62. */
-  floor: 68.0,
-  /** Beyond this horizon the projection is fantasy, so stop compounding. */
-  maxYears: 5,
-  /** Only project when a golfer is at least this many years out. */
-  minYears: 2,
 });
 
 /**
@@ -106,8 +87,8 @@ export const clamp = (n, lo = 0, hi = 100) => Math.min(hi, Math.max(lo, n));
 /**
  * Map `value` from the range [best, worst] onto [100, 0], clamped.
  * Works whether `best` is numerically higher or lower than `worst`, which is
- * why scoring average (lower is better) and GPA (higher is better) can share
- * one function instead of two near-identical ones. DRY.
+ * why one function handles rank ratios (lower is better) and GPA (higher is
+ * better) without splitting into two near-identical helpers. DRY.
  */
 export function scale(value, best, worst) {
   if (best === worst) return 50;
@@ -123,24 +104,12 @@ const round = (n, dp = 1) => {
 // Component scores — each returns { score, detail }
 // ---------------------------------------------------------------------------
 
-function scoringComponent(golfer, school) {
-  const gap = golfer.scoringAvg - school.teamScoringAvg; // negative == better
-  const score = scale(gap, BANDS.scoringBest, BANDS.scoringWorst);
-  const abs = Math.abs(round(gap, 1));
-  const detail =
-    gap <= 0
-      ? `Your ${golfer.scoringAvg} average is ${abs} better than the roster's ${school.teamScoringAvg}.`
-      : `Your ${golfer.scoringAvg} average is ${abs} behind the roster's ${school.teamScoringAvg}.`;
-  return { score, detail };
-}
-
-function rankingComponent(golfer, school) {
-  const ratio = golfer.nationalRank / school.recruitRank; // <1 == better
+function rosterRankComponent(golfer, school) {
+  const ratio = golfer.nationalRank / school.avgRosterSeniorJgsRank;
   const score = scale(ratio, BANDS.rankBest, BANDS.rankWorst);
   const detail =
-    ratio <= 1
-      ? `You rank #${golfer.nationalRank} nationally; this program typically recruits around #${school.recruitRank}.`
-      : `You rank #${golfer.nationalRank}; this program typically recruits around #${school.recruitRank}.`;
+    `You rank #${golfer.nationalRank}; this roster's current players ` +
+    `averaged #${school.avgRosterSeniorJgsRank} at the end of high school.`;
   return { score, detail };
 }
 
@@ -181,16 +150,12 @@ export const hasAcademics = (golfer) =>
   golfer?.gpa != null &&
   golfer?.sat != null;
 
-/**
- * A national junior rank is only comparable to a program's recruit rank when
- * the golfer is actually in the recruiting pool. A 13-year-old sits behind
- * every 17-year-old in the country by construction, so his overall rank says
- * nothing about his ceiling. Projection turns this off explicitly.
- */
-export const hasComparableRank = (golfer) =>
-  golfer?.nationalRank != null && golfer?.rankComparable !== false;
+/** Athletic fit needs a national rank. Everything else in the engine is optional. */
+export const isScorable = (golfer) =>
+  Number.isFinite(Number(golfer?.nationalRank));
 
-/** Pull a 4-digit graduation year out of "Class of 2031". */
+/** Pull a 4-digit graduation year out of "Class of 2031". Kept for UI copy
+ *  ("you are N years from enrolling") even though projection no longer uses it. */
 export function graduationYear(golfer) {
   const match = String(golfer?.class_year ?? "").match(/(\d{4})/);
   return match ? Number(match[1]) : null;
@@ -203,95 +168,54 @@ export function yearsToGraduation(golfer, today = new Date()) {
 }
 
 /**
- * Project a young golfer forward to their enrolment year.
- *
- * Returns the golfer unchanged (and `projected: false`) for anyone inside the
- * recruiting window -- seniors and juniors get scored on what they actually
- * shoot today, because that is what coaches are looking at. Also returns them
- * unchanged when the chosen rate is 0, because "no change" is a legitimate and
- * arguably the most defensible scenario.
- *
- * @param {Object} golfer
- * @param {Object} [options]
- * @param {number} [options.strokesPerYear=0] NEGATIVE improves. Supplied by the
- *   caller from SCENARIOS -- this module refuses to invent one.
- * @param {Date} [options.today]
- * @returns {{golfer:Object, projected:boolean, years:?number,
- *            strokesPerYear:number,
- *            currentScoringAvg:?number, projectedScoringAvg:?number}}
- */
-export function projectGolfer(golfer, { strokesPerYear = 0, today = new Date() } = {}) {
-  const years = yearsToGraduation(golfer, today);
-  const unchanged = {
-    golfer,
-    projected: false,
-    years,
-    strokesPerYear,
-    currentScoringAvg: golfer?.scoringAvg ?? null,
-    projectedScoringAvg: null,
-  };
-
-  if (years == null || years < IMPROVEMENT.minYears) return unchanged;
-  if (!Number.isFinite(Number(golfer?.scoringAvg))) return unchanged;
-  if (!strokesPerYear) return unchanged;
-
-  const horizon = Math.min(years, IMPROVEMENT.maxYears);
-  const projectedScoringAvg = Math.max(
-    IMPROVEMENT.floor,
-    Number(golfer.scoringAvg) + horizon * strokesPerYear
-  );
-
-  return {
-    golfer: {
-      ...golfer,
-      scoringAvg: Math.round(projectedScoringAvg * 100) / 100,
-      // Today's overall junior rank is not comparable to a college recruit
-      // rank once we are talking about a future version of this golfer.
-      rankComparable: false,
-    },
-    projected: true,
-    years,
-    strokesPerYear,
-    currentScoringAvg: Number(golfer.scoringAvg),
-    projectedScoringAvg: Math.round(projectedScoringAvg * 100) / 100,
-  };
-}
-/**
  * Score one golfer against one school.
- * @returns {{overall:number, athletic:number, academic:?number, tier:string,
- *            components:Array, capped:boolean, academicKnown:boolean}}
+ * @returns {{overall:number, athletic:?number, academic:?number, tier:string,
+ *            components:Array, capped:boolean, academicKnown:boolean,
+ *            rankKnown:boolean}}
  *
- * `academic` is null when the golfer has no GPA/SAT on file. Render that as
+ * `athletic` is null when the golfer has no national rank on file.
+ * `academic` is null when the golfer has no GPA/SAT on file. Render both as
  * "not yet", NEVER as zero -- unknown and bad are different facts, and
- * conflating them tells a 13-year-old he is a poor student.
+ * conflating them tells a golfer he is a poor athlete/student when he is
+ * simply un-measured.
  */
 export function scoreSchool(golfer, school) {
-  const scoring = scoringComponent(golfer, school);
-  const rankKnown = hasComparableRank(golfer);
+  const rankKnown = isScorable(golfer);
+  const academicsKnown = hasAcademics(golfer);
+  const components = [];
 
-  const components = [
-    { key: "scoring", label: "Scoring average", ...scoring, score: round(scoring.score, 0) },
-  ];
+  // No rank AND no academics -> nothing to score. Refusing to guess is the
+  // feature; this returns an explicit unscored result rather than a zero.
+  if (!rankKnown && !academicsKnown) {
+    return {
+      overall: null,
+      athletic: null,
+      academic: null,
+      academicKnown: false,
+      rankKnown: false,
+      tier: "reach",
+      capped: false,
+      components,
+    };
+  }
 
-  // Same principle as academics: an input we cannot fairly compare is dropped
-  // and its weight redistributed, never silently scored as zero.
-  let athletic = scoring.score;
+  let athletic = null;
   if (rankKnown) {
-    const ranking = rankingComponent(golfer, school);
-    athletic = scoring.score * WEIGHTS.scoring + ranking.score * WEIGHTS.ranking;
+    const roster = rosterRankComponent(golfer, school);
+    athletic = roster.score;
     components.push({
-      key: "ranking",
-      label: "National ranking",
-      ...ranking,
-      score: round(ranking.score, 0),
+      key: "roster-rank",
+      label: "Roster fit",
+      ...roster,
+      score: round(roster.score, 0),
     });
   }
 
   // No academics on file -> Athletic Fit stands alone. We deliberately do NOT
   // substitute a league-average GPA to fill the gap. A fabricated input yields
   // a confident wrong answer, which is the worst thing a recruiting tool can
-  // produce. Refusing to guess is the feature.
-  if (!hasAcademics(golfer)) {
+  // produce.
+  if (!academicsKnown) {
     return {
       overall: round(athletic, 0),
       athletic: round(athletic, 0),
@@ -308,6 +232,25 @@ export function scoreSchool(golfer, school) {
   const testing = testingComponent(golfer, school);
   const academic = gpa.score * WEIGHTS.gpa + testing.score * WEIGHTS.testing;
 
+  // No rank on file -> Academic Fit stands alone. Symmetric to the athletic-
+  // only branch above: an input we cannot fairly compare is dropped, not zeroed.
+  if (!rankKnown) {
+    components.push(
+      { key: "gpa",     label: "GPA",        ...gpa,     score: round(gpa.score, 0) },
+      { key: "testing", label: "Test score", ...testing, score: round(testing.score, 0) }
+    );
+    return {
+      overall: round(academic, 0),
+      athletic: null,
+      academic: round(academic, 0),
+      academicKnown: true,
+      rankKnown: false,
+      tier: tierFor(academic),
+      capped: false,
+      components,
+    };
+  }
+
   let overall = athletic * WEIGHTS.athletic + academic * WEIGHTS.academic;
 
   const capped = academic < ACADEMIC_GATE.below && overall > ACADEMIC_GATE.capOverall;
@@ -323,7 +266,7 @@ export function scoreSchool(golfer, school) {
     athletic: round(athletic, 0),
     academic: round(academic, 0),
     academicKnown: true,
-    rankKnown,
+    rankKnown: true,
     tier: tierFor(overall),
     capped,
     components,
@@ -346,12 +289,15 @@ export function matchesPrefs(school, prefs = {}) {
 
 /**
  * Score a golfer against a list of schools, filtered and ranked.
+ * Schools that come back unscorable (both rank and academics missing) are
+ * dropped rather than sorted as null.
  * @returns {Array<{school:Object, fit:Object}>} best fit first.
  */
 export function rankSchools(golfer, schools, prefs = {}) {
   return schools
     .filter((s) => matchesPrefs(s, prefs))
     .map((school) => ({ school, fit: scoreSchool(golfer, school) }))
+    .filter((row) => row.fit.overall != null)
     .sort((a, b) => b.fit.overall - a.fit.overall);
 }
 
@@ -384,15 +330,9 @@ export const HIGHLIGHT_BAND = 12;
  * those are statistically indistinguishable given how coarse this data is --
  * and among that shortlist feature the most competitive program.
  *
- * Why this is not cheating: a golfer who fits Adrian (76.8 team average) at 15
- * and Carnegie Mellon (75.4) at 14 is, within the noise, an equally plausible
- * recruit at both. Leading with the stronger program is a better
- * recommendation, and leading with whichever happened to win by one point is
- * false precision.
- *
- * Ties inside a division break on teamScoringAvg -- a real, measured number --
- * rather than on array order, so the answer does not depend on how the data
- * file happens to be sorted.
+ * Ties inside a division break on avgRosterSeniorJgsRank -- a real, measured
+ * number -- rather than on array order, so the answer does not depend on how
+ * the data file happens to be sorted. Lower rank = tougher roster.
  *
  * @param {Array<{school:Object, fit:Object}>} ranked best-fit-first
  * @returns {{school:Object, fit:Object}|null}
@@ -409,8 +349,12 @@ export function pickHighlight(ranked, band = HIGHLIGHT_BAND) {
       (PROGRAM_STRENGTH[leader.school.division] ?? 0);
     if (byStrength !== 0) return byStrength > 0 ? row : leader;
 
-    // Same division: the tougher team wins. Lower stroke average = tougher.
-    return row.school.teamScoringAvg < leader.school.teamScoringAvg ? row : leader;
+    // Same division: the tougher roster wins. Lower avg senior-year rank means
+    // the current players were higher-ranked juniors -- a real, measured fact
+    // about who this program signs, not a stylistic preference.
+    return row.school.avgRosterSeniorJgsRank < leader.school.avgRosterSeniorJgsRank
+      ? row
+      : leader;
   }, shortlist[0]);
 }
 

@@ -205,7 +205,7 @@ export const dataCases = [
       };
       assert.equal(hasAcademics(golfer), true);
       const school = {
-        teamScoringAvg: 74.5, recruitRank: 250,
+        avgRosterSeniorJgsRank: 250,
         avgGPA: 3.7, avgSAT: 1350,
       };
       const fit = scoreSchool(golfer, school);
@@ -331,10 +331,12 @@ export const dataCases = [
       for (const c of colleges) {
         assert.ok(!ids.has(c.id), `duplicate college id: ${c.id}`);
         ids.add(c.id);
-        assert.ok(c.teamScoringAvg > 60 && c.teamScoringAvg < 85, `bad avg: ${c.id}`);
+        assert.ok(
+          c.avgRosterSeniorJgsRank > 0 && c.avgRosterSeniorJgsRank < 20000,
+          `bad avgRosterSeniorJgsRank: ${c.id}`
+        );
         assert.ok(c.avgGPA > 0 && c.avgGPA <= 4.3, `bad GPA: ${c.id}`);
         assert.ok(c.avgSAT > 400 && c.avgSAT <= 1600, `bad SAT: ${c.id}`);
-        assert.ok(c.recruitRank > 0, `bad recruitRank: ${c.id}`);
       }
     },
   },

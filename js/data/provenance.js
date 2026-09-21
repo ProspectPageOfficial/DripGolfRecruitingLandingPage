@@ -4,8 +4,9 @@
  * WHY THIS FILE EXISTS
  * The person building this product is not a golfer, and neither is the agent
  * that wrote it. That is a normal situation and a survivable one -- but it
- * means nobody involved can look at "team scoring average 76.8" and instinctively
- * think "that is wrong". The usual safety net (domain intuition) is absent.
+ * means nobody involved can look at "average senior-year JGS rank 320" and
+ * instinctively think "that is wrong". The usual safety net (domain
+ * intuition) is absent.
  *
  * So the software has to carry the warning itself, in one place, and show it in
  * the UI rather than burying it in a README nobody opens twice.
@@ -65,14 +66,8 @@ export const PROVENANCE = Object.freeze([
   {
     group: "College database",
     status: "fabricated",
-    what: "Every team scoring average",
-    source: "INVENTED. Real source would be Golfstat / Clippd team season stats",
-  },
-  {
-    group: "College database",
-    status: "fabricated",
-    what: "Every 'typical recruit rank'",
-    source: "INVENTED. Real source would be JGS/AJGA ranks of actual signed recruits",
+    what: "Every average senior-year JGS rank of the current roster",
+    source: "INVENTED. Real source would be JGS historical rank snapshots joined against each program's currently published roster (name + grad year). Requires a JGS data agreement -- no legitimate public export exists at the moment",
   },
   {
     group: "College database",
@@ -89,20 +84,20 @@ export const PROVENANCE = Object.freeze([
   {
     group: "Fit model",
     status: "assumption",
-    what: "Component weights (scoring 68/32 rank, athletic 62/38 academic)",
+    what: "Component weights (athletic 62 / academic 38, GPA 55 / SAT 45 inside academic)",
     source: "A modelling choice. Not validated against any recruiting outcome data",
+  },
+  {
+    group: "Fit model",
+    status: "assumption",
+    what: "Athletic score band (rank ratio 0.5 -> 100, 3.0 -> 0)",
+    source: "A modelling choice. The 'rank twice as high as the roster averaged' ceiling and 'three times worse' floor are picks, not measurements",
   },
   {
     group: "Fit model",
     status: "assumption",
     what: "Tier thresholds (Likely 78+, Target 58+)",
     source: "A modelling choice. Not validated against any recruiting outcome data",
-  },
-  {
-    group: "Fit model",
-    status: "assumption",
-    what: "Improvement scenarios (0 / 1 / 2 strokes per year)",
-    source: "Explicitly user-chosen. Luke's own measured trend is +0.12/yr and noisy",
   },
 ]);
 

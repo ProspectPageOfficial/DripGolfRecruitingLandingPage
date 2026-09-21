@@ -1,9 +1,15 @@
 /**
  * tests/cases-fit.js — the fit engine's maths.
  *
- * The scoring engine: scales, tiers, weights, preferences, projection and the
+ * The scoring engine: scales, tiers, weights, preferences, and the golfer's
  * measured trend. Pure maths on fixed fixtures -- no network, no storage, and
  * no opinion about where the golfer's numbers came from.
+ *
+ * The projection / strokes-per-year-scenario suite that used to live here was
+ * retired when the engine switched to comparing JGS rank against each
+ * roster's senior-year JGS rank. That signal is age-normalized by
+ * construction, so a 13-year-old no longer needs a what-if to be scored
+ * fairly.
  */
 import {
   scoreSchool,
@@ -16,21 +22,16 @@ import {
   tierFor,
   scale,
   hasAcademics,
-  hasComparableRank,
-  projectGolfer,
+  isScorable,
   yearsToGraduation,
   graduationYear,
-  IMPROVEMENT,
   TIERS,
   ACADEMIC_GATE,
 } from "../js/lib/fit.js";
 import {
   measureTrend,
   seasonAverages,
-  scenarioByKey,
   rollingScoringAvg,
-  SCENARIOS,
-  DEFAULT_SCENARIO,
 } from "../js/lib/trend.js";
 import { colleges, collegeById } from "../js/data/colleges.js";
 import { buildGolfer } from "../js/data/golfer.js";
@@ -42,13 +43,11 @@ const golfOnly = { scoringAvg: 69.0, nationalRank: 5, gpa: 2.1, sat: 820 };
 /** A middle schooler: real game, no academics on file. Modelled on Luke. */
 const noAcademics = { scoringAvg: 81.12, nationalRank: 10557 };
 const luke = buildGolfer();
-/** Fixed clock so "years to graduation" cases do not rot next January. */
-const AT_2026 = new Date("2026-06-01T12:00:00");
 const stanford = collegeById["stanford"];
 const adrian = collegeById["adrian"];
 /** Two schools identical but for the thing under test. */
-const pick = (division, overall, teamScoringAvg = 73) => ({
-  school: { name: division + overall, division, teamScoringAvg },
+const pick = (division, overall, avgRosterSeniorJgsRank = 300) => ({
+  school: { name: division + overall, division, avgRosterSeniorJgsRank },
   fit: { overall, tier: "target" },
 });
 export const fitCases = [
@@ -84,10 +83,11 @@ export const fitCases = [
     },
   },
   {
-    name: "pickHighlight() breaks same-division ties on the tougher team",
+    name: "pickHighlight() breaks same-division ties on the tougher roster",
     run: (assert) => {
-      const ranked = [pick("D1", 80, 72.5), pick("D1", 78, 69.9)];
-      assert.equal(pickHighlight(ranked).school.teamScoringAvg, 69.9);
+      // Lower avg senior-year JGS rank = higher-ranked HS players = tougher.
+      const ranked = [pick("D1", 80, 220), pick("D1", 78, 70)];
+      assert.equal(pickHighlight(ranked).school.avgRosterSeniorJgsRank, 70);
     },
   },
   {
@@ -120,10 +120,10 @@ export const fitCases = [
   {
     name: "scale() maps best/worst onto 100/0 and clamps outside the range",
     run: (assert) => {
-      assert.equal(scale(-1.5, -1.5, 6), 100);
-      assert.equal(scale(6, -1.5, 6), 0);
-      assert.equal(scale(-99, -1.5, 6), 100);
-      assert.equal(scale(99, -1.5, 6), 0);
+      assert.equal(scale(0.5, 0.5, 3.0), 100);
+      assert.equal(scale(3.0, 0.5, 3.0), 0);
+      assert.equal(scale(-99, 0.5, 3.0), 100);
+      assert.equal(scale(99, 0.5, 3.0), 0);
     },
   },
   {
@@ -167,8 +167,10 @@ export const fitCases = [
     },
   },
   {
-    name: "beating the team average produces a dominant athletic score",
+    name: "ranking well beneath the roster's HS avg produces a dominant athletic score",
     run: (assert) => {
+      // Adrian's roster averaged #1100 as HS seniors; an elite golfer at #8
+      // is a ratio of 0.007 -- deep into the 100 band.
       const fit = scoreSchool(elite, adrian);
       assert.ok(fit.athletic > 90, `expected >90, got ${fit.athletic}`);
     },
@@ -183,10 +185,12 @@ export const fitCases = [
     },
   },
   {
-    name: "every score ships with four human-readable components",
+    name: "every scored fit ships with three human-readable components",
     run: (assert) => {
+      // Roster-rank + GPA + testing. Academics-only or athletic-only cases
+      // ship with fewer; those are covered in their own dedicated cases.
       const fit = scoreSchool(mid, stanford);
-      assert.equal(fit.components.length, 4);
+      assert.equal(fit.components.length, 3);
       for (const c of fit.components) {
         assert.ok(c.label, "component missing label");
         assert.ok(c.detail, "component missing reasoning");
@@ -261,13 +265,24 @@ export const fitCases = [
     },
   },
   {
+    name: "isScorable() requires only a national rank",
+    run: (assert) => {
+      assert.equal(isScorable(mid), true);
+      assert.equal(isScorable(noAcademics), true);
+      assert.equal(isScorable({ scoringAvg: 70 }), false);
+      assert.equal(isScorable({}), false);
+      assert.equal(isScorable(null), false);
+    },
+  },
+  {
     name: "a golfer with no academics is scored on athletic fit alone",
     run: (assert) => {
       const fit = scoreSchool(noAcademics, adrian);
       assert.equal(fit.academicKnown, false);
       assert.equal(fit.academic, null, "academic must be null, never 0");
       assert.equal(fit.overall, fit.athletic, "overall should equal athletic");
-      assert.equal(fit.components.length, 2, "only two components without academics");
+      assert.equal(fit.components.length, 1, "only the roster-rank component without academics");
+      assert.equal(fit.components[0].key, "roster-rank");
       assert.equal(fit.capped, false, "the academic gate must not fire");
     },
   },
@@ -280,6 +295,37 @@ export const fitCases = [
         assert.ok(Number.isFinite(fit.overall));
         assert.ok(fit.overall >= 0 && fit.overall <= 100);
       }
+    },
+  },
+  {
+    name: "a golfer with academics but no rank is scored on academics alone",
+    run: (assert) => {
+      // Symmetric to the noAcademics case. Refuses to guess a rank the same
+      // way it refuses to guess a GPA.
+      const noRank = { gpa: 3.9, sat: 1450 };
+      const fit = scoreSchool(noRank, stanford);
+      assert.equal(fit.rankKnown, false);
+      assert.equal(fit.athletic, null, "athletic must be null, never 0");
+      assert.equal(fit.overall, fit.academic);
+      assert.equal(fit.components.length, 2, "gpa + testing only");
+    },
+  },
+  {
+    name: "a golfer with neither rank nor academics is unscorable, not zero",
+    run: (assert) => {
+      const blank = { scoringAvg: 74 };
+      const fit = scoreSchool(blank, stanford);
+      assert.equal(fit.overall, null);
+      assert.equal(fit.athletic, null);
+      assert.equal(fit.academic, null);
+    },
+  },
+  {
+    name: "rankSchools drops unscorable schools rather than sorting nulls",
+    run: (assert) => {
+      const blank = { scoringAvg: 74 };
+      const ranked = rankSchools(blank, colleges);
+      assert.equal(ranked.length, 0);
     },
   },
   {
@@ -310,92 +356,20 @@ export const fitCases = [
     },
   },
   {
-    name: "golfers inside the recruiting window are NOT projected",
+    name: "Luke at #10,557 is honestly all-Reach today, and the engine says so",
     run: (assert) => {
-      const senior = { ...mid, class_year: "Class of 2027" };
-      const p = projectGolfer(senior, { strokesPerYear: -2, today: AT_2026 });
-      assert.equal(p.projected, false, "a golfer 1 year out must be scored as-is");
-      assert.equal(p.golfer.scoringAvg, senior.scoringAvg);
-      assert.equal(hasComparableRank(p.golfer), true);
-    },
-  },
-  {
-    name: "a zero rate means no projection, even years out",
-    run: (assert) => {
-      const p = projectGolfer(luke, { strokesPerYear: 0, today: AT_2026 });
-      assert.equal(p.projected, false, "'no change' must leave the golfer alone");
-      assert.equal(p.golfer.scoringAvg, 81.12);
-      assert.equal(hasComparableRank(p.golfer), true);
-    },
-  },
-  {
-    name: "the projection rate comes from the caller, never from the engine",
-    run: (assert) => {
-      assert.equal(
-        IMPROVEMENT.strokesPerYear, undefined,
-        "fit.js must not carry an invented improvement rate"
-      );
-      const slow = projectGolfer(luke, { strokesPerYear: -1, today: AT_2026 });
-      const fast = projectGolfer(luke, { strokesPerYear: -2, today: AT_2026 });
-      assert.ok(fast.projectedScoringAvg < slow.projectedScoringAvg);
-      assert.ok(Math.abs(slow.projectedScoringAvg - (81.12 - 5)) < 0.01);
-      assert.ok(Math.abs(fast.projectedScoringAvg - (81.12 - 10)) < 0.01);
-    },
-  },
-  {
-    name: "a golfer years out loses rank comparability once projected",
-    run: (assert) => {
-      const p = projectGolfer(luke, { strokesPerYear: -2, today: AT_2026 });
-      assert.equal(p.projected, true);
-      assert.equal(p.years, 5);
-      assert.equal(p.currentScoringAvg, 81.12);
-      assert.ok(p.projectedScoringAvg < p.currentScoringAvg);
-      assert.equal(hasComparableRank(p.golfer), false);
-    },
-  },
-  {
-    name: "projection never drops below the floor",
-    run: (assert) => {
-      const prodigy = { scoringAvg: 70.0, nationalRank: 3, class_year: "Class of 2033" };
-      const p = projectGolfer(prodigy, { strokesPerYear: -3, today: AT_2026 });
-      assert.ok(
-        p.projectedScoringAvg >= IMPROVEMENT.floor,
-        `projected ${p.projectedScoringAvg} below floor ${IMPROVEMENT.floor}`
-      );
-    },
-  },
-  {
-    name: "an incomparable rank is dropped, not scored as zero",
-    run: (assert) => {
-      const asis = scoreSchool(luke, adrian);
-      const p = projectGolfer(luke, { strokesPerYear: -2, today: AT_2026 });
-      const projected = scoreSchool(p.golfer, adrian);
-      assert.equal(asis.rankKnown, true);
-      assert.equal(projected.rankKnown, false);
-      assert.equal(projected.components.length, 1, "only the scoring component survives");
-      assert.ok(
-        projected.overall > asis.overall,
-        "dropping an unfair zero must not make the score worse"
-      );
-    },
-  },
-  {
-    name: "scoring Luke as-is really is the bleak all-Reach case",
-    run: (assert) => {
+      // Under the OLD engine this outcome was the whole reason projection
+      // existed -- a middle-schooler compared to current college roster
+      // scoring averages had no path forward. Under the NEW rank-vs-rank
+      // engine the answer is the same when the golfer's rank is genuinely
+      // 10,000+ places behind every roster in the database: honest, not
+      // hopeful. The right way to help him is to ship college rows whose
+      // rosters actually recruited players ranked outside the top 1,000 as
+      // HS seniors -- not to bolt a fabricated improvement rate on top.
       const groups = groupByTier(rankSchools(luke, colleges));
-      assert.equal(groups.likely.length + groups.target.length, 0,
-        "unprojected, a 13-year-old is all Reach - this is the problem");
-    },
-  },
-  {
-    name: "a chosen scenario turns Luke's results into an actual plan",
-    run: (assert) => {
-      const p = projectGolfer(luke, { strokesPerYear: -2, today: AT_2026 });
-      const groups = groupByTier(rankSchools(p.golfer, colleges));
-      assert.ok(
-        groups.likely.length + groups.target.length > 0,
-        "under a growth scenario he must have real programs to aim at"
-      );
+      assert.equal(groups.likely.length, 0);
+      assert.equal(groups.target.length, 0);
+      assert.equal(groups.reach.length, colleges.length);
     },
   },
 
@@ -452,15 +426,6 @@ export const fitCases = [
       assert.equal(t.measurable, true);
       assert.ok(t.strokesPerYear < -2, `expected clear improvement, got ${t.strokesPerYear}`);
       assert.equal(t.reliable, true, "a clean signal should be reported as reliable");
-    },
-  },
-  {
-    name: "scenarios are what-ifs with a conservative default",
-    run: (assert) => {
-      assert.equal(SCENARIOS.length, 3);
-      assert.ok(SCENARIOS.every((s) => s.strokesPerYear <= 0), "no scenario predicts decline");
-      assert.equal(scenarioByKey("hold").strokesPerYear, 0);
-      assert.equal(scenarioByKey("nonsense").key, DEFAULT_SCENARIO, "unknown key falls back");
     },
   },
 ];

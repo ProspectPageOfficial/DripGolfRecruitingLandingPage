@@ -13,45 +13,34 @@ import { schoolLogo } from "../lib/thumbs.js";
 import {
   rankSchools,
   groupByTier,
-  projectGolfer,
-  yearsToGraduation,
-  IMPROVEMENT,
   TIER_COPY,
+  yearsToGraduation,
 } from "../lib/fit.js";
-import {
-  measureTrend,
-  SCENARIOS,
-  DEFAULT_SCENARIO,
-  scenarioByKey,
-} from "../lib/trend.js";
+import { measureTrend } from "../lib/trend.js";
 import { colleges, DIVISIONS, REGIONS } from "../data/colleges.js";
 import { provenanceDetails } from "./provenance.js";
 
 const TIER_ORDER = ["likely", "target", "reach"];
 
 /**
- * The engine needs these two and nothing else. GPA and SAT are OPTIONAL --
+ * The engine needs national rank and nothing else. GPA and SAT are optional --
  * a middle schooler has neither, and locking them out of the whole feature
  * over a test they cannot sit for four years would be absurd.
+ *
+ * Scoring average is no longer required either: the athletic score is now a
+ * rank-vs-rank comparison against the roster's senior-year JGS rank, so the
+ * golfer's own average is displayed as context rather than fed into the model.
  */
-const REQUIRED = ["scoringAvg", "nationalRank"];
+const REQUIRED = ["nationalRank"];
 
 export function fitView(profile, prefs = {}) {
   const missing = REQUIRED.filter((f) => profile?.[f] == null);
   if (missing.length) return incompleteState(missing);
 
-  // Golfers years away from enrolling are scored against a SCENARIO they pick,
-  // not against a rate we invented. See lib/trend.js for why.
-  const scenario = scenarioByKey(prefs.scenario ?? DEFAULT_SCENARIO);
-  const projection = projectGolfer(profile, {
-    strokesPerYear: scenario.strokesPerYear,
-  });
-  const scored = projection.golfer;
   const years = yearsToGraduation(profile);
-  const showPlanner = years != null && years >= IMPROVEMENT.minYears;
-  const trend = showPlanner ? measureTrend(profile.tournaments) : null;
+  const trend = measureTrend(profile.tournaments);
 
-  const ranked = rankSchools(scored, colleges, prefs);
+  const ranked = rankSchools(profile, colleges, prefs);
   const groups = groupByTier(ranked);
   const best = ranked[0];
 
@@ -63,13 +52,14 @@ export function fitView(profile, prefs = {}) {
           Where you actually stack up.
         </h1>
         <p class="muted" style="font-size:.92rem;max-width:60ch">
-          Every program scored against your game and your grades. Expand any
-          school to see exactly which input moved the number.
+          Every program scored against your JGS rank and your grades. Expand
+          any school to see exactly which input moved the number.
         </p>
       </div>
 
-      ${raw(showPlanner ? plannerCard(projection, scenario, trend, years) : "")}
-      ${raw(best ? summaryCard(scored, best, projection) : "")}
+      ${raw(years != null ? enrolmentNote(years) : "")}
+      ${raw(best ? summaryCard(profile, best) : "")}
+      ${raw(trendCard(trend))}
       ${raw(filterBar(prefs))}
 
       <div id="fit-results" class="stack-sm">
@@ -86,87 +76,37 @@ export function fitView(profile, prefs = {}) {
 }
 
 /**
- * The planner. Deliberately shows THREE things in this order:
- *   1. what the golfer's own scores actually say (fact),
- *   2. the what-if they have chosen (assumption, theirs to change),
- *   3. the resulting number (consequence).
- * Presenting 2 without 1 is how you end up with a confident lie.
+ * The "you are N years out" caveat used to introduce a strokes-per-year
+ * scenario picker. That whole apparatus went away when the Fit engine moved
+ * to a rank-vs-rank comparison, because the roster's senior-year JGS rank is
+ * a real historical fact and does not need a projection to be fair to a
+ * younger golfer. The note stays as context -- "you are 5 years out" is still
+ * information a golfer should have when reading a Reach tile.
  */
-function plannerCard(projection, scenario, trend, years) {
-  const horizon = Math.min(years, IMPROVEMENT.maxYears);
-
+function enrolmentNote(years) {
+  if (years <= 0) return "";
   return html`
     <div class="card card-flat" style="border-color:var(--sage)">
-      <span class="eyebrow">Planning ahead</span>
+      <span class="eyebrow">Timing</span>
       <p style="font-size:.93rem;margin-top:.6rem">
-        You are <b>${years} years</b> from enrolling, so comparing today's card
-        against today's rosters would not tell you much. Pick a scenario and we
-        will score the version of you that shows up on campus.
-      </p>
-
-      ${raw(trendBlock(trend))}
-
-      <div style="margin-top:1.1rem">
-        <form id="fit-scenario" class="filters">
-          <div class="field">
-            <label for="p-scen">Scenario</label>
-            <select id="p-scen" name="scenario">
-              ${raw(
-                SCENARIOS.map(
-                  (s) => html`<option value="${s.key}" ${raw(s.key === scenario.key ? "selected" : "")}>
-                      ${s.label}${raw(s.strokesPerYear ? ` (${Math.abs(s.strokesPerYear)}/yr)` : "")}
-                    </option>`
-                ).join("")
-              )}
-            </select>
-            <span class="field-hint">${scenario.blurb}</span>
-          </div>
-          <div class="field">
-            <label>Scoring average used</label>
-            <div class="stat" style="text-align:left">
-              <div class="val" style="font-size:1.3rem">
-                ${projection.currentScoringAvg}${raw(
-                  projection.projected
-                    ? ` &rarr; ${projection.projectedScoringAvg}`
-                    : ""
-                )}
-              </div>
-              <div class="lbl">
-                ${raw(
-                  projection.projected
-                    ? `over ${horizon} years`
-                    : "today's card, unchanged"
-                )}
-              </div>
-            </div>
-          </div>
-        </form>
-      </div>
-
-      <p class="field-hint" style="margin-top:.9rem">
-        This is a what-if, not a forecast. National ranking is excluded from a
-        projection on purpose &mdash; an overall junior rank puts every
-        13-year-old behind every 17-year-old, so it measures age, not ceiling.
+        You are <b>${years} ${years === 1 ? "year" : "years"}</b> from enrolling.
+        Your JGS rank today is compared against the AVERAGE senior-year JGS
+        rank of each roster's current players &mdash; a rank-vs-rank comparison
+        so a 13-year-old is not being measured against 22-year-olds.
       </p>
     </div>
   `;
 }
 
-/** What the golfer's own rounds actually say. Facts before assumptions. */
-function trendBlock(trend) {
-  if (!trend) return "";
-
-  if (!trend.measurable) {
-    return html`<p class="field-hint" style="margin-top:.8rem">
-      <b>Your measured trend:</b> ${trend.note}
-    </p>`;
-  }
+/** What the golfer's own rounds actually say. Facts, not forecasts. */
+function trendCard(trend) {
+  if (!trend || trend.measurable === false) return "";
 
   const dir = trend.strokesPerYear < 0 ? "-" : "+";
   return html`
-    <div style="margin-top:1rem">
-      <div class="row" style="gap:.6rem;align-items:baseline">
-        <b style="font-size:.88rem">Your measured trend:</b>
+    <div class="card card-flat">
+      <span class="eyebrow">Your measured trend</span>
+      <div class="row" style="gap:.6rem;align-items:baseline;margin-top:.6rem">
         <span class="pill ${trend.reliable ? "pill-likely" : "pill-plain"}">
           ${dir}${Math.abs(trend.strokesPerYear)} strokes / yr
         </span>
@@ -185,11 +125,16 @@ function trendBlock(trend) {
             .join("")
         )}
       </div>
+      <p class="field-hint" style="margin-top:.6rem">
+        Shown as context, not fed into the fit score. The engine now compares
+        your JGS rank against each roster's senior-year JGS rank instead of
+        chasing a strokes-per-year projection.
+      </p>
     </div>
   `;
 }
 
-function summaryCard(profile, best, projection) {
+function summaryCard(profile, best) {
   const { fit, school } = best;
   const academicsKnown = fit.academicKnown;
   return html`
@@ -207,7 +152,7 @@ function summaryCard(profile, best, projection) {
             ${school.conference} &middot; ${school.region}
           </p>
           <div class="grid grid-2" style="margin-top:.5rem">
-            ${raw(meter("Athletic fit", fit.athletic, "Can you compete on this roster?"))}
+            ${raw(meter("Athletic fit", fit.athletic, "Where you rank vs the roster's HS-senior average."))}
             ${raw(
               academicsKnown
                 ? meter("Academic fit", fit.academic, "Do your grades match the school?")
@@ -222,12 +167,12 @@ function summaryCard(profile, best, projection) {
       </div>
       <div class="grid grid-4" style="margin-top:1.4rem">
         <div class="stat">
-          <div class="val">${profile.scoringAvg}</div>
-          <div class="lbl">${raw(projection?.projected ? "Projected avg" : "Scoring avg")}</div>
+          <div class="val">#${commas(profile.nationalRank)}</div>
+          <div class="lbl">Your JGS rank</div>
         </div>
         <div class="stat">
-          <div class="val">${fit.rankKnown ? "#" + commas(profile.nationalRank) : "\u2014"}</div>
-          <div class="lbl">${raw(fit.rankKnown ? "National rank" : "Rank (n/a yet)")}</div>
+          <div class="val">${profile.scoringAvg ?? "\u2014"}</div>
+          <div class="lbl">Scoring avg</div>
         </div>
         <div class="stat"><div class="val">${academicsKnown ? Number(profile.gpa).toFixed(2) : "\u2014"}</div><div class="lbl">GPA</div></div>
         <div class="stat"><div class="val">${academicsKnown ? profile.sat : "\u2014"}</div><div class="lbl">SAT</div></div>
@@ -236,9 +181,10 @@ function summaryCard(profile, best, projection) {
         academicsKnown
           ? ""
           : html`<div class="banner-demo" style="margin:1.2rem 0 0">
-              <b>Athletic fit only.</b> These scores reflect your game, not your
-              grades. Add a GPA and test score when you have them and every
-              number here re-weights automatically. We will not guess them for you.
+              <b>Athletic fit only.</b> These scores reflect your JGS rank, not
+              your grades. Add a GPA and test score when you have them and
+              every number here re-weights automatically. We will not guess
+              them for you.
             </div>`
       )}
     </div>
@@ -325,7 +271,8 @@ function schoolRow({ school, fit }) {
           <div class="school-meta">
             ${school.division} &middot; #${school.nationalRank} &middot;
             ${school.conference} &middot; ${school.region} &middot;
-            ${money(school.tuition)}/yr &middot; team avg ${school.teamScoringAvg}
+            ${money(school.tuition)}/yr &middot; roster HS avg
+            #${commas(school.avgRosterSeniorJgsRank)}
           </div>
         </div>
         ${raw(tierPill(fit.tier))}
@@ -351,17 +298,16 @@ function detailBody(school, fit) {
         : ""
     )}
     <div class="grid grid-4" style="margin-top:1rem">
-      <div class="stat"><div class="val">${school.teamScoringAvg}</div><div class="lbl">Team avg</div></div>
-      <div class="stat"><div class="val">#${commas(school.recruitRank)}</div><div class="lbl">Typical recruit</div></div>
+      <div class="stat"><div class="val">#${commas(school.avgRosterSeniorJgsRank)}</div><div class="lbl">Roster HS avg rank</div></div>
       <div class="stat"><div class="val">${school.acceptRate}%</div><div class="lbl">Accept rate</div></div>
       <div class="stat"><div class="val">${school.roster}</div><div class="lbl">Roster size</div></div>
+      <div class="stat"><div class="val">${money(school.tuition)}</div><div class="lbl">Tuition / yr</div></div>
     </div>
   `;
 }
 
 function incompleteState(missing) {
   const NAMES = {
-    scoringAvg: "scoring average",
     nationalRank: "national rank",
   };
   return html`
@@ -386,26 +332,20 @@ function incompleteState(missing) {
 }
 
 /** Wire filters + row expansion. Called after the view lands in the DOM. */
-export function bindFit(root, { onPrefsChange, prefs = {} }) {
+export function bindFit(root, { onPrefsChange }) {
   const form = root.querySelector("#fit-filters");
-  const scenarioForm = root.querySelector("#fit-scenario");
 
   const emit = () => {
     const f = form ? Object.fromEntries(new FormData(form).entries()) : {};
-    const s = scenarioForm
-      ? Object.fromEntries(new FormData(scenarioForm).entries())
-      : {};
     onPrefsChange({
       divisions: f.division ? [f.division] : [],
       regions: f.region ? [f.region] : [],
       maxTuition: f.maxTuition ? Number(f.maxTuition) : null,
       publicOnly: Boolean(f.publicOnly),
-      scenario: s.scenario ?? prefs.scenario ?? DEFAULT_SCENARIO,
     });
   };
 
   form?.addEventListener("change", emit);
-  scenarioForm?.addEventListener("change", emit);
 
   const toggle = (rowEl) => {
     const id = rowEl.dataset.school;

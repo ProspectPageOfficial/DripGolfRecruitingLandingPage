@@ -184,7 +184,7 @@ js/
     luke-season.js      GENERATED - Luke's 29 real tournaments
   lib/
     fit.js              THE SCORING ENGINE - pure, no DOM, no storage
-    trend.js            measures a golfer's real trend + the what-if scenarios
+    trend.js            measures a golfer's real season-over-season trend
     components.js       dial, meter, tier pills, empty state
     thumbs.js           monogram tiles + the live preview of the real site
     dom.js              auto-escaping html`` template + safe external links
@@ -204,8 +204,9 @@ _ref/                   scratch: cloned repos + throwaway scripts, not shipped
 Everything lives in `js/lib/fit.js`, in named constants at the top of the file.
 
 ```
-Athletic Fit  = 0.68 * scoring average vs team average
-              + 0.32 * national rank vs the program's typical recruit
+Athletic Fit  = your JGS national rank
+              /  the AVERAGE senior-year JGS rank of the current roster
+              -> mapped onto 100..0 across the ratio band [0.5 .. 3.0]
 
 Academic Fit  = 0.55 * GPA vs school average
               + 0.45 * SAT vs school average
@@ -226,21 +227,16 @@ Five deliberate design decisions:
 - **Academics are optional.** Luke is 13 and sits the SAT in about four years.
   Missing inputs are dropped and their weight redistributed - never scored as
   zero, never invented. `academic: null` means "not yet", not "bad".
-- **Young golfers are projected, not judged.** See below.
+- **The athletic metric is age-normalized on purpose.** See below.
 
-### The projection, and the constant I had to delete
+### Why the metric is roster-rank, not scoring average
 
-Scored raw against current college rosters, Luke - a genuinely good 13-year-old
-- lands on **0/100 at 24 of 27 programs**. Every school "Reach". That is not
-insight; it is a child being told he is worthless at golf by a product his
-parents pay for.
-
-The cause is a category error: he does not enrol for five years, so comparing
-today's card to today's roster is meaningless. Hence projection.
-
-**The first version of this was wrong in an instructive way.** It hardcoded
-`strokesPerYear: 1.6` - a number I invented because it sounded reasonable.
-Then we measured it against Luke's 29 real events:
+The engine used to compare a golfer's 18-hole scoring average against each
+program's team average. That produced a category error for anyone years out
+from enrolling: a real 13-year-old landed 0/100 at 24 of 27 programs, because
+he was being scored against 22-year-olds on a per-stroke basis. The fix at the
+time was a projection layer with a hardcoded `strokesPerYear: 1.6` -- a number
+invented on vibes. When we finally measured Luke's 29 real events:
 
 ```
 2024   22 rounds   avg 79.27   stdev 4.53
@@ -252,35 +248,30 @@ mean year-over-year change: +0.11 strokes/yr
 
 His real trend is **flat**, and the round-to-round noise (~4.4 strokes) is
 larger than any annual signal. The invented constant was wrong by roughly its
-own entire magnitude, and it was compounding over five years.
+own entire magnitude and compounding over five years.
 
-So the constant is gone. `projectGolfer()` now takes the rate as an argument,
-and the UI makes it the golfer's choice:
+The honest fix is to stop needing a projection at all. The engine now compares
+a golfer's **current JGS national rank** against **the AVERAGE senior-year JGS
+rank of the players currently on each roster**. That is rank-vs-rank between
+two populations of teenage golfers scored under the same system, so a
+13-year-old is not being measured against 22-year-olds. The engine reports
+`overall = null` when neither rank nor academics are on file rather than
+inventing a zero, and it drops unscorable rows from `rankSchools()` rather
+than sorting nulls.
 
-| Scenario | Luke's best match | Likely | Target | Reach |
-|---|---|---|---|---|
-| No change | Adrian, **15** | 0 | 0 | 27 |
-| Steady, 1/yr | Adrian, **89** | 1 | 2 | 24 |
-| Strong, 2/yr | North Texas, **100** | 22 | 5 | 0 |
+`lib/trend.js` still measures the golfer's season-over-season trend and
+flags it **Noisy** when volatility exceeds the signal (which for juniors is
+most of the time). It is shown on the Fit page as **context**, not fed back
+into the score.
 
-That sensitivity is the entire argument. One buried assumption was swinging the
-whole product from "you have no future" to "you can play anywhere". An
-assumption with that much leverage does not belong hidden inside an engine - it
-belongs on screen, labelled, with the golfer's own measured trend sitting next
-to it for comparison. `lib/trend.js` computes that trend and flags it **Noisy**
-whenever the volatility exceeds the signal, which for juniors is most of the
-time.
-
-National ranking is also dropped from any projection, because an *overall*
-junior rank puts every 13-year-old behind every 17-year-old by construction. It
-measures age, not ceiling.
-
-**What would actually settle this:** run `_ref/improvement.py`'s calculation
-across every golfer in the Drip Golf tour database, bucketed by age, and fit a
-real curve - ideally normalised for course difficulty, since a 79 at Pinehurst
-and a 79 at a municipal are not the same round (JGS uses a differential for
-exactly this reason; Luke's is 10.61). That data is yours. Nexus does not have
-it. It is the most defensible moat in this whole product.
+**The data catch.** `avgRosterSeniorJgsRank` is the field the new engine
+leans on entirely, and every value in `js/data/colleges.js` is a placeholder.
+Real values require joining each roster's current players (name + grad year)
+against JGS historical rank snapshots as of end-of-HS-senior-year. There is no
+legitimate public export for this today; it requires a JGS data agreement or
+a manually seeded dataset per program. The Fit engine works the same either
+way -- that is the point of keeping it pure -- but the demo numbers must not
+be shown to a paying golfer as measurements.
 
 ### What is real and what is not
 
@@ -296,8 +287,7 @@ Before this goes near a paying customer, source the college data properly:
 
 | Field | Source |
 |---|---|
-| `teamScoringAvg` | Golfstat / Clippd team season averages |
-| `recruitRank` | Junior Golf Scoreboard / AJGA ranks of committed recruits |
+| `avgRosterSeniorJgsRank` | JGS historical rank snapshots joined against each program's current roster (name + grad year). No public export -- requires a JGS data agreement or manually seeded per program. |
 | `avgGPA`, `avgSAT`, `tuition` | IPEDS Common Data Set (free, public, citable) |
 
 The engine does not change when the data gets real - that is the whole point of

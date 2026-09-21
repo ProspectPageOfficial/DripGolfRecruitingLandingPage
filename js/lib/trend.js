@@ -2,10 +2,10 @@
  * lib/trend.js — measure a golfer's ACTUAL scoring trend from their own rounds.
  *
  * WHY THIS EXISTS
- * The projection in fit.js originally used a hardcoded 1.6 strokes/year of
- * improvement. That number was invented. When we finally checked it against
- * Luke Selzer's 29 real events it turned out to be wrong by roughly 1.6
- * strokes/year:
+ * The Fit engine used to project a golfer forward using a hardcoded 1.6
+ * strokes/year of improvement. That number was invented. When we finally
+ * checked it against Luke Selzer's 29 real events it turned out to be wrong
+ * by roughly 1.6 strokes/year:
  *
  *     2024  22 rounds  avg 79.27  stdev 4.53
  *     2025  27 rounds  avg 82.04  stdev 4.22   (+2.76 - he got worse)
@@ -16,8 +16,10 @@
  * than any annual signal in the data. Projecting an 8-stroke gain out of that
  * was not a model, it was wishful thinking with a decimal point.
  *
- * So: measure what we can, report the uncertainty honestly, and let the golfer
- * choose the assumption rather than burying our guess inside the maths.
+ * So: measure what we can, report the uncertainty honestly, and stop trying
+ * to bolt a fabricated "improvement rate" onto anything. This module now only
+ * describes the golfer's OWN measured trend -- the Fit engine has moved to
+ * a rank-vs-rank comparison that doesn't need a projection at all.
  *
  * Pure functions. No DOM, no storage.
  */
@@ -127,9 +129,9 @@ export function rollingScoringAvg(tournaments = [], window = RANKING_WINDOW_EVEN
  *   seasons: Array, measurable: boolean, strokesPerYear: ?number,
  *   volatility: ?number, reliable: boolean, note: string
  * }}
- *   `strokesPerYear` is NEGATIVE when improving, to match how the projection
- *   consumes it. `reliable` is false whenever the noise swamps the signal,
- *   which for a junior golfer is most of the time.
+ *   `strokesPerYear` is NEGATIVE when improving, by convention.
+ *   `reliable` is false whenever the noise swamps the signal, which for a
+ *   junior golfer is most of the time.
  */
 export function measureTrend(tournaments = []) {
   const seasons = seasonAverages(tournaments);
@@ -177,26 +179,9 @@ export function measureTrend(tournaments = []) {
   };
 }
 
-/**
- * Scenarios a golfer can plan against.
- *
- * These are explicitly WHAT-IFS, not predictions. Nobody involved in building
- * this knows the true junior improvement curve, so the honest move is to put
- * the assumption in front of the user instead of hiding it in a constant.
- *
- * `strokesPerYear` is negative for improvement.
- */
-export const SCENARIOS = Object.freeze([
-  Object.freeze({ key: "hold", label: "No change", strokesPerYear: 0,
-    blurb: "You keep shooting what you shoot today." }),
-  Object.freeze({ key: "steady", label: "Steady gains", strokesPerYear: -1,
-    blurb: "One stroke a year. Modest, consistent progress." }),
-  Object.freeze({ key: "strong", label: "Strong gains", strokesPerYear: -2,
-    blurb: "Two strokes a year. Growth spurt plus serious practice." }),
-]);
-
-/** Conservative default: assume nothing until the data earns it. */
-export const DEFAULT_SCENARIO = "steady";
-
-export const scenarioByKey = (key) =>
-  SCENARIOS.find((s) => s.key === key) ?? SCENARIOS.find((s) => s.key === DEFAULT_SCENARIO);
+// The SCENARIOS / DEFAULT_SCENARIO / scenarioByKey trio used to live here to
+// feed a strokes-per-year projection into the Fit engine. Removed when the
+// engine switched to comparing JGS rank against the roster's senior-year JGS
+// rank -- an age-normalized signal that does not need a strokes-per-year
+// what-if to be fair to a 13-year-old. Season measurement stays; the golfer
+// can still see their own trend, it just no longer plugs into a score.
