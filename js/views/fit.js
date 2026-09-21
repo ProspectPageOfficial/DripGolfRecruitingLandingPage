@@ -22,6 +22,8 @@ import {
   groupByTier,
   TIER_COPY,
   yearsToGraduation,
+  coachLink,
+  coachGenderFor,
 } from "../lib/fit.js";
 import { colleges } from "../data/colleges.js";
 import { provenanceDetails } from "./provenance.js";
@@ -122,6 +124,7 @@ function summaryCard(profile, best) {
             ${school.conference} &middot; ${school.region}
           </p>
           ${raw(versusStack(profile, school, fit, "md"))}
+          ${raw(coachAction(profile, school, "prominent"))}
         </div>
       </div>
     </div>
@@ -223,7 +226,40 @@ function schoolRow({ school, fit }, profile) {
  * detail body is now those blocks only.
  */
 function detailBody(school, fit, profile) {
-  return versusStack(profile, school, fit, "md");
+  return html`
+    ${raw(versusStack(profile, school, fit, "md"))}
+    ${raw(coachAction(profile, school, "subtle"))}
+  `;
+}
+
+/**
+ * The one thing on this view that isn't the head-to-head comparison but earns
+ * its place anyway: a link out to the program's head coach page. A recruit
+ * who trusts a fit still needs to reach someone. Two styles -- "prominent"
+ * for the summary card, "subtle" for row details -- because the summary card
+ * asks for a single call-to-action and the row list benefits from lots of
+ * small ones that do not compete for attention.
+ *
+ * We link OUT rather than storing coach names or emails on college rows on
+ * purpose: coach turnover is too high for embedded records to stay honest.
+ * See `coachLink` in lib/fit.js for the fallback logic.
+ */
+function coachAction(profile, school, style = "prominent") {
+  const { url, source } = coachLink(school, coachGenderFor(profile));
+  const label =
+    source === "direct"
+      ? "Meet the head coach \u2192"
+      : `Find ${school.name}'s head coach \u2192`;
+  const cls =
+    style === "prominent"
+      ? "btn btn-sm btn-sage coach-cta"
+      : "btn btn-sm btn-ghost coach-cta";
+  return html`
+    <a class="${cls}" href="${url}"
+       target="_blank" rel="noopener noreferrer">
+      ${label}
+    </a>
+  `;
 }
 
 function incompleteState(missing) {

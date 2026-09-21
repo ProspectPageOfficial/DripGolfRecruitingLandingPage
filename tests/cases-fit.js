@@ -28,6 +28,8 @@ import {
   rankVerdict,
   gpaVerdict,
   satVerdict,
+  coachLink,
+  coachGenderFor,
   TIERS,
   ACADEMIC_GATE,
 } from "../js/lib/fit.js";
@@ -478,6 +480,77 @@ export const fitCases = [
       const testing = fit.components.find((c) => c.key === "testing");
       assert.ok(gpa.detail.toLowerCase().includes("above"));
       assert.ok(testing.detail.includes("+150"));
+    },
+  },
+  {
+    name: "coachGenderFor defaults to men and honours women when set",
+    run: (assert) => {
+      assert.equal(coachGenderFor({}), "men");
+      assert.equal(coachGenderFor(null), "men");
+      assert.equal(coachGenderFor({ gender: "men" }), "men");
+      assert.equal(coachGenderFor({ gender: "women" }), "women");
+      // Anything unrecognised falls back to men rather than to "unknown",
+      // because the UI needs a URL to render a link, not a shrug.
+      assert.equal(coachGenderFor({ gender: "nonbinary" }), "men");
+    },
+  },
+  {
+    name: "coachLink prefers a stored URL, source=direct",
+    run: (assert) => {
+      const school = {
+        name: "Stanford University",
+        athleticsGolfUrl: {
+          men: "https://gostanford.com/sports/mens-golf/coaches",
+          women: "https://gostanford.com/sports/womens-golf/coaches",
+        },
+      };
+      const menResult = coachLink(school, "men");
+      assert.equal(menResult.source, "direct");
+      assert.ok(menResult.url.includes("mens-golf"));
+
+      const womenResult = coachLink(school, "women");
+      assert.equal(womenResult.source, "direct");
+      assert.ok(womenResult.url.includes("womens-golf"));
+    },
+  },
+  {
+    name: "coachLink falls back to a Google search when the URL is missing",
+    run: (assert) => {
+      // The common case today: we ship the pattern with URLs unpopulated so
+      // nobody is misled by a hardcoded 404. The search URL still lands the
+      // golfer on the right page in one click.
+      const school = { name: "University of Texas" };
+      const result = coachLink(school, "men");
+      assert.equal(result.source, "search");
+      assert.ok(result.url.startsWith("https://www.google.com/search?q="));
+      assert.ok(decodeURIComponent(result.url).includes("University of Texas"));
+      assert.ok(decodeURIComponent(result.url).includes("men's golf"));
+      assert.ok(decodeURIComponent(result.url).includes("head coach"));
+
+      const w = coachLink(school, "women");
+      assert.ok(decodeURIComponent(w.url).includes("women's golf"));
+    },
+  },
+  {
+    name: "coachLink treats blank/whitespace URLs as absent",
+    run: (assert) => {
+      // A stored empty string is a common data-entry bug -- treat it the
+      // same as null so an accidental "" does not silently 404 the golfer.
+      const school = {
+        name: "Emory University",
+        athleticsGolfUrl: { men: "   ", women: "" },
+      };
+      assert.equal(coachLink(school, "men").source, "search");
+      assert.equal(coachLink(school, "women").source, "search");
+    },
+  },
+  {
+    name: "coachLink defaults to men when no gender is passed",
+    run: (assert) => {
+      const school = { name: "Emory University" };
+      const result = coachLink(school);
+      assert.equal(result.source, "search");
+      assert.ok(decodeURIComponent(result.url).includes("men's golf"));
     },
   },
   {

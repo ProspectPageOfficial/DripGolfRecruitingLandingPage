@@ -107,6 +107,32 @@ export const viewCases = [
     },
   },
   {
+    name: "fit view ships a coach outreach link for the top pick",
+    run: (assert) => {
+      // The summary card must send the golfer somewhere useful. The link is
+      // Google-search fallback for now (no direct URLs on college rows yet)
+      // and that is exactly what the smoke test should assert -- no direct
+      // URL, but the CTA and its search fallback both reach the DOM.
+      const out = fitView(luke, {});
+      assert.ok(out.includes("head coach"),
+        "summary card should show a coach CTA");
+      assert.ok(out.includes("https://www.google.com/search"),
+        "missing coach URLs should fall back to a targeted Google search");
+      assert.ok(out.includes("target=\"_blank\""),
+        "coach link must open in a new tab");
+    },
+  },
+  {
+    name: "dashboard renders a coach outreach link on the top pick",
+    run: (assert) => {
+      const out = dashboardView(luke, true);
+      assert.ok(out.includes("head coach"),
+        "dashboard top pick should show a coach CTA");
+      assert.ok(out.includes("target=\"_blank\""),
+        "dashboard coach link must open in a new tab");
+    },
+  },
+  {
     name: "fit view ships a search input and no measured-trend card",
     run: (assert) => {
       const out = fitView(luke, {});

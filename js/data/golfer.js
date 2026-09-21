@@ -66,6 +66,12 @@ export const GOLFER_SNAPSHOT = Object.freeze({
   class_year: "Class of 2031",
   age: "13",
 
+  // Team the golfer would recruit into. Drives which head-coach link this
+  // app shows next to each program (men's vs women's golf are separate
+  // programs with separate staff). "men" | "women" | null; null falls back
+  // to men's downstream, which is the current default for Luke.
+  gender: "men",
+
   // Every published stat, generated from the live page. Spread rather than
   // relisted, so adding a stat upstream needs no edit here.
   ...lukePublished,

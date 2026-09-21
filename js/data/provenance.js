@@ -99,6 +99,12 @@ export const PROVENANCE = Object.freeze([
     what: "Tier thresholds (Likely 78+, Target 58+)",
     source: "A modelling choice. Not validated against any recruiting outcome data",
   },
+  {
+    group: "Coach outreach",
+    status: "assumption",
+    what: "Head coach names, emails and phone numbers are NOT stored on college rows",
+    source: "Deliberate. Coach turnover is ~10-15% per year, so any stored record would send a recruit's cold email to a stranger before long. The app links OUT to each program's own coach page (via `athleticsGolfUrl`) when a URL is on file, and to a Google search scoped to '{school} men's/women's golf head coach' otherwise",
+  },
 ]);
 
 /** Counts for the summary line, so it can never drift from the table. */

@@ -239,6 +239,67 @@ function testingComponent(golfer, school) {
 // Public API
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Coach-outreach links
+// ---------------------------------------------------------------------------
+//
+// We deliberately DO NOT store coach names, emails or phone numbers on college
+// rows. Coach turnover is ~10-15% per year at D1 alone; every stale record
+// would send a recruit's cold email to a stranger, which reads worse than no
+// email at all. Instead each row can carry an `athleticsGolfUrl: { men,
+// women }` pointing at the program's own coach page -- always fresh, because
+// the school updates it whenever staff changes.
+//
+// When that field is absent (the common case until someone verifies a URL
+// per program) the app falls back to a targeted Google search. That is not a
+// cop-out: it lands on the right page in one click and it is future-proof
+// against the school changing CMS platforms, coach names, or URL slugs. The
+// alternative -- guessing a URL from a pattern like
+// `{domain}/sports/mens-golf/coaches` -- would look like a link but 404 on
+// every school not running SIDEARM Sports, which is exactly the sort of
+// confidently-wrong behaviour we do not ship.
+
+/**
+ * The gender we should show a coach link for. Falls back to men's when the
+ * golfer profile does not publish a gender -- Luke is 13 and his site does
+ * not (yet) carry the field, and a null default of "unknown" would either
+ * hide the link entirely or force a coin-flip.
+ *
+ * @param {Object} golfer
+ * @returns {"men"|"women"}
+ */
+export function coachGenderFor(golfer) {
+  return golfer?.gender === "women" ? "women" : "men";
+}
+
+/**
+ * A URL that leads the golfer to the head coach for a given program.
+ *
+ * Priority order:
+ *   1. `school.athleticsGolfUrl[gender]` if present -- the direct link.
+ *   2. A Google search scoped to "{school name} men's/women's golf head coach".
+ *      Reliable, always current, and honest about what we know.
+ *
+ * The function returns both the URL and the source that produced it, so the
+ * UI can hint at what the golfer is clicking into (a direct page vs a search).
+ *
+ * @param {Object} school
+ * @param {"men"|"women"} gender
+ * @returns {{url:string, source:"direct"|"search"}}
+ */
+export function coachLink(school, gender = "men") {
+  const direct = school?.athleticsGolfUrl?.[gender];
+  if (typeof direct === "string" && direct.trim()) {
+    return { url: direct.trim(), source: "direct" };
+  }
+  const teamPhrase = gender === "women" ? "women's golf" : "men's golf";
+  const q = encodeURIComponent(`"${school.name}" ${teamPhrase} head coach`);
+  return {
+    url: `https://www.google.com/search?q=${q}`,
+    source: "search",
+  };
+}
+
 export function tierFor(overall) {
   if (overall >= TIERS.likely) return "likely";
   if (overall >= TIERS.target) return "target";

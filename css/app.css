@@ -510,6 +510,10 @@ table.data tbody tr:hover { background: var(--cream-2); }
 }
 
 /* ---- the single best-fit recommendation ---- */
+/* The tile is now a container, not an <a>: it holds the whole-tile link to
+   #/fit AND a separate outbound link to the coach. Two calls-to-action on
+   one tile is intentional -- "see the whole list" and "reach out to this
+   coach" are different verbs and a golfer should be able to choose. */
 .top-pick {
   display: flex;
   flex-direction: column;
@@ -518,11 +522,16 @@ table.data tbody tr:hover { background: var(--cream-2); }
   border: 1px solid var(--line);
   border-radius: var(--radius-sm);
   background: var(--cream);
-  text-decoration: none;
-  color: inherit;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 .top-pick:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+.top-pick-link {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  text-decoration: none;
+  color: inherit;
+}
 .top-pick-head { display: flex; align-items: center; gap: var(--s-3); }
 .top-pick-body { min-width: 0; flex: 1; }
 .top-pick-name {
@@ -610,6 +619,15 @@ table.data tbody tr:hover { background: var(--cream-2); }
 }
 @media (min-width: 640px) {
   .versus-stack-academics { grid-template-columns: 1fr 1fr; }
+}
+
+/* ---- coach outreach call-to-action ----
+   Deliberately understated inside a row detail (btn-ghost) and confident on
+   the summary card + dashboard tile (btn-sage). Same class either way so
+   spacing rules stay in one place. */
+.coach-cta {
+  align-self: flex-start;
+  margin-top: var(--s-2);
 }
 
 /* Inline rank pair used inside a school-row's meta area. Same info as the

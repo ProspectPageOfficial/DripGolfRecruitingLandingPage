@@ -16,6 +16,8 @@ import {
   pickHighlight,
   hasAcademics,
   isScorable,
+  coachLink,
+  coachGenderFor,
 } from "../lib/fit.js";
 import { colleges } from "../data/colleges.js";
 import { PUBLIC_SITE } from "../config.js";
@@ -135,27 +137,48 @@ const collegePanel = (highlight, academics, profile) => {
  * that produced the score are visible on the same tile, so the recommendation
  * shows its work.
  */
-const topPick = ({ school, fit }, profile) => html`
-  <a class="top-pick" href="#/fit">
-    <div class="top-pick-head">
-      ${raw(schoolLogo(school, fit.tier))}
-      <span class="top-pick-body">
-        <b class="top-pick-name">${school.name}</b>
-        <span class="thumb-meta">
-          ${school.division} &middot; ${school.conference}
-        </span>
-        <span class="row" style="gap:.4rem;margin-top:.35rem">${raw(tierPill(fit.tier))}</span>
-      </span>
-      <b class="top-pick-score" style="color:var(--tier-${fit.tier})">${fit.overall}</b>
+/**
+ * The top-pick tile is a link to #/fit for the rest of the page, but the
+ * coach button underneath links OUT to the school's own site. Two links in
+ * one card: the outer <a> is the fit context, the coach <a> is the action.
+ * The coach <a> stops the click from bubbling so tapping it does not also
+ * bounce the golfer to #/fit -- if you asked to talk to the coach, that is
+ * where you should end up.
+ */
+const topPick = ({ school, fit }, profile) => {
+  const { url: coachUrl, source } = coachLink(school, coachGenderFor(profile));
+  const coachLabel =
+    source === "direct"
+      ? "Meet the head coach \u2192"
+      : `Find ${school.name}'s head coach \u2192`;
+  return html`
+    <div class="top-pick">
+      <a class="top-pick-link" href="#/fit">
+        <div class="top-pick-head">
+          ${raw(schoolLogo(school, fit.tier))}
+          <span class="top-pick-body">
+            <b class="top-pick-name">${school.name}</b>
+            <span class="thumb-meta">
+              ${school.division} &middot; ${school.conference}
+            </span>
+            <span class="row" style="gap:.4rem;margin-top:.35rem">${raw(tierPill(fit.tier))}</span>
+          </span>
+          <b class="top-pick-score" style="color:var(--tier-${fit.tier})">${fit.overall}</b>
+        </div>
+        ${raw(fit.rankKnown ? rankVersus({
+          yourRank: profile.nationalRank,
+          rosterRank: school.avgRosterSeniorJgsRank,
+          tier: fit.tier,
+          size: "sm",
+        }) : "")}
+      </a>
+      <a class="btn btn-sm btn-sage coach-cta" href="${coachUrl}"
+         target="_blank" rel="noopener noreferrer">
+        ${coachLabel}
+      </a>
     </div>
-    ${raw(fit.rankKnown ? rankVersus({
-      yourRank: profile.nationalRank,
-      rosterRank: school.avgRosterSeniorJgsRank,
-      tier: fit.tier,
-      size: "sm",
-    }) : "")}
-  </a>
-`;
+  `;
+};
 
 /**
  * The site now owns GPA and SAT/ACT fields, so the notice points at the
