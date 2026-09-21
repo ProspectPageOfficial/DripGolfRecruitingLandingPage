@@ -104,12 +104,47 @@ const round = (n, dp = 1) => {
 // Component scores — each returns { score, detail }
 // ---------------------------------------------------------------------------
 
+/**
+ * Compare a golfer's rank to a roster's average senior-year rank in plain
+ * English. Pure so it can be used both by the scoring engine (as a component
+ * `detail` string) and by the UI (as the label under a visual comparison).
+ * One source of truth stops the number on screen from disagreeing with the
+ * sentence next to it.
+ *
+ * @param {number} golferRank
+ * @param {number} rosterRank
+ * @returns {{ratio:number, direction:"ahead"|"behind"|"level",
+ *            multiple:number, phrase:string}}
+ */
+export function rankVerdict(golferRank, rosterRank) {
+  const ratio = golferRank / rosterRank;
+  if (!Number.isFinite(ratio) || ratio <= 0) {
+    return { ratio: null, direction: "level", multiple: 1, phrase: "" };
+  }
+  // Round on a coarser grid the further apart the two ranks get. "3.2x" is
+  // useful; "31.4x" is theatre -- the underlying data isn't that precise.
+  const raw = ratio < 1 ? 1 / ratio : ratio;
+  const multiple = raw >= 10 ? Math.round(raw) : Math.round(raw * 10) / 10;
+
+  if (Math.abs(ratio - 1) < 0.05) {
+    return { ratio, direction: "level", multiple: 1,
+      phrase: "You rank about level with the roster's HS-senior average." };
+  }
+  const direction = ratio < 1 ? "ahead" : "behind";
+  const phrase = direction === "ahead"
+    ? `You rank ${multiple}\u00d7 ahead of the roster's HS-senior average.`
+    : `You rank ${multiple}\u00d7 behind the roster's HS-senior average.`;
+  return { ratio, direction, multiple, phrase };
+}
+
 function rosterRankComponent(golfer, school) {
   const ratio = golfer.nationalRank / school.avgRosterSeniorJgsRank;
   const score = scale(ratio, BANDS.rankBest, BANDS.rankWorst);
+  const { phrase } = rankVerdict(golfer.nationalRank, school.avgRosterSeniorJgsRank);
   const detail =
     `You rank #${golfer.nationalRank}; this roster's current players ` +
-    `averaged #${school.avgRosterSeniorJgsRank} at the end of high school.`;
+    `averaged #${school.avgRosterSeniorJgsRank} at the end of high school. ` +
+    phrase;
   return { score, detail };
 }
 

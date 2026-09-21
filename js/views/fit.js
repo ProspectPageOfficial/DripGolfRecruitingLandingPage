@@ -8,7 +8,7 @@
  */
 import { html, raw, money, commas, extLink } from "../lib/dom.js";
 import { PUBLIC_SITE } from "../config.js";
-import { dial, meter, tierPill, empty } from "../lib/components.js";
+import { dial, meter, tierPill, empty, rankVersus } from "../lib/components.js";
 import { schoolLogo } from "../lib/thumbs.js";
 import {
   rankSchools,
@@ -65,7 +65,7 @@ export function fitView(profile, prefs = {}) {
       <div id="fit-results" class="stack-sm">
         ${raw(
           ranked.length
-            ? TIER_ORDER.map((tier) => tierBlock(tier, groups[tier])).join("")
+            ? TIER_ORDER.map((tier) => tierBlock(tier, groups[tier], profile)).join("")
             : empty("No programs match those filters. Loosen one and try again.")
         )}
       </div>
@@ -151,6 +151,12 @@ function summaryCard(profile, best) {
             ${school.division} &middot; #${school.nationalRank} &middot;
             ${school.conference} &middot; ${school.region}
           </p>
+          ${raw(fit.rankKnown ? rankVersus({
+            yourRank: profile.nationalRank,
+            rosterRank: school.avgRosterSeniorJgsRank,
+            tier: fit.tier,
+            size: "md",
+          }) : "")}
           <div class="grid grid-2" style="margin-top:.5rem">
             ${raw(meter("Athletic fit", fit.athletic, "Where you rank vs the roster's HS-senior average."))}
             ${raw(
@@ -247,7 +253,7 @@ function filterBar(prefs) {
   `;
 }
 
-function tierBlock(tier, rows) {
+function tierBlock(tier, rows, profile) {
   if (!rows.length) return "";
   return html`
     <div class="tier-head">
@@ -255,11 +261,11 @@ function tierBlock(tier, rows) {
       <h3>${TIER_COPY[tier].blurb}</h3>
       <span class="count">${rows.length} ${rows.length === 1 ? "program" : "programs"}</span>
     </div>
-    <div class="stack-sm">${raw(rows.map(schoolRow).join(""))}</div>
+    <div class="stack-sm">${raw(rows.map((r) => schoolRow(r, profile)).join(""))}</div>
   `;
 }
 
-function schoolRow({ school, fit }) {
+function schoolRow({ school, fit }, profile) {
   return html`
     <div>
       <div class="school-row" data-school="${school.id}" role="button" tabindex="0"
@@ -271,21 +277,37 @@ function schoolRow({ school, fit }) {
           <div class="school-meta">
             ${school.division} &middot; #${school.nationalRank} &middot;
             ${school.conference} &middot; ${school.region} &middot;
-            ${money(school.tuition)}/yr &middot; roster HS avg
-            #${commas(school.avgRosterSeniorJgsRank)}
+            ${money(school.tuition)}/yr
+          </div>
+          <div class="school-versus">
+            <span class="school-versus-side">
+              <span class="school-versus-lbl">You</span>
+              <b>#${commas(profile.nationalRank)}</b>
+            </span>
+            <span class="school-versus-vs">vs</span>
+            <span class="school-versus-side">
+              <span class="school-versus-lbl">Roster HS avg</span>
+              <b style="color:var(--tier-${fit.tier})">#${commas(school.avgRosterSeniorJgsRank)}</b>
+            </span>
           </div>
         </div>
         ${raw(tierPill(fit.tier))}
       </div>
       <div class="school-detail" data-detail="${school.id}" hidden>
-        ${raw(detailBody(school, fit))}
+        ${raw(detailBody(school, fit, profile))}
       </div>
     </div>
   `;
 }
 
-function detailBody(school, fit) {
+function detailBody(school, fit, profile) {
   return html`
+    ${raw(fit.rankKnown ? rankVersus({
+      yourRank: profile.nationalRank,
+      rosterRank: school.avgRosterSeniorJgsRank,
+      tier: fit.tier,
+      size: "md",
+    }) : "")}
     <div class="grid grid-2">
       ${raw(fit.components.map((c) => meter(c.label, c.score, c.detail)).join(""))}
     </div>

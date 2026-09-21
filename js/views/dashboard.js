@@ -9,7 +9,7 @@
  * A hub, not a destination. Every panel ends in a link somewhere more useful.
  */
 import { html, raw, extLink } from "../lib/dom.js";
-import { empty, tierPill } from "../lib/components.js";
+import { empty, tierPill, rankVersus } from "../lib/components.js";
 import { schoolLogo, sitePreview } from "../lib/thumbs.js";
 import {
   rankSchools,
@@ -113,7 +113,7 @@ const collegePanel = (highlight, academics) => {
 
       ${raw(
         highlight
-          ? topPick(highlight)
+          ? topPick(highlight, profile)
           : empty("Add your JGS national rank to unlock fit scores.")
       )}
 
@@ -129,19 +129,31 @@ const collegePanel = (highlight, academics) => {
 /**
  * The single recommendation. Big enough to read as an answer rather than as
  * the first row of a table the golfer is expected to scan.
+ *
+ * The rank versus block is the whole point: without it, the golfer sees
+ * "Emory, fit 62, Target" and has to trust the number. With it, the two ranks
+ * that produced the score are visible on the same tile, so the recommendation
+ * shows its work.
  */
-const topPick = ({ school, fit }) => html`
+const topPick = ({ school, fit }, profile) => html`
   <a class="top-pick" href="#/fit">
-    ${raw(schoolLogo(school, fit.tier))}
-    <span class="top-pick-body">
-      <b class="top-pick-name">${school.name}</b>
-      <span class="thumb-meta">
-        ${school.division} &middot; ${school.conference} &middot; roster avg HS
-        rank #${school.avgRosterSeniorJgsRank}
+    <div class="top-pick-head">
+      ${raw(schoolLogo(school, fit.tier))}
+      <span class="top-pick-body">
+        <b class="top-pick-name">${school.name}</b>
+        <span class="thumb-meta">
+          ${school.division} &middot; ${school.conference}
+        </span>
+        <span class="row" style="gap:.4rem;margin-top:.35rem">${raw(tierPill(fit.tier))}</span>
       </span>
-      <span class="row" style="gap:.4rem;margin-top:.35rem">${raw(tierPill(fit.tier))}</span>
-    </span>
-    <b class="top-pick-score" style="color:var(--tier-${fit.tier})">${fit.overall}</b>
+      <b class="top-pick-score" style="color:var(--tier-${fit.tier})">${fit.overall}</b>
+    </div>
+    ${raw(fit.rankKnown ? rankVersus({
+      yourRank: profile.nationalRank,
+      rosterRank: school.avgRosterSeniorJgsRank,
+      tier: fit.tier,
+      size: "sm",
+    }) : "")}
   </a>
 `;
 

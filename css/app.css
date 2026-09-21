@@ -505,7 +505,7 @@ table.data tbody tr:hover { background: var(--cream-2); }
 /* ---- the single best-fit recommendation ---- */
 .top-pick {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: var(--s-3);
   padding: var(--s-3);
   border: 1px solid var(--line);
@@ -516,6 +516,7 @@ table.data tbody tr:hover { background: var(--cream-2); }
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 .top-pick:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+.top-pick-head { display: flex; align-items: center; gap: var(--s-3); }
 .top-pick-body { min-width: 0; flex: 1; }
 .top-pick-name {
   display: block;
@@ -527,6 +528,88 @@ table.data tbody tr:hover { background: var(--cream-2); }
 .top-pick-score { font-family: var(--font-display); font-size: 2.4rem; line-height: 1; }
 /* The one pick gets a bigger badge than a list row would. */
 .top-pick .logo-slot, .top-pick .monogram { width: 64px; height: 64px; font-size: 1.3rem; }
+
+/* ---- rank versus block ----
+   Shows the golfer's JGS rank next to the roster's average senior-year JGS
+   rank. The whole product is a two-number comparison; giving those two
+   numbers real estate on screen is the difference between a fit score you
+   read and a fit score you trust. */
+.rank-versus {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+}
+.rank-versus-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  min-width: 0;
+}
+.rank-versus-label {
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+  text-align: center;
+}
+.rank-versus-num {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  line-height: 1;
+  font-weight: 500;
+}
+.rank-versus-vs {
+  font-family: var(--font-display);
+  font-style: italic;
+  color: var(--muted);
+  font-size: 1rem;
+}
+.rank-versus-phrase {
+  grid-column: 1 / -1;
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+  margin: 0;
+  padding-top: var(--s-2);
+  border-top: 1px dashed var(--line);
+}
+/* A subtle tint so "ahead" and "behind" read at a glance without shouting. */
+.rank-versus[data-direction="ahead"]  { background: var(--tier-likely-bg); border-color: var(--tier-likely); }
+.rank-versus[data-direction="behind"] { background: var(--tier-reach-bg);  border-color: var(--tier-reach); }
+.rank-versus[data-direction="level"]  { background: var(--tier-target-bg); border-color: var(--tier-target); }
+
+/* Compact version used inside the dashboard top-pick tile. */
+.rank-versus-sm { padding: var(--s-2) var(--s-3); gap: var(--s-2); }
+.rank-versus-sm .rank-versus-num { font-size: 1.25rem; }
+.rank-versus-sm .rank-versus-label { font-size: 0.6rem; letter-spacing: 0.12em; }
+.rank-versus-sm .rank-versus-phrase { display: none; }
+
+/* Inline rank pair used inside a school-row's meta area. Same info as the
+   full block, sized to sit next to the score without stealing the row. */
+.school-versus {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  margin-top: 0.3rem;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+.school-versus b { font-family: var(--font-display); font-size: 0.98rem; font-weight: 500; }
+.school-versus-lbl {
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-right: 0.2rem;
+}
+.school-versus-vs { font-style: italic; color: var(--muted); }
 
 .thumb-meta { display: block; font-size: 0.68rem; color: var(--muted); }
 

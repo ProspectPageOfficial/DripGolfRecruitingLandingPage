@@ -25,6 +25,7 @@ import {
   isScorable,
   yearsToGraduation,
   graduationYear,
+  rankVerdict,
   TIERS,
   ACADEMIC_GATE,
 } from "../js/lib/fit.js";
@@ -353,6 +354,45 @@ export const fitCases = [
       const at = (y) => new Date(`${y}-06-01T12:00:00`);
       assert.equal(yearsToGraduation({ class_year: "Class of 2031" }, at(2026)), 5);
       assert.equal(yearsToGraduation({ class_year: "Class of 2027" }, at(2026)), 1);
+    },
+  },
+  {
+    name: "rankVerdict() classifies ahead / behind / level and expresses the ratio",
+    run: (assert) => {
+      const ahead = rankVerdict(50, 200);      // you're 4x ahead
+      assert.equal(ahead.direction, "ahead");
+      assert.equal(ahead.multiple, 4);
+      assert.ok(ahead.phrase.includes("ahead"));
+
+      const behind = rankVerdict(10557, 340);  // Luke-ish
+      assert.equal(behind.direction, "behind");
+      assert.ok(behind.multiple > 10);
+      assert.ok(behind.phrase.includes("behind"));
+
+      const level = rankVerdict(100, 100);
+      assert.equal(level.direction, "level");
+      assert.ok(level.phrase.toLowerCase().includes("level"));
+
+      // Big gaps snap to whole numbers, small gaps keep one decimal.
+      assert.equal(rankVerdict(50, 100).multiple, 2);
+      assert.equal(rankVerdict(80, 100).multiple, 1.3);
+
+      // Junk inputs don't crash and don't lie.
+      assert.equal(rankVerdict(100, 0).phrase, "");
+      assert.equal(rankVerdict(100, -5).phrase, "");
+    },
+  },
+  {
+    name: "the roster-rank component's detail borrows rankVerdict's wording",
+    run: (assert) => {
+      // One source of truth for the sentence -- if this ever splits, the
+      // number on screen and the phrase next to it can disagree.
+      const golfer = { nationalRank: 200 };
+      const school = { avgRosterSeniorJgsRank: 100 };
+      const fit = scoreSchool(golfer, school);
+      const roster = fit.components.find((c) => c.key === "roster-rank");
+      assert.ok(roster.detail.includes("behind"));
+      assert.ok(roster.detail.includes("HS-senior"));
     },
   },
   {

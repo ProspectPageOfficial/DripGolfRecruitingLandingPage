@@ -5,8 +5,8 @@
  * detail panel. Defining them once is the difference between "change the ring
  * thickness" being a one-line edit and a three-file scavenger hunt.
  */
-import { html, raw } from "./dom.js";
-import { TIER_COPY } from "./fit.js";
+import { html, raw, commas } from "./dom.js";
+import { TIER_COPY, rankVerdict } from "./fit.js";
 
 const TIER_STROKE = {
   likely: "var(--tier-likely)",
@@ -57,6 +57,39 @@ export function meter(label, value, hint = "") {
 
 export const tierPill = (tier) =>
   html`<span class="pill pill-${tier}">${TIER_COPY[tier].label}</span>`;
+
+/**
+ * Head-to-head rank comparison. Shows the golfer's JGS rank next to the
+ * roster's average senior-year JGS rank so the fit isn't just a summary
+ * number -- the two inputs that produced it are on screen too.
+ *
+ * @param {Object}  opts
+ * @param {number}  opts.yourRank
+ * @param {number}  opts.rosterRank
+ * @param {string} [opts.tier="target"] tints the roster number so it reads as
+ *   the target the golfer is measured against, using the same likely/target/
+ *   reach palette as the rest of the score.
+ * @param {"sm"|"md"} [opts.size="md"] `sm` fits inside the dashboard top-pick;
+ *   `md` is the fit-page hero treatment.
+ */
+export function rankVersus({ yourRank, rosterRank, tier = "target", size = "md" }) {
+  const { direction, phrase } = rankVerdict(yourRank, rosterRank);
+  const cls = `rank-versus rank-versus-${size}`;
+  return html`
+    <div class="${cls}" data-direction="${direction}">
+      <div class="rank-versus-side">
+        <span class="rank-versus-label">You</span>
+        <b class="rank-versus-num">#${commas(yourRank)}</b>
+      </div>
+      <span class="rank-versus-vs" aria-hidden="true">vs</span>
+      <div class="rank-versus-side">
+        <span class="rank-versus-label">Roster HS-senior avg</span>
+        <b class="rank-versus-num" style="color:var(--tier-${tier})">#${commas(rosterRank)}</b>
+      </div>
+      ${raw(phrase ? html`<p class="rank-versus-phrase">${phrase}</p>` : "")}
+    </div>
+  `;
+}
 
 /** Empty-state block. Better than rendering nothing and looking broken. */
 export const empty = (message) => html`<div class="empty">${message}</div>`;
