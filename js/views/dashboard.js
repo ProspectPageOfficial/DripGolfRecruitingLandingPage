@@ -50,7 +50,7 @@ export function dashboardView(profile, liveOk = true) {
 
       <div class="dual">
         ${raw(myPagePanel(liveOk))}
-        ${raw(collegePanel(highlight, academics))}
+        ${raw(collegePanel(highlight, academics, profile))}
       </div>
 
       ${raw(academics || !isScorable(profile) ? "" : academicsNotice())}
@@ -102,7 +102,7 @@ const offlineNotice = () => html`
 `;
 
 /** Right half: where the golfer is going. One name, not a shortlist. */
-const collegePanel = (highlight, academics) => {
+const collegePanel = (highlight, academics, profile) => {
   const note = academics ? "" : "athletic only";
   return html`
     <div class="card">

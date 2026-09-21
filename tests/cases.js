@@ -7,12 +7,14 @@
  * Node installed). Writing them twice would guarantee the two copies disagree
  * within a month.
  *
- * Split in two because the file crossed 600 lines, and because the halves
- * genuinely answer different questions: cases-data.js asks "is this number
- * real?", cases-fit.js asks "is this number computed correctly?". A case can
- * fail in one file without implicating the other.
+ * Split into files because they answer different questions:
+ *   cases-data.js  "is this number real?"
+ *   cases-fit.js   "is this number computed correctly?"
+ *   cases-views.js "does the screen actually render at all?"
+ * A case can fail in one file without implicating the others.
  */
 import { dataCases } from "./cases-data.js";
 import { fitCases } from "./cases-fit.js";
+import { viewCases } from "./cases-views.js";
 
-export const cases = [...dataCases, ...fitCases];
+export const cases = [...dataCases, ...fitCases, ...viewCases];
