@@ -74,12 +74,6 @@ const myPagePanel = (liveOk) => html`
 
     ${raw(sitePreview(PUBLIC_SITE))}
 
-    <p class="field-hint">
-      Your name, hometown and class year are read from this site every time this
-      page loads. Edit them there and they change here &mdash; there is no second
-      copy to keep in step.
-    </p>
-
     <div class="row panel-foot">
       ${raw(extLink(PUBLIC_SITE.url, "Open my page", "btn btn-sm"))}
       ${raw(extLink(PUBLIC_SITE.url, "Edit on my site", "btn btn-sm btn-ghost"))}
@@ -118,12 +112,6 @@ const collegePanel = (highlight, academics, profile) => {
           ? topPick(highlight, profile)
           : empty("Add your JGS national rank to unlock fit scores.")
       )}
-
-      <p class="field-hint panel-foot">
-        Logos belong to the schools and are served from their own sites. The
-        numbers beside them are this demo's invention &mdash;
-        <a href="#/data" style="text-decoration:underline">see sources</a>.
-      </p>
     </div>
   `;
 };

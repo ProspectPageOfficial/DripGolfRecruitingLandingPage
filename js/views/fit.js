@@ -22,7 +22,6 @@ import {
   rankSchools,
   groupByTier,
   TIER_COPY,
-  yearsToGraduation,
   headCoachFor,
   coachGenderFor,
 } from "../lib/fit.js";
@@ -46,8 +45,6 @@ export function fitView(profile, prefs = {}) {
   const missing = REQUIRED.filter((f) => profile?.[f] == null);
   if (missing.length) return incompleteState(missing);
 
-  const years = yearsToGraduation(profile);
-
   const ranked = rankSchools(profile, colleges, prefs);
   const groups = groupByTier(ranked);
   const best = ranked[0];
@@ -59,13 +56,8 @@ export function fitView(profile, prefs = {}) {
         <h1 class="serif" style="font-size:clamp(2rem,4.5vw,3rem);margin:.5rem 0">
           Where you actually stack up.
         </h1>
-        <p class="muted" style="font-size:.92rem;max-width:60ch">
-          Every program scored against your JGS rank and your grades. Expand
-          any school to see exactly which input moved the number.
-        </p>
       </div>
 
-      ${raw(years != null ? enrolmentNote(years) : "")}
       ${raw(best ? summaryCard(profile, best) : "")}
       ${raw(searchBar(prefs))}
 
@@ -74,29 +66,6 @@ export function fitView(profile, prefs = {}) {
       </div>
 
       ${raw(provenanceDetails())}
-    </div>
-  `;
-}
-
-/**
- * The "you are N years out" caveat used to introduce a strokes-per-year
- * scenario picker. That whole apparatus went away when the Fit engine moved
- * to a rank-vs-rank comparison, because the roster's senior-year JGS rank is
- * a real historical fact and does not need a projection to be fair to a
- * younger golfer. The note stays as context -- "you are 5 years out" is still
- * information a golfer should have when reading a Reach tile.
- */
-function enrolmentNote(years) {
-  if (years <= 0) return "";
-  return html`
-    <div class="card card-flat" style="border-color:var(--sage)">
-      <span class="eyebrow">Timing</span>
-      <p style="font-size:.93rem;margin-top:.6rem">
-        You are <b>${years} ${years === 1 ? "year" : "years"}</b> from enrolling.
-        Your JGS rank today is compared against the AVERAGE senior-year JGS
-        rank of each roster's current players &mdash; a rank-vs-rank comparison
-        so a 13-year-old is not being measured against 22-year-olds.
-      </p>
     </div>
   `;
 }
