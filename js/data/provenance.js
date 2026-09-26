@@ -101,9 +101,9 @@ export const PROVENANCE = Object.freeze([
   },
   {
     group: "Coach outreach",
-    status: "assumption",
-    what: "Head coach names, emails and phone numbers are NOT stored on college rows",
-    source: "Deliberate. Coach turnover is ~10-15% per year, so any stored record would send a recruit's cold email to a stranger before long. The app links OUT to each program's own coach page (via `athleticsGolfUrl`) when a URL is on file, and to a Google search scoped to '{school} men's/women's golf head coach' otherwise",
+    status: "real",
+    what: "Head coach name, title, email and phone for each program's men's team",
+    source: "Copied by hand from each program's official athletics staff page (URL kept per row in data/coaches.js), verified Sep 2026. Coach turnover is ~10-15% per year, so re-verify every August. Email or phone shows as 'not published' where the school does not list one; never guessed",
   },
 ]);
 

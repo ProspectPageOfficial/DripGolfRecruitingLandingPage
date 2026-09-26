@@ -9,14 +9,14 @@
  * A hub, not a destination. Every panel ends in a link somewhere more useful.
  */
 import { html, raw, extLink } from "../lib/dom.js";
-import { empty, tierPill, rankVersus } from "../lib/components.js";
+import { empty, tierPill, rankVersus, coachCard } from "../lib/components.js";
 import { schoolLogo, sitePreview } from "../lib/thumbs.js";
 import {
   rankSchools,
   pickHighlight,
   hasAcademics,
   isScorable,
-  coachLink,
+  headCoachFor,
   coachGenderFor,
 } from "../lib/fit.js";
 import { colleges } from "../data/colleges.js";
@@ -138,19 +138,12 @@ const collegePanel = (highlight, academics, profile) => {
  * shows its work.
  */
 /**
- * The top-pick tile is a link to #/fit for the rest of the page, but the
- * coach button underneath links OUT to the school's own site. Two links in
- * one card: the outer <a> is the fit context, the coach <a> is the action.
- * The coach <a> stops the click from bubbling so tapping it does not also
- * bounce the golfer to #/fit -- if you asked to talk to the coach, that is
- * where you should end up.
+ * The top-pick tile is a link to #/fit for the rest of the page, with the
+ * head coach's contact card underneath it -- outside the <a>, so tapping the
+ * coach's email or phone does not also bounce the golfer to #/fit.
  */
 const topPick = ({ school, fit }, profile) => {
-  const { url: coachUrl, source } = coachLink(school, coachGenderFor(profile));
-  const coachLabel =
-    source === "direct"
-      ? "Meet the head coach \u2192"
-      : `Find ${school.name}'s head coach \u2192`;
+  const coach = headCoachFor(school, coachGenderFor(profile));
   return html`
     <div class="top-pick">
       <a class="top-pick-link" href="#/fit">
@@ -172,10 +165,7 @@ const topPick = ({ school, fit }, profile) => {
           size: "sm",
         }) : "")}
       </a>
-      <a class="btn btn-sm btn-sage coach-cta" href="${coachUrl}"
-         target="_blank" rel="noopener noreferrer">
-        ${coachLabel}
-      </a>
+      ${raw(coachCard(coach, "prominent"))}
     </div>
   `;
 };

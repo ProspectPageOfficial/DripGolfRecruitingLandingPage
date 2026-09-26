@@ -621,14 +621,50 @@ table.data tbody tr:hover { background: var(--cream-2); }
   .versus-stack-academics { grid-template-columns: 1fr 1fr; }
 }
 
-/* ---- coach outreach call-to-action ----
-   Deliberately understated inside a row detail (btn-ghost) and confident on
-   the summary card + dashboard tile (btn-sage). Same class either way so
-   spacing rules stay in one place. */
-.coach-cta {
-  align-self: flex-start;
+/* ---- head coach contact card ----
+   The coach's name and contact details, shown in place. Bordered on the
+   summary card + dashboard tile ("prominent"); a plain divided block inside
+   a row detail ("subtle") so a long list does not turn into a wall of boxes. */
+.coach-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
   margin-top: var(--s-2);
+  min-width: 0;
 }
+.coach-card-prominent {
+  padding: var(--s-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--cream-2);
+}
+.coach-card-subtle {
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--line);
+}
+.coach-card-eyebrow {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.coach-card-name { font-size: 1rem; }
+.coach-card-title { font-size: 0.8rem; }
+.coach-card-contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 1rem;
+  margin-top: 0.25rem;
+  font-size: 0.86rem;
+}
+.coach-card-contact a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  overflow-wrap: anywhere;
+}
+.coach-card-verified { font-size: 0.68rem; color: var(--muted); margin-top: 0.2rem; }
 
 /* Inline rank pair used inside a school-row's meta area. Same info as the
    full block, sized to sit next to the score without stealing the row. */

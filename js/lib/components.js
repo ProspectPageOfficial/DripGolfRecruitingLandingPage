@@ -7,6 +7,7 @@
  */
 import { html, raw, commas } from "./dom.js";
 import { TIER_COPY, rankVerdict, gpaVerdict, satVerdict } from "./fit.js";
+import { COACHES_VERIFIED } from "../data/coaches.js";
 
 const TIER_STROKE = {
   likely: "var(--tier-likely)",
@@ -145,3 +146,51 @@ export function satVersus({ yourSat, schoolSat, tier = "target", size = "md" }) 
 
 /** Empty-state block. Better than rendering nothing and looking broken. */
 export const empty = (message) => html`<div class="empty">${message}</div>`;
+
+/** "2026-09-26" -> "Sep 2026". Parsed by hand so no timezone can shift it. */
+const monthYear = (iso) => {
+  const [y, m] = String(iso).split("-").map(Number);
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return MONTHS[m - 1] ? `${MONTHS[m - 1]} ${y}` : String(iso);
+};
+
+/** Digits only, so "(405) 269-6293" dials as tel:4052696293. Extensions drop. */
+const telHref = (phone) => "tel:" + String(phone).split(/ext/i)[0].replace(/[^\d+]/g, "");
+
+/**
+ * The head coach's name and contact details, shown in place rather than
+ * behind a link. `coach` comes from headCoachFor(); null renders an honest
+ * "not on file" line instead of an empty box.
+ *
+ * Email and phone are mailto:/tel: so a tap opens the golfer's own mail or
+ * phone app -- the details stay readable on the card either way.
+ *
+ * @param {Object|null} coach
+ * @param {"prominent"|"subtle"} style
+ */
+export function coachCard(coach, style = "prominent") {
+  if (!coach) {
+    return html`
+      <div class="coach-card coach-card-${style}">
+        <span class="coach-card-eyebrow">Head coach</span>
+        <span class="muted">Contact not on file yet.</span>
+      </div>
+    `;
+  }
+  const email = coach.email
+    ? html`<a href="mailto:${coach.email}">${coach.email}</a>`
+    : html`<span class="muted">Email not published</span>`;
+  const phone = coach.phone
+    ? html`<a href="${telHref(coach.phone)}">${coach.phone}</a>`
+    : html`<span class="muted">Phone not published</span>`;
+  return html`
+    <div class="coach-card coach-card-${style}">
+      <span class="coach-card-eyebrow">Head coach</span>
+      <b class="coach-card-name">${coach.name}</b>
+      <span class="coach-card-title muted">${coach.title}</span>
+      <span class="coach-card-contact">${raw(email)}${raw(phone)}</span>
+      <span class="coach-card-verified">Verified ${monthYear(COACHES_VERIFIED)}</span>
+    </div>
+  `;
+}

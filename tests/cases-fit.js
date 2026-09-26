@@ -28,7 +28,7 @@ import {
   rankVerdict,
   gpaVerdict,
   satVerdict,
-  coachLink,
+  headCoachFor,
   coachGenderFor,
   TIERS,
   ACADEMIC_GATE,
@@ -490,67 +490,61 @@ export const fitCases = [
       assert.equal(coachGenderFor({ gender: "men" }), "men");
       assert.equal(coachGenderFor({ gender: "women" }), "women");
       // Anything unrecognised falls back to men rather than to "unknown",
-      // because the UI needs a URL to render a link, not a shrug.
+      // because the UI needs a team to look a coach up, not a shrug.
       assert.equal(coachGenderFor({ gender: "nonbinary" }), "men");
     },
   },
   {
-    name: "coachLink prefers a stored URL, source=direct",
+    name: "headCoachFor returns the coach on file for the requested team",
     run: (assert) => {
       const school = {
         name: "Stanford University",
-        athleticsGolfUrl: {
-          men: "https://gostanford.com/sports/mens-golf/coaches",
-          women: "https://gostanford.com/sports/womens-golf/coaches",
+        headCoaches: {
+          men: { name: "Conrad Ray", title: "Director of Men's Golf", email: "conrad.ray@stanford.edu", phone: "650-725-2052" },
         },
       };
-      const menResult = coachLink(school, "men");
-      assert.equal(menResult.source, "direct");
-      assert.ok(menResult.url.includes("mens-golf"));
-
-      const womenResult = coachLink(school, "women");
-      assert.equal(womenResult.source, "direct");
-      assert.ok(womenResult.url.includes("womens-golf"));
+      const coach = headCoachFor(school, "men");
+      assert.equal(coach.name, "Conrad Ray");
+      assert.equal(coach.email, "conrad.ray@stanford.edu");
+      assert.equal(coach.phone, "650-725-2052");
+      // No women's entry on file -> null, never the men's coach by mistake.
+      assert.equal(headCoachFor(school, "women"), null);
     },
   },
   {
-    name: "coachLink falls back to a Google search when the URL is missing",
+    name: "headCoachFor returns null when no coach is on file",
     run: (assert) => {
-      // The common case today: we ship the pattern with URLs unpopulated so
-      // nobody is misled by a hardcoded 404. The search URL still lands the
-      // golfer on the right page in one click.
-      const school = { name: "University of Texas" };
-      const result = coachLink(school, "men");
-      assert.equal(result.source, "search");
-      assert.ok(result.url.startsWith("https://www.google.com/search?q="));
-      assert.ok(decodeURIComponent(result.url).includes("University of Texas"));
-      assert.ok(decodeURIComponent(result.url).includes("men's golf"));
-      assert.ok(decodeURIComponent(result.url).includes("head coach"));
-
-      const w = coachLink(school, "women");
-      assert.ok(decodeURIComponent(w.url).includes("women's golf"));
+      assert.equal(headCoachFor({ name: "Nowhere U" }, "men"), null);
+      assert.equal(headCoachFor({ headCoaches: null }, "men"), null);
+      assert.equal(headCoachFor({ headCoaches: { men: { name: "  " } } }, "men"), null);
+      assert.equal(headCoachFor(null), null);
     },
   },
   {
-    name: "coachLink treats blank/whitespace URLs as absent",
+    name: "headCoachFor treats blank email/phone as unpublished",
     run: (assert) => {
-      // A stored empty string is a common data-entry bug -- treat it the
-      // same as null so an accidental "" does not silently 404 the golfer.
-      const school = {
-        name: "Emory University",
-        athleticsGolfUrl: { men: "   ", women: "" },
-      };
-      assert.equal(coachLink(school, "men").source, "search");
-      assert.equal(coachLink(school, "women").source, "search");
+      // A stored empty string is a common data-entry bug -- it must render
+      // as "not published", not as an empty mailto: link.
+      const coach = headCoachFor({
+        headCoaches: { men: { name: "Jack Kennedy", title: "", email: "  ", phone: "" } },
+      });
+      assert.equal(coach.email, null);
+      assert.equal(coach.phone, null);
+      assert.equal(coach.title, "Head Coach");
     },
   },
   {
-    name: "coachLink defaults to men when no gender is passed",
+    name: "every college row with a coach on file has a name and a source",
     run: (assert) => {
-      const school = { name: "Emory University" };
-      const result = coachLink(school);
-      assert.equal(result.source, "search");
-      assert.ok(decodeURIComponent(result.url).includes("men's golf"));
+      for (const c of colleges) {
+        const men = c.headCoaches?.men;
+        if (!men) continue;
+        assert.ok(men.name && men.name.trim(), `${c.id}: coach name missing`);
+        assert.ok(/^https:\/\//.test(men.source), `${c.id}: coach source URL missing`);
+        if (men.email) assert.ok(/^[^@\s]+@[^@\s]+\.[a-z]+$/i.test(men.email), `${c.id}: bad email`);
+      }
+      // All but one program (WashU lists no men's team) carry a coach.
+      assert.equal(colleges.filter((c) => c.headCoaches?.men).length, colleges.length - 1);
     },
   },
   {

@@ -41,10 +41,12 @@
  *                            a blank placeholder icon.
  */
 
+import { HEAD_COACHES } from "./coaches.js";
+
 export const DIVISIONS = ["D1", "D2", "D3", "NAIA"];
 export const REGIONS = ["West", "Southwest", "Midwest", "Southeast", "Northeast"];
 
-export const colleges = [
+const rows = [
   // ---- D1, elite ----
   { id: "stanford",   domain: "stanford.edu",       name: "Stanford University",       division: "D1",   conference: "ACC",           region: "West",      type: "Private", nationalRank: 2,   avgRosterSeniorJgsRank:   45, avgGPA: 3.95, avgSAT: 1520, tuition: 62484, acceptRate: 4,  roster: 9  },
   { id: "texas",      domain: "utexas.edu",         name: "University of Texas",       division: "D1",   conference: "SEC",           region: "Southwest", type: "Public",  nationalRank: 4,   avgRosterSeniorJgsRank:   70, avgGPA: 3.78, avgSAT: 1400, tuition: 11752, acceptRate: 29, roster: 10 },
@@ -82,6 +84,16 @@ export const colleges = [
   { id: "ok-city",    domain: "okcu.edu",           name: "Oklahoma City University",  division: "NAIA", conference: "Sooner",        region: "Southwest", type: "Private", nationalRank: 9,   avgRosterSeniorJgsRank:  380, avgGPA: 3.25, avgSAT: 1090, tuition: 30000, acceptRate: 71, roster: 11 },
   { id: "texas-wes",  domain: "txwes.edu",          name: "Texas Wesleyan University", division: "NAIA", conference: "Sooner",        region: "Southwest", type: "Private", nationalRank: 14,  avgRosterSeniorJgsRank:  460, avgGPA: 2.95, avgSAT:  980, tuition: 32000, acceptRate: 45, roster: 10 },
 ];
+
+/**
+ * Rows plus the head coach on file for each program. Coaches live in their
+ * own file because they are REAL, hand-verified data with a shelf life, while
+ * everything above is illustrative -- mixing the two would blur which is which.
+ */
+export const colleges = rows.map((row) => ({
+  ...row,
+  headCoaches: HEAD_COACHES[row.id] ?? null,
+}));
 
 /** Lookup by id. O(1) beats Array.find in a render loop. */
 export const collegeById = Object.fromEntries(colleges.map((c) => [c.id, c]));

@@ -107,29 +107,23 @@ export const viewCases = [
     },
   },
   {
-    name: "fit view ships a coach outreach link for the top pick",
+    name: "fit view shows the top pick's head coach contact in place",
     run: (assert) => {
-      // The summary card must send the golfer somewhere useful. The link is
-      // Google-search fallback for now (no direct URLs on college rows yet)
-      // and that is exactly what the smoke test should assert -- no direct
-      // URL, but the CTA and its search fallback both reach the DOM.
+      // The summary card shows the coach's name and contact details directly,
+      // and no longer sends the golfer off-site to a Google search.
       const out = fitView(luke, {});
-      assert.ok(out.includes("head coach"),
-        "summary card should show a coach CTA");
-      assert.ok(out.includes("https://www.google.com/search"),
-        "missing coach URLs should fall back to a targeted Google search");
-      assert.ok(out.includes("target=\"_blank\""),
-        "coach link must open in a new tab");
+      assert.ok(out.includes("coach-card"), "summary card should show a coach card");
+      assert.ok(out.includes("mailto:"), "coach email should be shown");
+      assert.ok(!out.includes("https://www.google.com/search"),
+        "coach search links should be gone");
     },
   },
   {
-    name: "dashboard renders a coach outreach link on the top pick",
+    name: "dashboard shows the top pick's head coach contact in place",
     run: (assert) => {
       const out = dashboardView(luke, true);
-      assert.ok(out.includes("head coach"),
-        "dashboard top pick should show a coach CTA");
-      assert.ok(out.includes("target=\"_blank\""),
-        "dashboard coach link must open in a new tab");
+      assert.ok(out.includes("coach-card"), "dashboard top pick should show a coach card");
+      assert.ok(out.includes("Head coach"), "coach card should be labelled");
     },
   },
   {
