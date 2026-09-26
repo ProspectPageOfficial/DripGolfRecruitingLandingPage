@@ -627,11 +627,50 @@ table.data tbody tr:hover { background: var(--cream-2); }
    a row detail ("subtle") so a long list does not turn into a wall of boxes. */
 .coach-card {
   display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
+  align-items: flex-start;
+  gap: var(--s-3);
   margin-top: var(--s-2);
   min-width: 0;
 }
+.coach-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+/* Headshot over initials: the photo covers the letters and removes itself on
+   error, revealing them. Cropped from the top because athletics headshots are
+   portrait with the face in the upper third. */
+.coach-photo {
+  position: relative;
+  flex: none;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--cream-2);
+  border: 1px solid var(--line);
+}
+.coach-card-subtle .coach-photo { width: 56px; height: 56px; }
+.coach-photo-initials {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--muted);
+}
+.coach-photo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 15%;
+}
+.coach-card-prominent .coach-photo { background: var(--cream); }
 .coach-card-prominent {
   padding: var(--s-3);
   border: 1px solid var(--line);

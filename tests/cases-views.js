@@ -114,6 +114,9 @@ export const viewCases = [
       const out = fitView(luke, {});
       assert.ok(out.includes("coach-card"), "summary card should show a coach card");
       assert.ok(out.includes("mailto:"), "coach email should be shown");
+      assert.ok(out.includes("coach-photo"), "coach headshot slot should render");
+      assert.ok(out.includes('onerror="this.remove()"'),
+        "a broken headshot must remove itself and reveal the initials");
       assert.ok(!out.includes("https://www.google.com/search"),
         "coach search links should be gone");
     },

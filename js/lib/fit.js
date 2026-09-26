@@ -272,17 +272,22 @@ export function coachGenderFor(golfer) {
  *
  * @param {Object} school
  * @param {"men"|"women"} gender
- * @returns {{name:string, title:string, email:string|null, phone:string|null}|null}
+ * A photo URL that is not https is dropped, so a typo in the data file can
+ * never put a `javascript:` or mixed-content URL into an <img>.
+ *
+ * @returns {{name:string, title:string, email:string|null, phone:string|null, photo:string|null}|null}
  */
 export function headCoachFor(school, gender = "men") {
   const coach = school?.headCoaches?.[gender];
   if (!coach || typeof coach.name !== "string" || !coach.name.trim()) return null;
   const clean = (v) => (typeof v === "string" && v.trim() ? v.trim() : null);
+  const photo = clean(coach.photo);
   return {
     name: coach.name.trim(),
     title: clean(coach.title) ?? "Head Coach",
     email: clean(coach.email),
     phone: clean(coach.phone),
+    photo: photo && /^https:\/\//i.test(photo) ? photo : null,
   };
 }
 

@@ -5,7 +5,7 @@
  * detail panel. Defining them once is the difference between "change the ring
  * thickness" being a one-line edit and a three-file scavenger hunt.
  */
-import { html, raw, commas } from "./dom.js";
+import { html, raw, commas, initials } from "./dom.js";
 import { TIER_COPY, rankVerdict, gpaVerdict, satVerdict } from "./fit.js";
 import { COACHES_VERIFIED } from "../data/coaches.js";
 
@@ -173,8 +173,10 @@ export function coachCard(coach, style = "prominent") {
   if (!coach) {
     return html`
       <div class="coach-card coach-card-${style}">
-        <span class="coach-card-eyebrow">Head coach</span>
-        <span class="muted">Contact not on file yet.</span>
+        <div class="coach-card-body">
+          <span class="coach-card-eyebrow">Head coach</span>
+          <span class="muted">Contact not on file yet.</span>
+        </div>
       </div>
     `;
   }
@@ -186,11 +188,35 @@ export function coachCard(coach, style = "prominent") {
     : html`<span class="muted">Phone not published</span>`;
   return html`
     <div class="coach-card coach-card-${style}">
-      <span class="coach-card-eyebrow">Head coach</span>
-      <b class="coach-card-name">${coach.name}</b>
-      <span class="coach-card-title muted">${coach.title}</span>
-      <span class="coach-card-contact">${raw(email)}${raw(phone)}</span>
-      <span class="coach-card-verified">Verified ${monthYear(COACHES_VERIFIED)}</span>
+      ${raw(coachPhoto(coach))}
+      <div class="coach-card-body">
+        <span class="coach-card-eyebrow">Head coach</span>
+        <b class="coach-card-name">${coach.name}</b>
+        <span class="coach-card-title muted">${coach.title}</span>
+        <span class="coach-card-contact">${raw(email)}${raw(phone)}</span>
+        <span class="coach-card-verified">Verified ${monthYear(COACHES_VERIFIED)}</span>
+      </div>
     </div>
   `;
 }
+
+/**
+ * The coach's headshot, layered OVER their initials -- the same trick as
+ * schoolLogo(): the initials always render, the photo covers them, and a
+ * photo that fails removes itself so the initials show through. `onerror` is
+ * a fixed string with no interpolation; the URL is escaped by html``.
+ *
+ * The alt text is empty on purpose: the name is printed right beside it, so
+ * a screen reader announcing it twice would be noise.
+ */
+const coachPhoto = (coach) => html`
+  <span class="coach-photo" aria-hidden="true">
+    <span class="coach-photo-initials">${initials(coach.name)}</span>
+    ${raw(
+      coach.photo
+        ? html`<img src="${coach.photo}" alt="" loading="lazy"
+                 referrerpolicy="no-referrer" onerror="this.remove()" />`
+        : ""
+    )}
+  </span>
+`;

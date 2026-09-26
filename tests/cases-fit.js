@@ -531,6 +531,18 @@ export const fitCases = [
       assert.equal(coach.email, null);
       assert.equal(coach.phone, null);
       assert.equal(coach.title, "Head Coach");
+      assert.equal(coach.photo, null);
+    },
+  },
+  {
+    name: "headCoachFor keeps https photos and drops anything else",
+    run: (assert) => {
+      const withPhoto = (photo) =>
+        headCoachFor({ headCoaches: { men: { name: "Alan Bratton", photo } } }).photo;
+      assert.equal(withPhoto("https://okstate.com/a.jpg"), "https://okstate.com/a.jpg");
+      assert.equal(withPhoto("http://okstate.com/a.jpg"), null);
+      assert.equal(withPhoto("javascript:alert(1)"), null);
+      assert.equal(withPhoto(undefined), null);
     },
   },
   {
@@ -542,6 +554,7 @@ export const fitCases = [
         assert.ok(men.name && men.name.trim(), `${c.id}: coach name missing`);
         assert.ok(/^https:\/\//.test(men.source), `${c.id}: coach source URL missing`);
         if (men.email) assert.ok(/^[^@\s]+@[^@\s]+\.[a-z]+$/i.test(men.email), `${c.id}: bad email`);
+        if (men.photo) assert.ok(/^https:\/\//.test(men.photo), `${c.id}: photo must be https`);
       }
       // All but one program (WashU lists no men's team) carry a coach.
       assert.equal(colleges.filter((c) => c.headCoaches?.men).length, colleges.length - 1);
