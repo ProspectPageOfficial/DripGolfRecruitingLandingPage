@@ -10,8 +10,12 @@ A clickable prototype of two things:
 2. **College Best Fit** - a transparent 0-100 fit score against every program in
    the database, bucketed into Likely / Target / Reach.
 
-This is a *personal* recruiting site, not a platform. There is one golfer, one
-account, one page - so there is no directory, no slugs and no sign-up flow.
+This is a *personal* recruiting site, not a platform - yet. There is one
+golfer, one account, one page. **Create account** on the sign-in page demos
+onboarding a second golfer: a survey (`#/signup`) asking every Personal Bio
+question plus team and JGS rank, then a mock dashboard (`#/welcome`,
+`#/welcome/fit`) built from the answers. No account is created; the answers
+(minus the password) live in `sessionStorage` for that tab only.
 
 No build step. No `npm install`. No backend. Open it and click.
 

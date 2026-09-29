@@ -8,12 +8,19 @@
 import { html, raw, initials, isExternal, extLink } from "./dom.js";
 import { PUBLIC_SITE } from "../config.js";
 
-export function nav(user, golfer, active) {
+export function nav(user, golfer, active, mock = false) {
   // Signed-out visitors get no nav links — the "Sign in" button below is the
   // only affordance they need. Anything else (like a "The Page" tab) is noise
   // for someone who hasn't opted in yet, and duplicating "Sign In" here would
   // just repeat the button rendered a few lines down.
-  const links = user
+  // The sign-up demo's mock dashboard gets the signed-in tabs, pointed at its
+  // own routes, so the preview looks like the real thing without an account.
+  const links = mock
+    ? [
+        ["#/welcome", "Dashboard", "welcome"],
+        ["#/welcome/fit", "College Best Fit", "welcome-fit"],
+      ]
+    : user
     ? [
         ["#/dashboard", "Dashboard", "dashboard"],
         ["#/fit", "College Best Fit", "fit"],
@@ -48,7 +55,11 @@ export function nav(user, golfer, active) {
               .join("")
           )}
           ${raw(
-            user
+            mock
+              ? html`<a class="btn btn-sm btn-ghost" href="#/signup">
+                    Exit preview (${initials(golfer?.name)})
+                  </a>`
+              : user
               ? html`<button class="btn btn-sm btn-ghost" data-action="signout">
                     Sign out (${initials(golfer?.name ?? user.email)})
                   </button>`
@@ -72,8 +83,8 @@ export const footer = () => html`
 `;
 
 /** Wrap a view's inner HTML in the shared chrome. */
-export const page = (user, golfer, active, body) => html`
-  ${raw(nav(user, golfer, active))}
+export const page = (user, golfer, active, body, mock = false) => html`
+  ${raw(nav(user, golfer, active, mock))}
   <main>${raw(body)}</main>
   ${raw(footer())}
 `;

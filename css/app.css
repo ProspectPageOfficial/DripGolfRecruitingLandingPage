@@ -771,3 +771,62 @@ table.data tbody tr:hover { background: var(--cream-2); }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+/* ---------------- sign-up survey ---------------- */
+.survey-card { width: min(560px, 100%); }
+.survey-card h1 { font-size: 1.9rem; }
+.survey-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--cream-2);
+  overflow: hidden;
+}
+.survey-progress span {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--sage);
+  transition: width 0.25s ease;
+}
+.survey-count { font-size: 0.78rem; margin-top: calc(-1 * var(--s-2)); }
+.survey-step { border: 0; padding: 0; margin: 0; min-width: 0; }
+/* .stack-sm sets display:flex, which beats the [hidden] attribute. */
+.survey-step[hidden] { display: none; }
+.survey-title { font-size: 1.25rem; padding: 0; }
+.survey-blurb { font-size: 0.86rem; margin-bottom: var(--s-2); }
+.survey-grid {
+  display: grid;
+  gap: var(--s-3);
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+.survey-wide { grid-column: 1 / -1; }
+.survey-avatar {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--sage); color: var(--cream);
+  font-family: var(--font-display); font-size: 1.3rem;
+}
+.survey-review {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--s-3);
+  margin: 0;
+}
+.survey-review dd { margin: 0.15rem 0 0; overflow-wrap: anywhere; }
+.survey-bio { white-space: pre-line; line-height: 1.6; }
+
+/* The mock dashboard's stand-in for the live site frame: same card slot, the
+   golfer's answers instead of an iframe of a site they do not have yet. */
+.mock-page {
+  background: var(--cream);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: var(--s-3);
+}
+.mock-page-name { display: block; font-size: 1.25rem; }
+.mock-page-dt,
+.survey-review dt {
+  font-size: 0.7rem; letter-spacing: 0.09em; text-transform: uppercase;
+  font-weight: 600; color: var(--muted);
+}

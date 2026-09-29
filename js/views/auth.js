@@ -1,9 +1,9 @@
 /**
  * views/auth.js — sign in.
  *
- * That is the whole surface. There is no sign-up mode and no mode toggle,
- * because there is no second golfer to sign up: the owner account is
- * provisioned, everyone else is a coach who only ever reads the public page.
+ * The owner account is still provisioned, not self-served. "Create account"
+ * links to the sign-up survey (views/signup.js), which demos onboarding a
+ * second golfer without actually creating one.
  */
 import { html, raw, formData, extLink } from "../lib/dom.js";
 import { auth } from "../auth/store.js";
@@ -39,6 +39,8 @@ export function authView() {
             Sign in
           </button>
         </form>
+
+        <a class="btn btn-ghost btn-block" href="#/signup">Create account</a>
 
         <div class="demo-hint stack-sm">
           <b>Demo login</b> &mdash; click to fill the form.

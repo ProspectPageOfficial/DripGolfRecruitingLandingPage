@@ -33,8 +33,15 @@ import { PUBLIC_SITE } from "../config.js";
  * athletic metric compares a junior's JGS rank against the AVERAGE senior-year
  * JGS rank of the roster's current players -- age-normalized by construction,
  * so no what-if is needed to score a 13-year-old fairly.
+ *
+ * `mock` is the sign-up demo (views/signup.js): a golfer with no site yet. It
+ * swaps the live frame for a rendered preview of their answers, points the
+ * Best Fit link at the mock's own fit page, and drops the notices that talk
+ * about Luke's site.
+ *
+ * @param {{pagePanel:string, banner:string, fitHref:string}} [mock]
  */
-export function dashboardView(profile, liveOk = true) {
+export function dashboardView(profile, liveOk = true, mock = null) {
   const ranked = isScorable(profile) ? rankSchools(profile, colleges) : [];
   const highlight = pickHighlight(ranked);
   const academics = hasAcademics(profile);
@@ -48,14 +55,14 @@ export function dashboardView(profile, liveOk = true) {
         </h1>
       </div>
 
-      ${raw(liveOk ? "" : offlineNotice())}
+      ${raw(mock ? mock.banner : liveOk ? "" : offlineNotice())}
 
       <div class="dual">
-        ${raw(myPagePanel(liveOk))}
-        ${raw(collegePanel(highlight, academics, profile))}
+        ${raw(mock ? mock.pagePanel : myPagePanel(liveOk))}
+        ${raw(collegePanel(highlight, academics, profile, mock?.fitHref))}
       </div>
 
-      ${raw(academics || !isScorable(profile) ? "" : academicsNotice())}
+      ${raw(mock || academics || !isScorable(profile) ? "" : academicsNotice())}
 
     </div>
   `;
@@ -98,18 +105,18 @@ const offlineNotice = () => html`
 `;
 
 /** Right half: where the golfer is going. One name, not a shortlist. */
-const collegePanel = (highlight, academics, profile) => {
+const collegePanel = (highlight, academics, profile, fitHref = "#/fit") => {
   const note = academics ? "" : "athletic only";
   return html`
     <div class="card">
       <div class="row row-between">
         <span class="eyebrow">Best fit${raw(note ? ` &mdash; ${note}` : "")}</span>
-        <a class="btn btn-sm btn-ghost" href="#/fit">See all Good Fits</a>
+        <a class="btn btn-sm btn-ghost" href="${fitHref}">See all Good Fits</a>
       </div>
 
       ${raw(
         highlight
-          ? topPick(highlight, profile)
+          ? topPick(highlight, profile, fitHref)
           : empty("Add your JGS national rank to unlock fit scores.")
       )}
     </div>
@@ -130,11 +137,11 @@ const collegePanel = (highlight, academics, profile) => {
  * head coach's contact card underneath it -- outside the <a>, so tapping the
  * coach's email or phone does not also bounce the golfer to #/fit.
  */
-const topPick = ({ school, fit }, profile) => {
+const topPick = ({ school, fit }, profile, fitHref) => {
   const coach = headCoachFor(school, coachGenderFor(profile));
   return html`
     <div class="top-pick">
-      <a class="top-pick-link" href="#/fit">
+      <a class="top-pick-link" href="${fitHref}">
         <div class="top-pick-head">
           ${raw(schoolLogo(school, fit.tier))}
           <span class="top-pick-body">

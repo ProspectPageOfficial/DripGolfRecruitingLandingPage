@@ -18,6 +18,9 @@ import { empty } from "./lib/components.js";
 
 import { landing } from "./views/landing.js";
 import { authView, bindAuth } from "./views/auth.js";
+import {
+  signupView, bindSignup, loadAnswers, mockGolfer, mockPagePanel, mockBanner, MOCK_KEY,
+} from "./views/signup.js";
 import { dashboardView } from "./views/dashboard.js";
 import { fitView, bindFit } from "./views/fit.js";
 import { provenanceView } from "./views/provenance.js";
@@ -36,6 +39,7 @@ const STORAGE_KEYS = [
   "dg.demo.session",
   "dg.demo.golfer",
   "dg.demo.profiles",
+  MOCK_KEY,
 ];
 
 /**
@@ -60,6 +64,14 @@ const ui = { live: {}, liveOk: false };
 const ROUTES = [
   { path: /^\/?$/,         key: "home",      render: () => landing() },
   { path: /^\/login$/,     key: "login",     render: () => authView() },
+  { path: /^\/signup$/,    key: "signup",    render: () => signupView() },
+
+  // The sign-up demo's mock dashboard. Signed out on purpose -- no account was
+  // made -- so it is guarded by "finished the survey" instead of by auth.
+  { path: /^\/welcome$/,     key: "welcome",     mock: true, render: (ctx) => dashboardView(ctx.mock, true, {
+      pagePanel: mockPagePanel(ctx.answers), banner: mockBanner(ctx.answers), fitHref: "#/welcome/fit",
+    }) },
+  { path: /^\/welcome\/fit$/, key: "welcome-fit", mock: true, render: (ctx) => fitView(ctx.mock) },
   { path: /^\/data$/,      key: "data",      render: () => provenanceView() },
 
   // The public page is a separate deployment, so this app no longer renders a
@@ -96,6 +108,15 @@ async function router() {
   // re-entering the redirect and bouncing straight back out again.
   if (route.redirect) return location.replace(route.redirect);
 
+  if (route.mock) {
+    ctx.answers = loadAnswers();
+    if (!ctx.answers) {
+      location.hash = "#/signup";
+      return;
+    }
+    ctx.mock = mockGolfer(ctx.answers);
+  }
+
   if (route.auth && !ctx.user) {
     location.hash = "#/login";
     return;
@@ -106,7 +127,9 @@ async function router() {
 }
 
 function paint(ctx, active, body) {
-  root.innerHTML = page(ctx.user, ctx.golfer, active, body);
+  root.innerHTML = ctx.mock
+    ? page(null, ctx.mock, active, body, true)
+    : page(ctx.user, ctx.golfer, active, body);
   root.querySelector("[data-action='signout']")?.addEventListener("click", async () => {
     await auth.signOut();
     location.hash = "#/";
@@ -125,6 +148,16 @@ function bindFor(key) {
       },
     });
   }
+
+  if (key === "signup") {
+    bindSignup(root, {
+      onDone: () => {
+        location.hash = "#/welcome";
+      },
+    });
+  }
+
+  if (key === "welcome-fit") bindFit(root, { profile: mockGolfer(loadAnswers()) });
 
   if (key === "fit") {
     // The Fit view now filters locally as-you-type; there is no pref that has

@@ -14,6 +14,7 @@ import { dashboardView } from "../js/views/dashboard.js";
 import { fitView } from "../js/views/fit.js";
 import { landing } from "../js/views/landing.js";
 import { authView } from "../js/views/auth.js";
+import { signupView, mockGolfer, mockPagePanel, mockBanner } from "../js/views/signup.js";
 import { provenanceView } from "../js/views/provenance.js";
 import { buildGolfer } from "../js/data/golfer.js";
 
@@ -40,6 +41,49 @@ export const viewCases = [
   {
     name: "auth view renders",
     run: (assert) => rendersFine(assert, "authView", () => authView()),
+  },
+  {
+    name: "sign-in page links to the sign-up survey",
+    run: (assert) => assert.ok(authView().includes('href="#/signup"'), "Create account link missing"),
+  },
+  {
+    name: "sign-up survey renders every Personal Bio question",
+    run: (assert) => {
+      const out = signupView();
+      rendersFine(assert, "signupView", () => out);
+      for (const name of ["email", "password", "name", "hometown", "address", "phone", "age",
+        "height", "weight", "classYear", "school", "gpa", "sat", "bio", "instagram", "website"]) {
+        assert.ok(out.includes(`name="${name}"`), `survey is missing ${name}`);
+      }
+    },
+  },
+  {
+    name: "sign-up answers become a golfer the fit engine can score",
+    run: (assert) => {
+      const g = mockGolfer({ name: "Ava Reed", classYear: "Class of 2029", gender: "women",
+        nationalRank: "850", gpa: "3.9 / 4.0", sat: "31" });
+      assert.equal(g.name, "Ava Reed");
+      assert.equal(g.class_year, "Class of 2029");
+      assert.equal(g.nationalRank, 850);
+      assert.equal(g.gender, "women");
+      assert.equal(g.gpa, 3.9);
+      assert.equal(g.sat, 1390, "ACT 31 should concord to SAT 1390, same as the live read");
+    },
+  },
+  {
+    name: "mock dashboard renders the survey answers instead of Luke's site",
+    run: (assert) => {
+      const answers = { name: "Ava Reed", hometown: "Austin, TX", classYear: "Class of 2029",
+        gender: "women", nationalRank: "850", bio: "Plays <b>fast</b>." };
+      const out = dashboardView(mockGolfer(answers), true, {
+        pagePanel: mockPagePanel(answers), banner: mockBanner(answers), fitHref: "#/welcome/fit",
+      });
+      rendersFine(assert, "dashboardView(mock)", () => out);
+      assert.ok(out.includes("Ava Reed") && out.includes("Austin, TX"), "answers missing");
+      assert.ok(out.includes('href="#/welcome/fit"'), "Best Fit link should stay in the mock");
+      assert.ok(!out.includes("<iframe"), "mock must not frame Luke's live site");
+      assert.ok(!out.includes("<b>fast</b>"), "bio must be escaped");
+    },
   },
   {
     name: "provenance view renders",
