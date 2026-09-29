@@ -49,9 +49,11 @@ export const provenanceDetails = () => html`
     </summary>
     <div style="margin-top:1rem">
       <div class="alert alert-error" style="margin-bottom:1rem">
-        <b>Every college statistic in this demo is invented.</b> School names are
-        real; the numbers attached to them are not. Do not show these figures to
-        a golfer, a parent or a coach as though they were researched.
+        <b>The roster ranks behind every fit score are not measured.</b> Most
+        are estimated from the school's conference (marked "est."), and the 27
+        original programs carry invented numbers throughout. School facts, SAT
+        and tuition for the rest are real. Do not present fit scores to a
+        golfer, a parent or a coach as though they were researched.
       </div>
       ${raw(table())}
     </div>
@@ -74,9 +76,9 @@ export const provenanceView = () => html`
     </div>
 
     <div class="alert alert-error">
-      <b>Not shippable as-is.</b> The entire college database is fabricated.
-      Replacing it is the single largest task between this demo and a product
-      anyone should pay for.
+      <b>Not shippable as-is.</b> The roster rank each fit score runs on is
+      invented or estimated for every program. Sourcing it is the single
+      largest task between this demo and a product anyone should pay for.
     </div>
 
     <div class="card">${raw(table())}</div>

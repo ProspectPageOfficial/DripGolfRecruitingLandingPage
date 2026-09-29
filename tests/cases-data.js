@@ -335,8 +335,25 @@ export const dataCases = [
           c.avgRosterSeniorJgsRank > 0 && c.avgRosterSeniorJgsRank < 20000,
           `bad avgRosterSeniorJgsRank: ${c.id}`
         );
-        assert.ok(c.avgGPA > 0 && c.avgGPA <= 4.3, `bad GPA: ${c.id}`);
-        assert.ok(c.avgSAT > 400 && c.avgSAT <= 1600, `bad SAT: ${c.id}`);
+        // Generated rows may lack a benchmark (Scorecard has no GPA, and some
+        // schools publish no SAT); a number that IS there must be in range.
+        if (c.avgGPA != null) assert.ok(c.avgGPA > 0 && c.avgGPA <= 4.3, `bad GPA: ${c.id}`);
+        if (c.avgSAT != null) assert.ok(c.avgSAT > 400 && c.avgSAT <= 1600, `bad SAT: ${c.id}`);
+        assert.ok(["hand-set", "conference-estimate"].includes(c.rankSource), `no rankSource: ${c.id}`);
+        if (c.programs) assert.ok(c.programs.men || c.programs.women, `${c.id} fields no golf team`);
+      }
+      // The hand-set rows keep full academics, which the fit tests lean on.
+      for (const c of colleges.filter((x) => x.rankSource === "hand-set")) {
+        assert.ok(c.avgGPA != null && c.avgSAT != null, `hand-set row lost academics: ${c.id}`);
+      }
+    },
+  },
+  {
+    name: "the college list covers every NCAA golf program, not a sample",
+    run: (assert) => {
+      assert.ok(colleges.length > 800, `only ${colleges.length} programs`);
+      for (const d of ["D1", "D2", "D3", "NAIA"]) {
+        assert.ok(colleges.some((c) => c.division === d), `no ${d} programs`);
       }
     },
   },

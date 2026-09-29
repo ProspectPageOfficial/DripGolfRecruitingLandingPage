@@ -76,7 +76,7 @@ export const footer = () => html`
     <div class="footer row row-between">
       <span>Drip Golf Recruiting &mdash; recruiting page demo.</span>
       <a href="#/data" style="text-decoration:underline">
-        College data is invented &mdash; see sources
+        Roster ranks are estimates &mdash; see sources
       </a>
     </div>
   </div>

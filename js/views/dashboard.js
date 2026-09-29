@@ -156,6 +156,7 @@ const topPick = ({ school, fit }, profile, fitHref) => {
         ${raw(fit.rankKnown ? rankVersus({
           yourRank: profile.nationalRank,
           rosterRank: school.avgRosterSeniorJgsRank,
+          estimated: school.rankSource === "conference-estimate",
           tier: fit.tier,
           size: "sm",
         }) : "")}

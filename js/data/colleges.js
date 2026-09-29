@@ -2,10 +2,14 @@
  * data/colleges.js — the program database the Fit engine scores against.
  *
  * ===========================================================================
- * ILLUSTRATIVE DEMO DATA. THE NUMBERS ARE FABRICATED.
+ * TWO SOURCES. THE 27 ROWS BELOW ARE ILLUSTRATIVE; THE REST ARE GENERATED.
  * ===========================================================================
- * School names are real; every stat attached to them is invented to make the
- * demo behave believably. Do NOT ship these figures to a paying golfer.
+ * The 27 hand-set rows in this file carry invented stats (school names are
+ * real) and are kept because the tests and coach cards are written against
+ * them. Every other NCAA golf program comes from colleges-ncaa.js, generated
+ * by tools/gen-colleges.mjs from the NCAA member directory and the College
+ * Scorecard -- real facts, plus a roster rank MODELLED from conference tier.
+ * Do NOT ship the invented or modelled figures to a paying golfer.
  *
  * For production, source each field properly:
  *   avgRosterSeniorJgsRank
@@ -42,6 +46,7 @@
  */
 
 import { HEAD_COACHES } from "./coaches.js";
+import { NCAA_GOLF_PROGRAMS } from "./colleges-ncaa.js";
 
 export const DIVISIONS = ["D1", "D2", "D3", "NAIA"];
 export const REGIONS = ["West", "Southwest", "Midwest", "Southeast", "Northeast"];
@@ -86,14 +91,41 @@ const rows = [
 ];
 
 /**
- * Rows plus the head coach on file for each program. Coaches live in their
- * own file because they are REAL, hand-verified data with a shelf life, while
- * everything above is illustrative -- mixing the two would blur which is which.
+ * The hand-set rows above, keyed to their NCAA member-directory id so the
+ * generated list (colleges-ncaa.js) can skip them and lend them the one real
+ * fact it has that they lack: which golf teams the school actually fields.
+ * The four NAIA rows have no NCAA id.
  */
-export const colleges = rows.map((row) => ({
-  ...row,
-  headCoaches: HEAD_COACHES[row.id] ?? null,
-}));
+const NCAA_ID = {
+  "stanford": 674, "texas": 703, "vanderbilt": 736, "oklahoma-st": 521, "byu": 77,
+  "baylor": 51, "colorado-st": 156, "denver": 183, "furman": 244, "north-texas": 497,
+  "kent-state": 331, "sacred-hrt": 590, "lynn": 20794, "barry": 49, "cal-st-mb": 30055,
+  "mo-southern": 9012, "west-fla": 11740, "carnegie": 119, "emory": 217, "methodist": 412,
+  "adrian": 4, "wash-u": 755, "trinity-tx": 715,
+};
+
+const ncaaById = new Map(NCAA_GOLF_PROGRAMS.map((p) => [p.ncaaId, p]));
+const handIds = new Set(Object.values(NCAA_ID));
+
+/**
+ * Every program the engine scores: the hand-set rows first, then every other
+ * NCAA school with a golf team. Coaches are merged in from their own file
+ * because they are REAL, hand-verified data with a shelf life -- mixing them
+ * into either list would blur which facts are which.
+ *
+ * `programs` is { men, women } from the NCAA directory; null means unknown
+ * (the NAIA rows) and is treated as fielding both teams.
+ * `rankSource` says where avgRosterSeniorJgsRank came from: "hand-set" for
+ * the illustrative rows above, "conference-estimate" for generated ones.
+ */
+export const colleges = [
+  ...rows.map((row) => ({
+    ...row,
+    programs: ncaaById.get(NCAA_ID[row.id])?.programs ?? null,
+    rankSource: "hand-set",
+  })),
+  ...NCAA_GOLF_PROGRAMS.filter((p) => !handIds.has(p.ncaaId)),
+].map((row) => ({ ...row, headCoaches: HEAD_COACHES[row.id] ?? null }));
 
 /** Lookup by id. O(1) beats Array.find in a render loop. */
 export const collegeById = Object.fromEntries(colleges.map((c) => [c.id, c]));

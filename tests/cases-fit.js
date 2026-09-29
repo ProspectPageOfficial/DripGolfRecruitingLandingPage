@@ -30,6 +30,7 @@ import {
   satVerdict,
   headCoachFor,
   coachGenderFor,
+  fieldsTeam,
   TIERS,
   ACADEMIC_GATE,
 } from "../js/lib/fit.js";
@@ -363,7 +364,7 @@ export const fitCases = [
     name: "ranking still works end to end for a golfer with no academics",
     run: (assert) => {
       const ranked = rankSchools(noAcademics, colleges);
-      assert.equal(ranked.length, colleges.length);
+      assert.equal(ranked.length, colleges.filter((c) => fieldsTeam(c, "men")).length);
       for (let i = 1; i < ranked.length; i += 1) {
         assert.ok(ranked[i - 1].fit.overall >= ranked[i].fit.overall);
       }
@@ -556,8 +557,9 @@ export const fitCases = [
         if (men.email) assert.ok(/^[^@\s]+@[^@\s]+\.[a-z]+$/i.test(men.email), `${c.id}: bad email`);
         if (men.photo) assert.ok(/^https:\/\//.test(men.photo), `${c.id}: photo must be https`);
       }
-      // All but one program (WashU lists no men's team) carry a coach.
-      assert.equal(colleges.filter((c) => c.headCoaches?.men).length, colleges.length - 1);
+      // Every hand-set program but one (WashU lists no men's team) carries a coach.
+      const handSet = colleges.filter((c) => c.rankSource === "hand-set");
+      assert.equal(colleges.filter((c) => c.headCoaches?.men).length, handSet.length - 1);
     },
   },
   {
@@ -574,7 +576,7 @@ export const fitCases = [
       const groups = groupByTier(rankSchools(luke, colleges));
       assert.equal(groups.likely.length, 0);
       assert.equal(groups.target.length, 0);
-      assert.equal(groups.reach.length, colleges.length);
+      assert.equal(groups.reach.length, colleges.filter((c) => fieldsTeam(c, "men")).length);
     },
   },
 

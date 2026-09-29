@@ -109,10 +109,12 @@ export function statVersus({
 }
 
 /** JGS rank versus the roster's average senior-year JGS rank. */
-export function rankVersus({ yourRank, rosterRank, tier = "target", size = "md" }) {
+export function rankVersus({ yourRank, rosterRank, estimated = false, tier = "target", size = "md" }) {
   const { direction, phrase } = rankVerdict(yourRank, rosterRank);
   return statVersus({
-    label: "Roster HS-senior avg",
+    // "est." when the roster number is modelled from conference tier rather
+    // than set per school -- see data/colleges.js.
+    label: estimated ? "Roster HS-senior avg (est.)" : "Roster HS-senior avg",
     yourLabel: "Your JGS rank",
     yourDisplay: `#${commas(yourRank)}`,
     theirDisplay: `#${commas(rosterRank)}`,

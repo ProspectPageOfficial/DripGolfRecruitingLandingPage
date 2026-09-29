@@ -20,6 +20,7 @@ import {
 import { schoolLogo } from "../lib/thumbs.js";
 import {
   rankSchools,
+  pickHighlight,
   groupByTier,
   TIER_COPY,
   headCoachFor,
@@ -47,7 +48,10 @@ export function fitView(profile, prefs = {}) {
 
   const ranked = rankSchools(profile, colleges, prefs);
   const groups = groupByTier(ranked);
-  const best = ranked[0];
+  // Same pick as the dashboard's Best Fit panel. With ~900 programs the raw
+  // top score is usually the easiest team to make, not the one worth leading
+  // with; pickHighlight features the strongest program within a few points.
+  const best = pickHighlight(ranked);
 
   return html`
     <div class="container section-tight stack">
@@ -89,10 +93,7 @@ function summaryCard(profile, best) {
             ${raw(tierPill(fit.tier))}
           </div>
           <h2 class="serif" style="font-size:1.65rem">${school.name}</h2>
-          <p class="muted" style="font-size:.85rem">
-            ${school.division} &middot; #${school.nationalRank} &middot;
-            ${school.conference} &middot; ${school.region}
-          </p>
+          <p class="muted" style="font-size:.85rem">${schoolMeta(school)}</p>
           ${raw(versusStack(profile, school, fit, "md"))}
           ${raw(coachAction(profile, school, "prominent"))}
         </div>
@@ -129,15 +130,38 @@ function searchBar(prefs) {
   `;
 }
 
-function tierBlock(tier, rows, profile) {
+/**
+ * With ~900 programs a tier can hold hundreds of rows, and every row pulls a
+ * logo. Show the best PAGE of each tier; "Show all" opens the rest.
+ */
+const PAGE = 25;
+
+/** "D1 · #4 · SEC · Southwest · $12k/yr", skipping whatever is not on file. */
+function schoolMeta(school, withTuition = false) {
+  return [
+    school.division,
+    school.nationalRank != null ? `#${school.nationalRank}` : null,
+    school.conference,
+    school.region ?? school.state,
+    withTuition && Number.isFinite(school.tuition) ? `${money(school.tuition)}/yr` : null,
+  ].filter(Boolean).join(" · ");
+}
+
+function tierBlock(tier, rows, profile, expanded = false) {
   if (!rows.length) return "";
+  const shown = expanded ? rows : rows.slice(0, PAGE);
   return html`
     <div class="tier-head">
       ${raw(tierPill(tier))}
       <h3>${TIER_COPY[tier].blurb}</h3>
       <span class="count">${rows.length} ${rows.length === 1 ? "program" : "programs"}</span>
     </div>
-    <div class="stack-sm">${raw(rows.map((r) => schoolRow(r, profile)).join(""))}</div>
+    <div class="stack-sm">${raw(shown.map((r) => schoolRow(r, profile)).join(""))}</div>
+    ${raw(rows.length > shown.length
+      ? html`<button class="btn btn-sm btn-ghost btn-block" type="button" data-more="${tier}">
+          Show all ${rows.length} ${TIER_COPY[tier].label} programs
+        </button>`
+      : "")}
   `;
 }
 
@@ -146,11 +170,11 @@ function tierBlock(tier, rows, profile) {
  * the live-search handler in bindFit can re-render just this container on
  * every keystroke without disturbing the search input's focus or caret.
  */
-function renderResults(ranked, groups, profile) {
+function renderResults(ranked, groups, profile, expanded = new Set()) {
   if (!ranked.length) {
     return empty("No schools match that search. Clear it to see the full list.");
   }
-  return TIER_ORDER.map((tier) => tierBlock(tier, groups[tier], profile)).join("");
+  return TIER_ORDER.map((tier) => tierBlock(tier, groups[tier], profile, expanded.has(tier))).join("");
 }
 
 function schoolRow({ school, fit }, profile) {
@@ -162,11 +186,7 @@ function schoolRow({ school, fit }, profile) {
         <div class="school-score" style="color:var(--tier-${fit.tier})">${fit.overall}</div>
         <div>
           <div class="school-name">${school.name}</div>
-          <div class="school-meta">
-            ${school.division} &middot; #${school.nationalRank} &middot;
-            ${school.conference} &middot; ${school.region} &middot;
-            ${money(school.tuition)}/yr
-          </div>
+          <div class="school-meta">${schoolMeta(school, true)}</div>
           <div class="school-versus">
             <span class="school-versus-side">
               <span class="school-versus-lbl">Your JGS rank</span>
@@ -174,7 +194,7 @@ function schoolRow({ school, fit }, profile) {
             </span>
             <span class="school-versus-vs">vs</span>
             <span class="school-versus-side">
-              <span class="school-versus-lbl">Roster HS avg</span>
+              <span class="school-versus-lbl">Roster HS avg${school.rankSource === "conference-estimate" ? " (est.)" : ""}</span>
               <b style="color:var(--tier-${fit.tier})">#${commas(school.avgRosterSeniorJgsRank)}</b>
             </span>
           </div>
@@ -252,12 +272,13 @@ function versusStack(profile, school, fit, size) {
     ? rankVersus({
         yourRank: profile.nationalRank,
         rosterRank: school.avgRosterSeniorJgsRank,
+        estimated: school.rankSource === "conference-estimate",
         tier: fit.tier,
         size,
       })
     : "";
 
-  const gpa = fit.academicKnown
+  const gpa = fit.academicKnown && Number.isFinite(school.avgGPA)
     ? gpaVersus({
         yourGpa: profile.gpa,
         schoolGpa: school.avgGPA,
@@ -266,7 +287,7 @@ function versusStack(profile, school, fit, size) {
       })
     : "";
 
-  const sat = fit.academicKnown
+  const sat = fit.academicKnown && Number.isFinite(school.avgSAT)
     ? satVersus({
         yourSat: profile.sat,
         schoolSat: school.avgSAT,
@@ -304,15 +325,22 @@ export function bindFit(root, { profile }) {
   const searchEl = root.querySelector("#p-search");
   const resultsEl = root.querySelector("#fit-results");
 
+  // Tiers the golfer has opened with "Show all". A new search closes them
+  // again, since a different query is a different list.
+  const expanded = new Set();
+
   const applySearch = () => {
     if (!resultsEl) return;
     const prefs = { search: searchEl?.value ?? "" };
     const ranked = rankSchools(profile, colleges, prefs);
     const groups = groupByTier(ranked);
-    resultsEl.innerHTML = renderResults(ranked, groups, profile);
+    resultsEl.innerHTML = renderResults(ranked, groups, profile, expanded);
   };
 
-  searchEl?.addEventListener("input", applySearch);
+  searchEl?.addEventListener("input", () => {
+    expanded.clear();
+    applySearch();
+  });
 
   const toggle = (rowEl) => {
     const id = rowEl.dataset.school;
@@ -327,6 +355,12 @@ export function bindFit(root, { profile }) {
   // Event delegation on `root` survives the innerHTML swap in applySearch,
   // which would detach any listener attached directly to a row element.
   root.addEventListener("click", (e) => {
+    const more = e.target.closest("[data-more]");
+    if (more) {
+      expanded.add(more.dataset.more);
+      applySearch();
+      return;
+    }
     const row = e.target.closest(".school-row");
     if (row) toggle(row);
   });

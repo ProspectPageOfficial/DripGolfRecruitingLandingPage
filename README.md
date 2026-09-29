@@ -182,7 +182,8 @@ js/
   main.js               hash router + auth guard
   auth/store.js         auth adapter, shaped exactly like Supabase Auth
   data/
-    colleges.js         program database (ILLUSTRATIVE NUMBERS)
+    colleges.js         program database: 27 hand-set rows + the generated list
+    colleges-ncaa.js    GENERATED - every NCAA D1-D3 golf program (tools/gen-colleges.mjs)
     golfer.js           the golfer, assembled from the site. No writes.
     live.js             reads lukethomasselzer.com/api/personal
     luke-season.js      GENERATED - Luke's 29 real tournaments
@@ -282,7 +283,20 @@ be shown to a paying golfer as measurements.
 | Data | Status |
 |---|---|
 | Luke's personal details, photo, rankings, 29 tournaments | **Real.** Pulled from `PORTFOLIO_DATA` in `ltselzer-portfolio.html` and the live `/api/personal` blob. Regenerate with `_ref/gen_luke.py`. |
-| Every college stat | **Invented.** School names are real; the numbers are not. |
+| The 27 original programs' stats | **Invented.** School names are real; the numbers are not. |
+| ~860 other NCAA D1-D3 golf programs | **Real** name, division, conference, state, website and which teams (men's / women's) they field, from the NCAA member directory. **Real** SAT, admission rate and tuition from the College Scorecard. No GPA (Scorecard does not publish it). |
+| Roster rank for those programs | **Estimated** from conference tier and shown as "(est.)". Not a measurement. |
+
+The college list is regenerated with:
+
+```
+node tools/gen-colleges.mjs path/to/Most-Recent-Cohorts-Institution.csv
+```
+
+The CSV is the "Most Recent Cohorts - Institution" download from
+<https://collegescorecard.ed.gov/data/>. NAIA programs are not in the NCAA
+directory and naia.org blocks scripted downloads, so only the four hand-set
+NAIA rows are included for now.
 
 Placeholder junk on the live site (`"Test Coach Name"`, instagram `"TEST"`,
 `"High School for really cool students"`) was deliberately **not** imported.

@@ -17,6 +17,8 @@ import { authView } from "../js/views/auth.js";
 import { signupView, mockGolfer, mockPagePanel, mockBanner } from "../js/views/signup.js";
 import { provenanceView } from "../js/views/provenance.js";
 import { buildGolfer } from "../js/data/golfer.js";
+import { rankSchools, pickHighlight } from "../js/lib/fit.js";
+import { colleges } from "../js/data/colleges.js";
 
 const luke = buildGolfer();
 
@@ -134,10 +136,14 @@ export const viewCases = [
       const out = fitView(withAcademics, {});
       assert.equal(typeof out, "string");
       assert.ok(out.length > 100);
-      // The academic versus blocks must reach the DOM when GPA and SAT are
-      // on file -- their absence is what tipped off the last regression.
-      assert.ok(out.includes("School avg GPA"), "GPA versus block missing");
+      // The academic versus blocks must reach the DOM when the golfer AND the
+      // top school both have the number -- their absence is what tipped off the
+      // last regression. Generated schools publish no GPA, so that block is
+      // expected only when the top pick is one of the hand-set rows.
+      const top = pickHighlight(rankSchools(withAcademics, colleges)).school;
       assert.ok(out.includes("School avg SAT"), "SAT versus block missing");
+      assert.equal(out.includes("School avg GPA"), Number.isFinite(top.avgGPA),
+        "GPA versus block should show exactly when the school has a GPA on file");
     },
   },
   {

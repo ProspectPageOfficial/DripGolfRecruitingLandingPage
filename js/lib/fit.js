@@ -341,7 +341,13 @@ export function yearsToGraduation(golfer, today = new Date()) {
  */
 export function scoreSchool(golfer, school) {
   const rankKnown = isScorable(golfer);
-  const academicsKnown = hasAcademics(golfer);
+  // Academics need numbers on BOTH sides. The College Scorecard publishes no
+  // GPA, and test-optional schools often no SAT, so a school missing both is
+  // scored on golf alone for this golfer -- the same drop-don't-zero rule the
+  // golfer's own missing inputs get.
+  const schoolGpa = Number.isFinite(school.avgGPA);
+  const schoolSat = Number.isFinite(school.avgSAT);
+  const academicsKnown = hasAcademics(golfer) && (schoolGpa || schoolSat);
   const components = [];
 
   // No rank AND no academics -> nothing to score. Refusing to guess is the
@@ -388,17 +394,22 @@ export function scoreSchool(golfer, school) {
     };
   }
 
-  const gpa = gpaComponent(golfer, school);
-  const testing = testingComponent(golfer, school);
-  const academic = gpa.score * WEIGHTS.gpa + testing.score * WEIGHTS.testing;
+  // Score whichever academic benchmarks this school publishes, and give the
+  // missing one's weight to the one that is there.
+  const gpa = schoolGpa ? gpaComponent(golfer, school) : null;
+  const testing = schoolSat ? testingComponent(golfer, school) : null;
+  const academic =
+    gpa && testing ? gpa.score * WEIGHTS.gpa + testing.score * WEIGHTS.testing
+    : (gpa ?? testing).score;
+  const academicComponents = [
+    gpa && { key: "gpa",     label: "GPA",        ...gpa,     score: round(gpa.score, 0) },
+    testing && { key: "testing", label: "Test score", ...testing, score: round(testing.score, 0) },
+  ].filter(Boolean);
 
   // No rank on file -> Academic Fit stands alone. Symmetric to the athletic-
   // only branch above: an input we cannot fairly compare is dropped, not zeroed.
   if (!rankKnown) {
-    components.push(
-      { key: "gpa",     label: "GPA",        ...gpa,     score: round(gpa.score, 0) },
-      { key: "testing", label: "Test score", ...testing, score: round(testing.score, 0) }
-    );
+    components.push(...academicComponents);
     return {
       overall: round(academic, 0),
       athletic: null,
@@ -416,10 +427,7 @@ export function scoreSchool(golfer, school) {
   const capped = academic < ACADEMIC_GATE.below && overall > ACADEMIC_GATE.capOverall;
   if (capped) overall = ACADEMIC_GATE.capOverall;
 
-  components.push(
-    { key: "gpa",     label: "GPA",        ...gpa,     score: round(gpa.score, 0) },
-    { key: "testing", label: "Test score", ...testing, score: round(testing.score, 0) }
-  );
+  components.push(...academicComponents);
 
   return {
     overall: round(overall, 0),
@@ -442,7 +450,9 @@ export function matchesPrefs(school, prefs = {}) {
   const { divisions, regions, maxTuition, publicOnly, search } = prefs;
   if (divisions?.length && !divisions.includes(school.division)) return false;
   if (regions?.length && !regions.includes(school.region)) return false;
-  if (maxTuition && school.tuition > maxTuition) return false;
+  // Unknown tuition cannot be shown to be under the cap, so it does not pass.
+  // (Number.isFinite, not a bare <=: in JS `null <= 1` is true.)
+  if (maxTuition && !(Number.isFinite(school.tuition) && school.tuition <= maxTuition)) return false;
   if (publicOnly && school.type !== "Public") return false;
   // Text search across name + conference. Case-insensitive substring: "stan"
   // finds Stanford, "acc" finds every ACC school. Whitespace-only input is
@@ -456,17 +466,34 @@ export function matchesPrefs(school, prefs = {}) {
 }
 
 /**
+ * Does the school field a team the golfer can join? 148 NCAA golf schools have
+ * no women's team and 73 no men's; recommending one of those is not a fit, it
+ * is a dead end. `programs: null` means unknown and is let through.
+ */
+export const fieldsTeam = (school, team = "men") => school.programs?.[team] !== false;
+
+/**
  * Score a golfer against a list of schools, filtered and ranked.
  * Schools that come back unscorable (both rank and academics missing) are
  * dropped rather than sorted as null.
  * @returns {Array<{school:Object, fit:Object}>} best fit first.
  */
 export function rankSchools(golfer, schools, prefs = {}) {
+  const team = coachGenderFor(golfer);
   return schools
+    .filter((s) => fieldsTeam(s, team))
     .filter((s) => matchesPrefs(s, prefs))
     .map((school) => ({ school, fit: scoreSchool(golfer, school) }))
     .filter((row) => row.fit.overall != null)
-    .sort((a, b) => b.fit.overall - a.fit.overall);
+    .sort((a, b) =>
+      b.fit.overall - a.fit.overall ||
+      // Equal scores are common with ~900 programs (every school a golfer
+      // clears comfortably maxes out at 100). Break ties the way
+      // pickHighlight() does -- stronger division, then tougher roster -- so
+      // the top of the list is not just whatever order the data file is in.
+      (PROGRAM_STRENGTH[b.school.division] ?? 0) - (PROGRAM_STRENGTH[a.school.division] ?? 0) ||
+      a.school.avgRosterSeniorJgsRank - b.school.avgRosterSeniorJgsRank
+    );
 }
 
 /**
@@ -520,9 +547,12 @@ export function pickHighlight(ranked, band = HIGHLIGHT_BAND) {
     // Same division: the tougher roster wins. Lower avg senior-year rank means
     // the current players were higher-ranked juniors -- a real, measured fact
     // about who this program signs, not a stylistic preference.
-    return row.school.avgRosterSeniorJgsRank < leader.school.avgRosterSeniorJgsRank
-      ? row
-      : leader;
+    const byRoster = row.school.avgRosterSeniorJgsRank - leader.school.avgRosterSeniorJgsRank;
+    if (byRoster !== 0) return byRoster < 0 ? row : leader;
+
+    // Same roster rank -- common now that most rows share a conference-tier
+    // estimate. The better fit wins, rather than whichever sorts first.
+    return row.fit.overall > leader.fit.overall ? row : leader;
   }, shortlist[0]);
 }
 
