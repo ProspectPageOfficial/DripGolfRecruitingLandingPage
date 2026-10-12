@@ -4,7 +4,9 @@
  * of the way.
  */
 import { html, raw } from "../lib/dom.js";
+import { sitePreview } from "../lib/thumbs.js";
 import { colleges } from "../data/colleges.js";
+import { PUBLIC_SITE } from "../config.js";
 
 /**
  * Each step is a screenshot of this app run for "Ava Reed", a made-up golfer
@@ -82,8 +84,19 @@ export function landing() {
   return html`
     <section class="hero">
       <div class="container">
-        <span class="eyebrow">Drip Golf Recruiting</span>
-        <h1 class="serif">Your College Recruiting is <em class="accent">One Link</em> Away</h1>
+        <div class="hero-grid">
+          <div>
+            <span class="eyebrow">Drip Golf Recruiting</span>
+            <h1 class="serif">Your College Recruiting is <em class="accent">One Link</em> Away</h1>
+          </div>
+          <!-- The whole card is the link. The preview is the same live, scaled
+               frame the dashboard uses (pointer-events: none), so clicks fall
+               through to the <a> and nothing of the real site is copied here. -->
+          <a class="live-example" href="${PUBLIC_SITE.url}" target="_blank" rel="noopener noreferrer">
+            ${raw(sitePreview(PUBLIC_SITE))}
+            <span class="btn btn-lg btn-block">See a live example<span aria-hidden="true"> &#8599;</span><span class="sr-only"> (opens in a new tab)</span></span>
+          </a>
+        </div>
       </div>
     </section>
 
