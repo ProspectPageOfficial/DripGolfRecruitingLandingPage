@@ -84,13 +84,6 @@ export function landing() {
       <div class="container">
         <span class="eyebrow">Drip Golf Recruiting</span>
         <h1 class="serif">Your College Recruiting is <em class="accent">One Link</em> Away</h1>
-        <div class="hero-foot">
-          <p class="lede">One page for coaches. A fit score for every college program.</p>
-          <div class="row hero-actions">
-            <a class="btn btn-lg" href="#/signup">Build my page &rarr;</a>
-            <a class="btn btn-lg btn-ghost" href="#/login">Sign in</a>
-          </div>
-        </div>
       </div>
     </section>
 
