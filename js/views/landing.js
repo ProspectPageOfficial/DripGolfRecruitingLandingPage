@@ -1,164 +1,155 @@
 /**
  * views/landing.js — the signed-out front door.
- * Explains the two things the account unlocks, then gets out of the way.
+ * Short copy, big type, one product preview. Says what it is, shows the
+ * price, then gets out of the way.
  */
 import { html, raw } from "../lib/dom.js";
+import { dial, tierPill } from "../lib/components.js";
 import { colleges } from "../data/colleges.js";
-import { PUBLIC_SITE } from "../config.js";
 
 const FEATURES = [
-  {
-    num: "01",
-    title: "One recruiting page",
-    body:
-      `Bio, season history, tournament results and swing video, already live ` +
-      `at ${PUBLIC_SITE.host}. Send coaches one link instead of a ` +
-      `nine-attachment email.`,
-  },
-  {
-    num: "02",
-    title: "College Best Fit",
-    body:
-      "Score yourself against every program in the database on scoring average, " +
-      "national rank, GPA and test scores. Sorted into Likely, Target and Reach " +
-      "so you stop guessing.",
-  },
-  {
-    num: "03",
-    title: "Update it once",
-    body:
-      "Change your scoring average in one place. Your public page and your fit " +
-      "scores both move. No spreadsheet, no re-uploading a PDF every fortnight.",
-  },
+  { icon: "⚑", title: "One link", body: "Your whole recruiting story on one page coaches actually open." },
+  { icon: "◎", title: "Best Fit", body: "Every NCAA program scored 0–100. Likely, Target, Reach." },
+  { icon: "↻", title: "Always current", body: "Post a result once. Page and fit scores update together." },
 ];
 
 /**
- * The plans, lifted from the marketing page this app replaced.
+ * The plans. Data, not markup: adding a tier is a few lines in this array,
+ * not a copy-pasted <article> that drifts from its sibling.
  *
- * Data, not markup, for the same reason FEATURES is: adding a tier should be
- * four lines in an array, not a copy-pasted <article> that drifts out of sync
- * with its siblings the first time the button style changes.
- *
- * `cta` points at #/login because that is the only real action this app has.
- * There is no checkout yet -- when Stripe lands, this field is the one place
- * that changes, and nothing else in this file needs to know.
+ * `cta` points at #/signup because there is no checkout yet -- when Stripe
+ * lands, this field is the one place that changes.
  */
 const TIERS = [
   {
-    name: "Prospect",
-    price: "$19",
+    name: "Non-Members",
+    price: "$50",
     cadence: "/ month",
-    popular: true,
-    cta: "Get Prospect",
-    perks: [
-      "Beautiful profile page",
-      "Tournament log",
-      "Unlimited swing vault",
-      "PDF recruit resume",
-      "Custom colors & theme",
-      "Viewer analytics",
-      "Drip Golf Recruiting subdomain",
-    ],
+    upfront: "+ $299 one-time setup",
+    featured: false,
+    cta: "Get started",
   },
   {
-    name: "Pro",
-    price: "$49",
+    name: "Drip Golf Premium Members",
+    price: "$25",
     cadence: "/ month",
-    popular: false,
-    cta: "Go Pro",
-    perks: [
-      "Everything in Prospect",
-      "Your own domain",
-      "Sponsor media kit",
-      "Priority support",
-      "Featured on the Roster",
-    ],
+    was: "$50",
+    badge: "50% off monthly",
+    featured: true,
+    cta: "Claim member pricing",
   },
 ];
 
+const PERKS = [
+  "Personal recruiting page",
+  "College Best Fit scores",
+  "Tournament & stat history",
+  "Live preview for coaches",
+];
+
 const tierCard = (t) => html`
-  <article class="card tier${t.popular ? " popular" : ""}">
-    <div class="name serif">${t.name}</div>
-    <div class="price serif">${t.price}<small>${` ${t.cadence}`}</small></div>
-    <ul>
-      ${raw(t.perks.map((p) => html`<li>${p}</li>`).join(""))}
-    </ul>
-    <a class="btn btn-block ${t.popular ? "btn-cream" : "btn-ghost"}" href="#/login">${t.cta}</a>
+  <article class="plan${t.featured ? " plan-featured" : ""}">
+    ${raw(t.badge ? html`<span class="plan-badge">${t.badge}</span>` : "")}
+    <div class="plan-name">${t.name}</div>
+    <div class="plan-price serif">
+      ${raw(t.was ? html`<s>${t.was}</s>` : "")}${t.price}<small>${` ${t.cadence}`}</small>
+    </div>
+    <div class="plan-upfront">${t.upfront ?? " "}</div>
+    <ul>${raw(PERKS.map((p) => html`<li>${p}</li>`).join(""))}</ul>
+    <a class="btn btn-lg btn-block ${t.featured ? "btn-sage" : ""}" href="#/signup">${t.cta} &rarr;</a>
   </article>
+`;
+
+/** Illustrative only -- the hero's product preview, not anyone's real scores. */
+const PREVIEW = [
+  { school: "Program A", score: 86, tier: "likely" },
+  { school: "Program B", score: 67, tier: "target" },
+  { school: "Program C", score: 41, tier: "reach" },
+];
+
+const heroPreview = () => html`
+  <div class="hero-preview" aria-hidden="true">
+    <div class="hp-head">
+      <span class="eyebrow">College Best Fit</span>
+      <span class="hp-live">&bull; Live</span>
+    </div>
+    <div class="hp-top">
+      ${raw(dial(86, "likely", 120))}
+      <div>
+        <div class="hp-label">Top fit</div>
+        <div class="hp-school serif">Program A</div>
+        ${raw(tierPill("likely"))}
+      </div>
+    </div>
+    <ul class="hp-list">
+      ${raw(PREVIEW.map((p) => html`
+        <li>
+          <span>${p.school}</span>
+          <i class="hp-bar"><b class="hp-${p.tier}" style="width:${p.score}%"></b></i>
+          <strong>${p.score}</strong>
+        </li>`).join(""))}
+    </ul>
+  </div>
 `;
 
 export function landing() {
   return html`
-    <div class="container">
-      <section class="hero">
-        <span class="eyebrow">A home for the next generation of golf</span>
-        <h1 class="serif">
-          Your recruiting,<br />finally in one place.
-        </h1>
-        <p class="lede">
-          One page for a junior golfer's whole recruiting story. Keep the season
-          current, and find out which college programs actually fit &mdash;
-          backed by numbers instead of vibes.
-        </p>
+    <section class="hero">
+      <div class="container hero-split">
+      <div>
+        <span class="eyebrow">Drip Golf Recruiting</span>
+        <h1 class="serif">Get seen.<br />Get <em class="accent">recruited.</em></h1>
+        <p class="lede">One page for your game. A fit score for every college program.</p>
         <div class="hero-actions row">
-          <a class="btn" href="#/login">Sign in to edit</a>
+          <a class="btn btn-lg" href="#/signup">Build my page &rarr;</a>
+          <a class="btn btn-lg btn-ghost" href="#/login">Sign in</a>
         </div>
-      </section>
+      </div>
+      ${raw(heroPreview())}
+      </div>
+    </section>
 
-      <section class="section-tight">
-        <div class="grid grid-3">
-          ${raw(
-            FEATURES.map(
-              (f) => html`
-                <article class="card feature-card">
-                  <span class="num serif">${f.num}</span>
-                  <h3>${f.title}</h3>
-                  <p>${f.body}</p>
-                </article>
-              `
-            ).join("")
-          )}
-        </div>
-      </section>
+    <section class="band-ink">
+      <div class="container stat-strip">
+        <div><b class="serif">${colleges.length.toLocaleString()}</b><span>Programs scored</span></div>
+        <div><b class="serif">D1&ndash;D3</b><span>Full NCAA coverage</span></div>
+        <div><b class="serif">1</b><span>Link for every coach</span></div>
+        <div><b class="serif">0</b><span>Guesswork</span></div>
+      </div>
+    </section>
 
-      <section class="section-tight">
-        <div class="card">
-          <span class="eyebrow">The Fit Score</span>
-          <h2 class="serif" style="font-size:1.9rem;margin:.6rem 0 .4rem">
-            One number. The full picture.
-          </h2>
-          <p class="muted" style="max-width:62ch;font-size:.92rem">
-            Every program is scored on two dimensions &mdash; can you compete on
-            that roster, and do your grades clear the door. Both halves are shown,
-            never hidden behind a single mystery number.
-          </p>
-          <div class="grid grid-4" style="margin-top:1.4rem">
-            <div class="stat"><div class="val">${colleges.length}</div><div class="lbl">Programs scored</div></div>
-            <div class="stat"><div class="val">4</div><div class="lbl">Inputs weighted</div></div>
-            <div class="stat"><div class="val">3</div><div class="lbl">Fit tiers</div></div>
-            <div class="stat"><div class="val">D1&ndash;NAIA</div><div class="lbl">Coverage</div></div>
-          </div>
-        </div>
-      </section>
+    <section class="section">
+      <div class="container">
+      <h2 class="section-title serif">Everything you need. <em class="accent">Nothing you don&rsquo;t.</em></h2>
+      <div class="grid grid-3">
+        ${raw(FEATURES.map((f) => html`
+          <article class="feature">
+            <span class="feature-icon">${f.icon}</span>
+            <h3 class="serif">${f.title}</h3>
+            <p>${f.body}</p>
+          </article>`).join(""))}
+      </div>
+      </div>
+    </section>
 
-      <!-- Deliberately no id="pricing" and no nav link to it. Routing here is
-           hash-based, so <a href="#pricing"> would set location.hash, wake the
-           router, match no route and render "That page does not exist." An
-           anchor and a route cannot share the fragment; the router won. -->
-      <section class="section-tight">
+    <!-- Deliberately no id="pricing" and no nav link to it. Routing here is
+         hash-based, so <a href="#pricing"> would set location.hash, wake the
+         router, match no route and render "That page does not exist." -->
+    <section class="section section-cream2">
+      <div class="container">
         <div class="center">
           <span class="eyebrow">Pricing</span>
-          <h2 class="serif" style="font-size:1.9rem;margin:.6rem 0 .4rem">
-            Simple plans. <em>Fair prices.</em>
-          </h2>
-          <p class="muted" style="font-size:.92rem">
-            Choose the plan that fits your journey. Cancel anytime.
-          </p>
+          <h2 class="section-title serif">Members pay <em class="accent">half.</em></h2>
         </div>
-        <div class="grid grid-2" style="margin-top:1.8rem">
-          ${raw(TIERS.map(tierCard).join(""))}
-        </div>
-      </section>
-    </div>
+        <div class="plans">${raw(TIERS.map(tierCard).join(""))}</div>
+      </div>
+    </section>
+
+    <section class="container">
+      <div class="cta-band">
+        <h2 class="serif">Your next coach is one link away.</h2>
+        <a class="btn btn-lg btn-cream" href="#/signup">Get started &rarr;</a>
+      </div>
+    </section>
   `;
 }
