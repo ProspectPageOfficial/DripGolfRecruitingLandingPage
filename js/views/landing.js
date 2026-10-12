@@ -91,7 +91,7 @@ export function landing() {
             <a class="btn btn-lg btn-ghost" href="#/login">Sign in</a>
           </div>
         </div>
-        <p class="hero-statement serif">Your next coach is <em class="accent">one link</em> away.</p>
+        <p class="hero-statement serif">Your College Recruiting is <em class="accent">One Link</em> Away</p>
       </div>
     </section>
 
