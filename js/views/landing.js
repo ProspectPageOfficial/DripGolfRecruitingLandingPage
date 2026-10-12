@@ -6,10 +6,30 @@
 import { html, raw } from "../lib/dom.js";
 import { colleges } from "../data/colleges.js";
 
+/**
+ * Each step is shown with a real screenshot of Luke's page or his Best Fit
+ * result -- the product, not a mock-up of it. They are images, so re-shoot
+ * them when the site changes; they will not update on their own.
+ */
 const STEPS = [
-  ["Build your page", "Bio, results and swing video. One link."],
-  ["See your fit", `${colleges.length.toLocaleString()} NCAA programs, scored 0–100.`],
-  ["Send it to coaches", "Post a result once. Everything updates."],
+  {
+    title: "Build your page",
+    body: "Bio, results and swing video. One link.",
+    img: "assets/step-page.webp",
+    alt: "Luke Thomas Selzer's recruiting page: photo, scoring average, rankings and a chart of his last five events",
+  },
+  {
+    title: "See your fit",
+    body: `${colleges.length.toLocaleString()} NCAA programs, scored 0–100.`,
+    img: "assets/step-fit.webp",
+    alt: "Luke's College Best Fit result for Oklahoma State, comparing his rank, GPA and SAT with the program's averages",
+  },
+  {
+    title: "Send it to coaches",
+    body: "Post a result once. Everything updates.",
+    img: "assets/step-share.webp",
+    alt: "Luke's tournament results as a coach sees them: finishing position, rounds, total and score to par",
+  },
 ];
 
 /**
@@ -77,11 +97,12 @@ export function landing() {
     <section class="section">
       <div class="container">
         <ol class="steps">
-          ${raw(STEPS.map(([title, body], i) => html`
+          ${raw(STEPS.map((step, i) => html`
             <li>
               <span class="step-num serif">0${i + 1}</span>
-              <h3 class="serif">${title}</h3>
-              <p>${body}</p>
+              <h3 class="serif">${step.title}</h3>
+              <p>${step.body}</p>
+              <img class="step-img" src="${step.img}" alt="${step.alt}" loading="lazy" width="1200" height="750" />
             </li>`).join(""))}
         </ol>
       </div>
