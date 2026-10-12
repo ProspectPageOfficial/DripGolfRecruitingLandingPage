@@ -96,6 +96,11 @@ button, input, select, textarea { font: inherit; color: inherit; }
   border: 0;
 }
 .nav-links a.active { color: var(--ink); border-bottom-color: var(--sage); }
+/* A button inside the nav is still a button. `.nav-links a` outranks `.btn`,
+   so without these the signed-out "Sign in" pill rendered grey text on ink
+   and went ink-on-ink on hover. */
+.nav-links a.btn, .nav-links a.btn:hover { color: var(--cream); padding-bottom: 0.42rem; border-bottom: 1px solid var(--ink); }
+.nav-links a.btn-ghost, .nav-links a.btn-ghost:hover { color: var(--ink); }
 
 /* ---------------- buttons ---------------- */
 .btn {
