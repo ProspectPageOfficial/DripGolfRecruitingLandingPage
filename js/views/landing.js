@@ -89,12 +89,13 @@ export function landing() {
             <span class="eyebrow">Drip Golf Recruiting</span>
             <h1 class="serif">Your College Recruiting is <em class="accent">One Link</em> Away</h1>
           </div>
-          <!-- The whole card is the link. The preview is the same live, scaled
-               frame the dashboard uses (pointer-events: none), so clicks fall
-               through to the <a> and nothing of the real site is copied here. -->
-          <a class="live-example" href="${PUBLIC_SITE.url}" target="_blank" rel="noopener noreferrer">
+          <!-- The whole card is the link, to the example golfer's dashboard
+               (#/example signs into the demo account). The preview is the
+               same live, scaled frame the dashboard itself shows
+               (pointer-events: none), so clicks fall through to the <a>. -->
+          <a class="live-example" href="#/example">
             ${raw(sitePreview(PUBLIC_SITE))}
-            <span class="btn btn-lg btn-block">See a live example<span aria-hidden="true"> &#8599;</span><span class="sr-only"> (opens in a new tab)</span></span>
+            <span class="btn btn-lg btn-block">See a live example &rarr;</span>
           </a>
         </div>
       </div>

@@ -80,6 +80,13 @@ const ROUTES = [
   // hold is not a refactor, it is breaking someone else's bookmark.
   { path: /^\/page$/,      key: "profile",   redirect: PUBLIC_SITE.url },
   { path: /^\/dashboard$/, key: "dashboard", auth: true, render: (ctx) => dashboardView(ctx.golfer, ctx.liveOk) },
+
+  // The landing page's "See a live example" card. Signs the visitor into the
+  // demo account and lands on its dashboard -- the same thing the sign-in
+  // page's one-click demo button does, minus the form. Auth here is the
+  // browser-only mock, so this hands out nothing a visitor could not already
+  // click their way to.
+  { path: /^\/example$/,   key: "example",   demoLogin: true },
   { path: /^\/fit$/,       key: "fit",       auth: true, render: (ctx) => fitView(ctx.golfer) },
 
   // #/edit is gone: there is nothing in this app left to edit. Anyone landing
@@ -107,6 +114,13 @@ async function router() {
   // one, so pressing Back returns to the screen before #/page instead of
   // re-entering the redirect and bouncing straight back out again.
   if (route.redirect) return location.replace(route.redirect);
+
+  // `replace` for the same reason: Back from the dashboard should return to
+  // the landing page, not re-run the sign-in and bounce forward again.
+  if (route.demoLogin) {
+    if (!ctx.user) await auth.signInWithPassword({ email: DEMO_LOGIN.email, password: DEMO_LOGIN.password });
+    return location.replace("#/dashboard");
+  }
 
   if (route.mock) {
     ctx.answers = loadAnswers();
