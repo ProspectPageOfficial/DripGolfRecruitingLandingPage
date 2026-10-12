@@ -7,28 +7,29 @@ import { html, raw } from "../lib/dom.js";
 import { colleges } from "../data/colleges.js";
 
 /**
- * Each step is shown with a real screenshot of Luke's page or his Best Fit
- * result -- the product, not a mock-up of it. They are images, so re-shoot
- * them when the site changes; they will not update on their own.
+ * Each step is a screenshot of this app run for "Ava Reed", a made-up golfer
+ * entered through the sign-up demo (#/signup -> #/welcome). Never a real
+ * player: these images are public, and real juniors are minors. Re-shoot
+ * them when the UI changes; they will not update on their own.
  */
 const STEPS = [
   {
     title: "Build your page",
     body: "Bio, results and swing video. One link.",
-    img: "assets/step-page.webp",
-    alt: "Luke Thomas Selzer's recruiting page: photo, scoring average, rankings and a chart of his last five events",
+    img: "assets/example-page.webp",
+    alt: "Example recruiting page preview for a sample golfer: hometown, age, height, class year, school and GPA",
   },
   {
     title: "See your fit",
     body: `${colleges.length.toLocaleString()} NCAA programs, scored 0–100.`,
-    img: "assets/step-fit.webp",
-    alt: "Luke's College Best Fit result for Oklahoma State, comparing his rank, GPA and SAT with the program's averages",
+    img: "assets/example-fit.webp",
+    alt: "Example College Best Fit result: a score of 88, Likely, comparing the golfer's rank, GPA and SAT with the program's averages",
   },
   {
     title: "Send it to coaches",
-    body: "Post a result once. Everything updates.",
-    img: "assets/step-share.webp",
-    alt: "Luke's tournament results as a coach sees them: finishing position, rounds, total and score to par",
+    body: "Pick your targets. Send each coach one link.",
+    img: "assets/example-share.webp",
+    alt: "Example list of Likely-fit college programs, each with its fit score, conference and roster rank",
   },
 ];
 
