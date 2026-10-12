@@ -1,22 +1,40 @@
 /**
  * views/landing.js — the signed-out front door.
- * Short copy, big type, one product preview. Says what it is, shows the
- * price, then gets out of the way.
+ * Short copy, big type, and a golf scorecard instead of a dashboard
+ * screenshot. Says what it is, shows the price, then gets out of the way.
  */
 import { html, raw } from "../lib/dom.js";
-import { dial, tierPill } from "../lib/components.js";
 import { colleges } from "../data/colleges.js";
+import { tierFor } from "../lib/fit.js";
 
-const FEATURES = [
-  { icon: "⚑", title: "One link", body: "Your whole recruiting story on one page coaches actually open." },
-  { icon: "◎", title: "Best Fit", body: "Every NCAA program scored 0–100. Likely, Target, Reach." },
-  { icon: "↻", title: "Always current", body: "Post a result once. Page and fit scores update together." },
+/**
+ * Illustrative only -- the hero scorecard, not anyone's real scores.
+ * Marked the way a scorecard marks holes: circle = Likely, square = Reach.
+ */
+const CARD = [91, 84, 72, 63, 48, 37];
+
+const scorecard = () => html`
+  <div class="scorecard" aria-hidden="true">
+    <table>
+      <tr class="sc-head"><th>Program</th>${raw(CARD.map((_, i) => html`<td>${String.fromCharCode(65 + i)}</td>`).join(""))}</tr>
+      <tr><th>Fit</th>${raw(CARD.map((s) => html`<td><span class="mark mark-${tierFor(s)}">${s}</span></td>`).join(""))}</tr>
+    </table>
+    <div class="sc-legend">
+      <span><i class="mark mark-likely"></i>Likely</span>
+      <span><i class="mark mark-target"></i>Target</span>
+      <span><i class="mark mark-reach"></i>Reach</span>
+    </div>
+  </div>
+`;
+
+const STEPS = [
+  ["Build your page", "Bio, results and swing video. One link."],
+  ["See your fit", `${colleges.length.toLocaleString()} NCAA programs, scored 0–100.`],
+  ["Send it to coaches", "Post a result once. Everything updates."],
 ];
 
 /**
- * The plans. Data, not markup: adding a tier is a few lines in this array,
- * not a copy-pasted <article> that drifts from its sibling.
- *
+ * The plans. Data, not markup: adding a tier is a few lines in this array.
  * `cta` points at #/signup because there is no checkout yet -- when Stripe
  * lands, this field is the one place that changes.
  */
@@ -35,6 +53,7 @@ const TIERS = [
     cadence: "/ month",
     was: "$50",
     badge: "50% off monthly",
+    upfront: "Save $25 every month",
     featured: true,
     cta: "Claim member pricing",
   },
@@ -47,109 +66,68 @@ const PERKS = [
   "Live preview for coaches",
 ];
 
-const tierCard = (t) => html`
-  <article class="plan${t.featured ? " plan-featured" : ""}">
+const ticketHalf = (t) => html`
+  <div class="ticket-half${t.featured ? " ticket-featured" : ""}">
     ${raw(t.badge ? html`<span class="plan-badge">${t.badge}</span>` : "")}
     <div class="plan-name">${t.name}</div>
     <div class="plan-price serif">
       ${raw(t.was ? html`<s>${t.was}</s>` : "")}${t.price}<small>${` ${t.cadence}`}</small>
     </div>
-    <div class="plan-upfront">${t.upfront ?? " "}</div>
-    <ul>${raw(PERKS.map((p) => html`<li>${p}</li>`).join(""))}</ul>
-    <a class="btn btn-lg btn-block ${t.featured ? "btn-sage" : ""}" href="#/signup">${t.cta} &rarr;</a>
-  </article>
-`;
-
-/** Illustrative only -- the hero's product preview, not anyone's real scores. */
-const PREVIEW = [
-  { school: "Program A", score: 86, tier: "likely" },
-  { school: "Program B", score: 67, tier: "target" },
-  { school: "Program C", score: 41, tier: "reach" },
-];
-
-const heroPreview = () => html`
-  <div class="hero-preview" aria-hidden="true">
-    <div class="hp-head">
-      <span class="eyebrow">College Best Fit</span>
-      <span class="hp-live">&bull; Live</span>
-    </div>
-    <div class="hp-top">
-      ${raw(dial(86, "likely", 120))}
-      <div>
-        <div class="hp-label">Top fit</div>
-        <div class="hp-school serif">Program A</div>
-        ${raw(tierPill("likely"))}
-      </div>
-    </div>
-    <ul class="hp-list">
-      ${raw(PREVIEW.map((p) => html`
-        <li>
-          <span>${p.school}</span>
-          <i class="hp-bar"><b class="hp-${p.tier}" style="width:${p.score}%"></b></i>
-          <strong>${p.score}</strong>
-        </li>`).join(""))}
-    </ul>
+    <div class="plan-upfront">${t.upfront}</div>
+    <a class="btn btn-lg btn-block ${t.featured ? "btn-cream" : ""}" href="#/signup">${t.cta} &rarr;</a>
   </div>
 `;
 
 export function landing() {
   return html`
     <section class="hero">
-      <div class="container hero-split">
-      <div>
+      <div class="container">
         <span class="eyebrow">Drip Golf Recruiting</span>
-        <h1 class="serif">Get seen.<br />Get <em class="accent">recruited.</em></h1>
-        <p class="lede">One page for your game. A fit score for every college program.</p>
-        <div class="hero-actions row">
-          <a class="btn btn-lg" href="#/signup">Build my page &rarr;</a>
-          <a class="btn btn-lg btn-ghost" href="#/login">Sign in</a>
+        <h1 class="serif">Your game,<br /><em class="accent">on the record.</em></h1>
+        <div class="hero-foot">
+          <p class="lede">One page for coaches. A fit score for every college program.</p>
+          <div class="row hero-actions">
+            <a class="btn btn-lg" href="#/signup">Build my page &rarr;</a>
+            <a class="btn btn-lg btn-ghost" href="#/login">Sign in</a>
+          </div>
         </div>
-      </div>
-      ${raw(heroPreview())}
-      </div>
-    </section>
-
-    <section class="band-ink">
-      <div class="container stat-strip">
-        <div><b class="serif">${colleges.length.toLocaleString()}</b><span>Programs scored</span></div>
-        <div><b class="serif">D1&ndash;D3</b><span>Full NCAA coverage</span></div>
-        <div><b class="serif">1</b><span>Link for every coach</span></div>
-        <div><b class="serif">0</b><span>Guesswork</span></div>
+        ${raw(scorecard())}
       </div>
     </section>
 
     <section class="section">
       <div class="container">
-      <h2 class="section-title serif">Everything you need. <em class="accent">Nothing you don&rsquo;t.</em></h2>
-      <div class="grid grid-3">
-        ${raw(FEATURES.map((f) => html`
-          <article class="feature">
-            <span class="feature-icon">${f.icon}</span>
-            <h3 class="serif">${f.title}</h3>
-            <p>${f.body}</p>
-          </article>`).join(""))}
-      </div>
+        <ol class="steps">
+          ${raw(STEPS.map(([title, body], i) => html`
+            <li>
+              <span class="step-num serif">0${i + 1}</span>
+              <h3 class="serif">${title}</h3>
+              <p>${body}</p>
+            </li>`).join(""))}
+        </ol>
       </div>
     </section>
 
     <!-- Deliberately no id="pricing" and no nav link to it. Routing here is
          hash-based, so <a href="#pricing"> would set location.hash, wake the
          router, match no route and render "That page does not exist." -->
-    <section class="section section-cream2">
+    <section class="section section-green">
       <div class="container">
-        <div class="center">
-          <span class="eyebrow">Pricing</span>
-          <h2 class="section-title serif">Members pay <em class="accent">half.</em></h2>
+        <span class="eyebrow">Pricing</span>
+        <h2 class="section-title serif">Members pay <em>half.</em></h2>
+        <div class="ticket">
+          ${raw(TIERS.map(ticketHalf).join(""))}
         </div>
-        <div class="plans">${raw(TIERS.map(tierCard).join(""))}</div>
+        <ul class="ticket-perks">
+          <li class="ticket-perks-lead">Both plans include</li>
+          ${raw(PERKS.map((p) => html`<li>${p}</li>`).join(""))}
+        </ul>
       </div>
     </section>
 
-    <section class="container">
-      <div class="cta-band">
-        <h2 class="serif">Your next coach is one link away.</h2>
-        <a class="btn btn-lg btn-cream" href="#/signup">Get started &rarr;</a>
-      </div>
+    <section class="container closer">
+      <h2 class="serif">Your next coach is <em class="accent">one link</em> away.</h2>
+      <a class="btn btn-lg" href="#/signup">Get started &rarr;</a>
     </section>
   `;
 }

@@ -213,142 +213,124 @@ button, input, select, textarea { font: inherit; color: inherit; }
 }
 
 /* ---------------- landing ----------------
-   Big type, short copy, full-bleed bands. Everything still comes off the
-   brand tokens -- "pop" here is contrast and scale, not new colours. */
+   Big editorial type, a golf scorecard as the hero image, a ticket for the
+   price. "Pop" is contrast and scale off the brand tokens, not new colours. */
 .btn-lg { padding: 0.95rem 1.7rem; font-size: 0.98rem; font-weight: 600; }
 
 .accent { font-style: italic; color: var(--sage); }
 
-.hero { padding: var(--s-6) 0; }
-.hero-split {
-  display: grid;
-  grid-template-columns: 1.15fr 1fr;
-  gap: var(--s-6);
-  align-items: center;
-}
+.hero { padding: var(--s-6) 0 var(--s-5); }
 .hero h1 {
-  font-size: clamp(3rem, 8vw, 6.2rem);
+  font-size: clamp(3.2rem, 11vw, 8.5rem);
   font-weight: 600;
-  letter-spacing: -0.035em;
-  line-height: 0.95;
-  margin: var(--s-3) 0 var(--s-4);
+  letter-spacing: -0.04em;
+  line-height: 0.92;
+  margin: var(--s-4) 0 var(--s-5);
+}
+.hero-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--s-4);
+  flex-wrap: wrap;
+  padding-top: var(--s-4);
+  border-top: 2px solid var(--ink);
 }
 .hero p.lede {
   font-size: clamp(1.05rem, 1.8vw, 1.3rem);
   color: var(--ink-soft);
-  max-width: 34ch;
+  max-width: 32ch;
 }
-.hero-actions { margin-top: var(--s-5); gap: var(--s-3); }
+.hero-actions { gap: var(--s-3); }
 
-/* The product preview: a dashboard card tilted just enough to read as an
-   object rather than a screenshot pasted in a box. */
-.hero-preview {
+/* The scorecard. Golf marks a birdie with a circle and a bogey with a square;
+   Likely and Reach borrow the same shorthand. */
+.scorecard {
+  margin-top: var(--s-6);
   background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  padding: var(--s-4);
+  border: 2px solid var(--sage-deep);
+  border-radius: var(--radius);
+  overflow: hidden;
   box-shadow: var(--shadow-lg);
-  transform: rotate(1.5deg);
-  transition: transform 0.3s ease;
 }
-.hero-preview:hover { transform: rotate(0deg) translateY(-4px); }
-.hp-head { display: flex; justify-content: space-between; align-items: center; }
-.hp-live { font-size: 0.72rem; font-weight: 600; color: var(--sage); }
-.hp-top { display: flex; align-items: center; gap: var(--s-4); margin: var(--s-4) 0; }
-.hp-label {
-  font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
-}
-.hp-school { font-size: 1.7rem; margin: 2px 0 var(--s-2); }
-.hp-list { list-style: none; border-top: 1px solid var(--line); padding-top: var(--s-3); }
-.hp-list li {
-  display: grid;
-  grid-template-columns: 6.5rem 1fr 2rem;
-  align-items: center;
-  gap: var(--s-3);
-  padding: var(--s-1) 0;
-  font-size: 0.85rem;
-}
-.hp-list strong { text-align: right; font-family: var(--font-display); font-size: 1.05rem; }
-.hp-bar { height: 8px; border-radius: 999px; background: var(--cream-2); overflow: hidden; }
-.hp-bar b { display: block; height: 100%; border-radius: inherit; }
-.hp-likely { background: var(--tier-likely); }
-.hp-target { background: var(--tier-target); }
-.hp-reach  { background: var(--tier-reach); }
-
-/* Full-bleed ink band. */
-.band-ink { background: var(--ink); color: var(--cream); }
-.stat-strip {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--s-4);
-  padding-top: var(--s-5);
-  padding-bottom: var(--s-5);
+.scorecard table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.scorecard th, .scorecard td {
   text-align: center;
+  padding: var(--s-3) var(--s-1);
+  border-right: 1px solid var(--line);
 }
-.stat-strip b { display: block; font-size: clamp(2rem, 4.5vw, 3.2rem); font-weight: 600; line-height: 1; }
-.stat-strip span {
-  display: block;
-  margin-top: var(--s-2);
-  font-size: 0.7rem;
+.scorecard th {
+  width: 7.5rem;
+  font-size: 0.68rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: color-mix(in srgb, var(--cream) 65%, transparent);
+  text-align: left;
+  padding-left: var(--s-4);
 }
+.scorecard tr > :last-child { border-right: none; }
+.scorecard .sc-head { background: var(--sage-deep); color: var(--cream); }
+.scorecard .sc-head td { font-family: var(--font-display); font-size: 1.1rem; border-color: color-mix(in srgb, var(--cream) 20%, transparent); }
+.scorecard td { font-family: var(--font-display); font-size: clamp(1.1rem, 2.6vw, 1.8rem); font-weight: 600; }
+.mark {
+  display: inline-grid;
+  place-items: center;
+  min-width: 2.2em;
+  height: 2.2em;
+  font-style: normal;
+}
+.mark-likely { border: 2px solid var(--tier-likely); border-radius: 50%; color: var(--sage-deep); }
+.mark-target { color: var(--tier-target); }
+.mark-reach  { border: 2px solid var(--tier-reach); border-radius: 4px; color: var(--tier-reach); }
+.sc-legend {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--s-4);
+  padding: var(--s-2) var(--s-4);
+  border-top: 1px solid var(--line);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.sc-legend span { display: inline-flex; align-items: center; gap: var(--s-1); }
+.sc-legend .mark { min-width: 0.9rem; width: 0.9rem; height: 0.9rem; }
+.sc-legend .mark-target { background: var(--tier-target); border-radius: 50%; width: 0.45rem; min-width: 0.45rem; height: 0.45rem; }
+
+/* How it works: numbered rows, ruled like a yardage book. */
+.steps { list-style: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-5); }
+.steps li { border-top: 2px solid var(--ink); padding-top: var(--s-3); }
+.step-num { display: block; font-size: clamp(3rem, 6vw, 4.5rem); font-weight: 600; color: var(--sage); line-height: 1; }
+.steps h3 { font-size: 1.7rem; margin: var(--s-3) 0 var(--s-1); }
+.steps p { color: var(--ink-soft); }
 
 .section-title {
-  font-size: clamp(2.1rem, 4.6vw, 3.4rem);
+  font-size: clamp(2.4rem, 6vw, 4.2rem);
   font-weight: 600;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.035em;
   margin: var(--s-2) 0 var(--s-5);
 }
-.section-cream2 { background: var(--cream-2); }
 
-.feature {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  padding: var(--s-5) var(--s-4);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-.feature:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
-.feature-icon {
-  display: grid;
-  place-items: center;
-  width: 52px; height: 52px;
-  border-radius: 14px;
-  background: var(--sage);
-  color: var(--cream);
-  font-size: 1.4rem;
-  margin-bottom: var(--s-4);
-}
-.feature h3 { font-size: 1.7rem; margin-bottom: var(--s-2); }
-.feature p { color: var(--ink-soft); font-size: 0.98rem; }
+/* ---------------- pricing: one ticket, two halves ---------------- */
+.section-green { background: var(--sage-deep); color: var(--cream); }
+.section-green .eyebrow { color: var(--cream); }
+.section-green .section-title em { color: var(--cream-2); }
 
-/* ---------------- pricing plans ---------------- */
-.plans {
+.ticket {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: var(--s-4);
-  max-width: 860px;
-  margin: 0 auto;
-}
-.plan {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  background: var(--card);
-  border: 1px solid var(--line);
+  grid-template-columns: 1fr 1fr;
+  background: var(--cream);
+  color: var(--ink);
   border-radius: var(--radius-lg);
-  padding: var(--s-5) var(--s-4) var(--s-4);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: var(--shadow-lg);
 }
-.plan:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
-.plan-featured { background: var(--ink); color: var(--cream); border-color: var(--ink); }
+.ticket-half { position: relative; padding: var(--s-5) var(--s-5) var(--s-4); display: flex; flex-direction: column; }
+.ticket-half + .ticket-half { border-left: 2px dashed var(--line); }
+.ticket-featured { background: var(--ink); color: var(--cream); border-radius: 0 var(--radius-lg) var(--radius-lg) 0; }
+.ticket-featured + .ticket-half, .ticket-half + .ticket-featured { border-left-color: var(--ink); }
 .plan-badge {
   position: absolute;
   top: -14px;
-  left: 50%;
-  transform: translateX(-50%);
+  right: var(--s-5);
   background: var(--rust);
   color: var(--cream);
   border-radius: 999px;
@@ -361,44 +343,53 @@ button, input, select, textarea { font: inherit; color: inherit; }
 }
 .plan-name { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
 .plan-price {
-  font-size: clamp(3.4rem, 7vw, 4.6rem);
+  font-size: clamp(3.6rem, 8vw, 5.4rem);
   font-weight: 600;
   line-height: 1;
-  margin: var(--s-3) 0 var(--s-1);
+  margin: var(--s-3) 0 var(--s-2);
 }
 .plan-price s {
-  font-size: 0.45em;
+  font-size: 0.4em;
   font-weight: 400;
   margin-right: var(--s-2);
-  vertical-align: 0.6em;
+  vertical-align: 0.8em;
   color: color-mix(in srgb, currentColor 50%, transparent);
 }
 .plan-price small { font-family: var(--font-body); font-size: 1rem; font-weight: 400; color: var(--muted); }
-.plan-upfront { font-size: 0.95rem; font-weight: 600; color: var(--rust); min-height: 1.5em; }
-.plan ul { list-style: none; margin: var(--s-4) 0; flex-grow: 1; }
-.plan li { display: flex; gap: var(--s-2); padding: var(--s-1) 0; font-size: 0.92rem; color: var(--ink-soft); }
-.plan li::before { content: "\2713"; font-weight: 700; color: var(--sage); }
-.plan-featured .plan-price small,
-.plan-featured li { color: color-mix(in srgb, var(--cream) 75%, transparent); }
+.ticket-featured .plan-price small { color: color-mix(in srgb, var(--cream) 70%, transparent); }
+.plan-upfront { font-size: 1rem; font-weight: 600; color: var(--rust); margin-bottom: var(--s-5); flex-grow: 1; }
+.ticket-featured .plan-upfront { color: var(--tier-likely-bg); }
 
-.cta-band {
-  margin-top: var(--s-6);
-  background: var(--sage-deep);
-  color: var(--cream);
-  border-radius: var(--radius-lg);
-  padding: var(--s-6) var(--s-5);
+.ticket-perks {
+  list-style: none;
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-4);
+  margin-top: var(--s-4);
+  font-size: 0.92rem;
+}
+.ticket-perks li::before { content: "\2713  "; white-space: pre; font-weight: 700; }
+.ticket-perks .ticket-perks-lead { font-weight: 600; }
+.ticket-perks .ticket-perks-lead::before { content: none; }
+
+.closer {
+  display: flex;
+  align-items: flex-end;
   justify-content: space-between;
   gap: var(--s-4);
   flex-wrap: wrap;
+  padding-top: var(--s-6);
 }
-.cta-band h2 { font-size: clamp(1.9rem, 4vw, 2.8rem); font-weight: 600; max-width: 18ch; }
+.closer h2 { font-size: clamp(2.2rem, 5.5vw, 4rem); font-weight: 600; letter-spacing: -0.03em; max-width: 16ch; }
 
-@media (max-width: 860px) {
-  .hero-split { grid-template-columns: 1fr; gap: var(--s-5); }
-  .hero-preview { transform: none; }
-  .stat-strip { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 760px) {
+  .steps { grid-template-columns: 1fr; gap: var(--s-4); }
+  .ticket { grid-template-columns: 1fr; }
+  .ticket-half + .ticket-half { border-left: none; }
+  .ticket-featured { border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
+  .scorecard th { width: 4.2rem; padding-left: var(--s-2); font-size: 0.58rem; letter-spacing: 0.06em; }
+  .scorecard th, .scorecard td { padding: var(--s-2) 2px; }
+  .sc-legend { justify-content: center; }
 }
 
 /* ---------------- stat tiles ---------------- */
