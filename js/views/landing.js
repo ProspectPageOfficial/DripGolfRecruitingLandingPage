@@ -83,7 +83,7 @@ export function landing() {
     <section class="hero">
       <div class="container">
         <span class="eyebrow">Drip Golf Recruiting</span>
-        <h1 class="serif">Your game,<br /><em class="accent">on the record.</em></h1>
+        <h1 class="serif">Your College Recruiting is <em class="accent">One Link</em> Away</h1>
         <div class="hero-foot">
           <p class="lede">One page for coaches. A fit score for every college program.</p>
           <div class="row hero-actions">
@@ -91,7 +91,6 @@ export function landing() {
             <a class="btn btn-lg btn-ghost" href="#/login">Sign in</a>
           </div>
         </div>
-        <p class="hero-statement serif">Your College Recruiting is <em class="accent">One Link</em> Away</p>
       </div>
     </section>
 

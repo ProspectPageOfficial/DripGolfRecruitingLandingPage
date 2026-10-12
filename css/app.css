@@ -220,10 +220,11 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 .hero { padding: var(--s-6) 0 var(--s-5); }
 .hero h1 {
-  font-size: clamp(3.2rem, 11vw, 8.5rem);
+  font-size: clamp(2.8rem, 8vw, 6.6rem);
   font-weight: 600;
   letter-spacing: -0.04em;
-  line-height: 0.92;
+  line-height: 0.95;
+  max-width: 14ch;
   margin: var(--s-4) 0 var(--s-5);
 }
 .hero-foot {
@@ -241,15 +242,6 @@ button, input, select, textarea { font: inherit; color: inherit; }
   max-width: 32ch;
 }
 .hero-actions { gap: var(--s-3); }
-
-/* The one-line pitch that closes the hero. */
-.hero-statement {
-  margin-top: var(--s-6);
-  font-size: clamp(2.2rem, 6vw, 4.6rem);
-  font-weight: 600;
-  letter-spacing: -0.035em;
-  max-width: 18ch;
-}
 
 /* How it works: numbered rows, ruled like a yardage book. */
 .steps { list-style: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-5); }
