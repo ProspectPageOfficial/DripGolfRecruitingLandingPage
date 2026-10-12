@@ -213,8 +213,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 }
 
 /* ---------------- landing ----------------
-   Big editorial type, a golf scorecard as the hero image, a ticket for the
-   price. "Pop" is contrast and scale off the brand tokens, not new colours. */
+   Big editorial type and a ticket for the price. "Pop" is contrast and scale off the brand tokens, not new colours. */
 .btn-lg { padding: 0.95rem 1.7rem; font-size: 0.98rem; font-weight: 600; }
 
 .accent { font-style: italic; color: var(--sage); }
@@ -243,58 +242,14 @@ button, input, select, textarea { font: inherit; color: inherit; }
 }
 .hero-actions { gap: var(--s-3); }
 
-/* The scorecard. Golf marks a birdie with a circle and a bogey with a square;
-   Likely and Reach borrow the same shorthand. */
-.scorecard {
+/* The one-line pitch that closes the hero. */
+.hero-statement {
   margin-top: var(--s-6);
-  background: var(--card);
-  border: 2px solid var(--sage-deep);
-  border-radius: var(--radius);
-  overflow: hidden;
-  box-shadow: var(--shadow-lg);
+  font-size: clamp(2.2rem, 6vw, 4.6rem);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  max-width: 18ch;
 }
-.scorecard table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-.scorecard th, .scorecard td {
-  text-align: center;
-  padding: var(--s-3) var(--s-1);
-  border-right: 1px solid var(--line);
-}
-.scorecard th {
-  width: 7.5rem;
-  font-size: 0.68rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  text-align: left;
-  padding-left: var(--s-4);
-}
-.scorecard tr > :last-child { border-right: none; }
-.scorecard .sc-head { background: var(--sage-deep); color: var(--cream); }
-.scorecard .sc-head td { font-family: var(--font-display); font-size: 1.1rem; border-color: color-mix(in srgb, var(--cream) 20%, transparent); }
-.scorecard td { font-family: var(--font-display); font-size: clamp(1.1rem, 2.6vw, 1.8rem); font-weight: 600; }
-.mark {
-  display: inline-grid;
-  place-items: center;
-  min-width: 2.2em;
-  height: 2.2em;
-  font-style: normal;
-}
-.mark-likely { border: 2px solid var(--tier-likely); border-radius: 50%; color: var(--sage-deep); }
-.mark-target { color: var(--tier-target); }
-.mark-reach  { border: 2px solid var(--tier-reach); border-radius: 4px; color: var(--tier-reach); }
-.sc-legend {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--s-4);
-  padding: var(--s-2) var(--s-4);
-  border-top: 1px solid var(--line);
-  font-size: 0.72rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-.sc-legend span { display: inline-flex; align-items: center; gap: var(--s-1); }
-.sc-legend .mark { min-width: 0.9rem; width: 0.9rem; height: 0.9rem; }
-.sc-legend .mark-target { background: var(--tier-target); border-radius: 50%; width: 0.45rem; min-width: 0.45rem; height: 0.45rem; }
 
 /* How it works: numbered rows, ruled like a yardage book. */
 .steps { list-style: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--s-5); }
@@ -372,24 +327,11 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .ticket-perks .ticket-perks-lead { font-weight: 600; }
 .ticket-perks .ticket-perks-lead::before { content: none; }
 
-.closer {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--s-4);
-  flex-wrap: wrap;
-  padding-top: var(--s-6);
-}
-.closer h2 { font-size: clamp(2.2rem, 5.5vw, 4rem); font-weight: 600; letter-spacing: -0.03em; max-width: 16ch; }
-
 @media (max-width: 760px) {
   .steps { grid-template-columns: 1fr; gap: var(--s-4); }
   .ticket { grid-template-columns: 1fr; }
   .ticket-half + .ticket-half { border-left: none; }
   .ticket-featured { border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
-  .scorecard th { width: 4.2rem; padding-left: var(--s-2); font-size: 0.58rem; letter-spacing: 0.06em; }
-  .scorecard th, .scorecard td { padding: var(--s-2) 2px; }
-  .sc-legend { justify-content: center; }
 }
 
 /* ---------------- stat tiles ---------------- */

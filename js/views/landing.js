@@ -1,31 +1,10 @@
 /**
  * views/landing.js — the signed-out front door.
- * Short copy, big type, and a golf scorecard instead of a dashboard
- * screenshot. Says what it is, shows the price, then gets out of the way.
+ * Short copy, big type. Says what it is, shows the price, then gets out
+ * of the way.
  */
 import { html, raw } from "../lib/dom.js";
 import { colleges } from "../data/colleges.js";
-import { tierFor } from "../lib/fit.js";
-
-/**
- * Illustrative only -- the hero scorecard, not anyone's real scores.
- * Marked the way a scorecard marks holes: circle = Likely, square = Reach.
- */
-const CARD = [91, 84, 72, 63, 48, 37];
-
-const scorecard = () => html`
-  <div class="scorecard" aria-hidden="true">
-    <table>
-      <tr class="sc-head"><th>Program</th>${raw(CARD.map((_, i) => html`<td>${String.fromCharCode(65 + i)}</td>`).join(""))}</tr>
-      <tr><th>Fit</th>${raw(CARD.map((s) => html`<td><span class="mark mark-${tierFor(s)}">${s}</span></td>`).join(""))}</tr>
-    </table>
-    <div class="sc-legend">
-      <span><i class="mark mark-likely"></i>Likely</span>
-      <span><i class="mark mark-target"></i>Target</span>
-      <span><i class="mark mark-reach"></i>Reach</span>
-    </div>
-  </div>
-`;
 
 const STEPS = [
   ["Build your page", "Bio, results and swing video. One link."],
@@ -91,7 +70,7 @@ export function landing() {
             <a class="btn btn-lg btn-ghost" href="#/login">Sign in</a>
           </div>
         </div>
-        ${raw(scorecard())}
+        <p class="hero-statement serif">Your next coach is <em class="accent">one link</em> away.</p>
       </div>
     </section>
 
@@ -123,11 +102,6 @@ export function landing() {
           ${raw(PERKS.map((p) => html`<li>${p}</li>`).join(""))}
         </ul>
       </div>
-    </section>
-
-    <section class="container closer">
-      <h2 class="serif">Your next coach is <em class="accent">one link</em> away.</h2>
-      <a class="btn btn-lg" href="#/signup">Get started &rarr;</a>
     </section>
   `;
 }
