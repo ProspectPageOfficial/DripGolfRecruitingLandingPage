@@ -86,7 +86,6 @@ export function landing() {
       <div class="container">
         <div class="hero-grid">
           <div>
-            <span class="eyebrow">Drip Golf Recruiting</span>
             <h1 class="serif">Your College Recruiting is <em class="accent">One Link</em> Away</h1>
           </div>
           <!-- The whole card is the link, to the example golfer's dashboard
@@ -120,7 +119,6 @@ export function landing() {
          router, match no route and render "That page does not exist." -->
     <section class="section section-green">
       <div class="container">
-        <span class="eyebrow">Pricing</span>
         <h2 class="section-title serif">Members pay <em>half.</em></h2>
         <div class="ticket">
           ${raw(TIERS.map(ticketHalf).join(""))}
