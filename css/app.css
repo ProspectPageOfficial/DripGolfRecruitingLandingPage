@@ -330,6 +330,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .plan-price small { font-family: var(--font-body); font-size: 1rem; font-weight: 400; color: var(--muted); }
 .ticket-featured .plan-price small { color: color-mix(in srgb, var(--cream) 70%, transparent); }
 .plan-upfront { font-size: 1rem; font-weight: 600; color: var(--rust); margin-bottom: var(--s-5); flex-grow: 1; }
+.plan-upfront span { display: block; }
 .ticket-featured .plan-upfront { color: var(--tier-likely-bg); }
 
 .ticket-perks {

@@ -55,7 +55,7 @@ const TIERS = [
     cadence: "/ month",
     was: "$50",
     badge: "50% off monthly",
-    upfront: "Save $25 every month",
+    upfront: ["$299 setup fee waived with Drip Premium membership", "Save $25 every month"],
     featured: true,
     cta: "Claim member pricing",
   },
@@ -75,7 +75,7 @@ const ticketHalf = (t) => html`
     <div class="plan-price serif">
       ${raw(t.was ? html`<s>${t.was}</s>` : "")}${t.price}<small>${` ${t.cadence}`}</small>
     </div>
-    <div class="plan-upfront">${t.upfront}</div>
+    <div class="plan-upfront">${raw([].concat(t.upfront).map((line) => html`<span>${line}</span>`).join(""))}</div>
     <a class="btn btn-lg btn-block ${t.featured ? "btn-cream" : ""}" href="#/signup">${t.cta} &rarr;</a>
   </div>
 `;
