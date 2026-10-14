@@ -9,6 +9,7 @@
  * the site publishes and the one recomputed from the results it also publishes.
  * If those ever diverge, every fit score is built on the disagreement.
  */
+import { parseStandings, parseProfile, matchPlayers, splitName } from "../js/data/dripgolf.js";
 import { hasAcademics, graduationYear, scoreSchool } from "../js/lib/fit.js";
 import { rollingScoringAvg, RANKING_WINDOW_EVENTS } from "../js/lib/trend.js";
 import {
@@ -355,6 +356,62 @@ export const dataCases = [
       for (const d of ["D1", "D2", "D3", "NAIA"]) {
         assert.ok(colleges.some((c) => c.division === d), `no ${d} programs`);
       }
+    },
+  },
+
+  // ---- Drip Golf Tour lookup (made-up players in the tour's real markup) ----
+  {
+    name: "Drip Golf standings rows parse into players",
+    run: (assert) => {
+      const row = (rank, id, name, town, year, avg) => `
+        <tr class=" Calc3Class1"><td>${rank}</td>
+          <td class="standingsmvmt"><span class="rankmvmt">--</span></td>
+          <td class="standingsplayer"><a href="/Public/PlayerProfile?PlayerID=${id}&amp;TourSeasonID=1178">${name}</a></td>
+          <td class="standingshometown">${town}</td>
+          <td class="standingsgradyear">${year}</td>
+          <td class="CalculatedField1">90.00</td><td class="CalculatedField6">0.00</td>
+          <td class="CalculatedField7">${avg}</td><td class="EventsPlayed">2</td></tr>`;
+      const page = `<table><tr><th>Rank</th><th>Player</th></tr>
+        ${row("1", "101", "Sam Carter", "Austin, TX", "2029", "71.25")}
+        ${row("T2", "102", "Jos&#233; Ruiz Jr.", "Cary, NC", "2031", "74.50")}
+        ${row("T2", "103", "Mary Kate Lane", "Durham, NC", "2028", "")}</table>`;
+      const ps = parseStandings(page, "High School Boys");
+      assert.equal(ps.length, 3);
+      assert.deepEqual(
+        { ...ps[0] },
+        { id: "101", name: "Sam Carter", firstName: "Sam", lastName: "Carter", division: "High School Boys",
+          rank: "1", hometown: "Austin, TX", classYear: "2029", points: 90, scoringAvg: 71.25, events: 2 });
+      assert.equal(ps[1].name, "José Ruiz Jr.");
+      assert.deepEqual(splitName(ps[1].name), ["José", "Ruiz Jr."]);
+      assert.deepEqual(splitName(ps[2].name), ["Mary Kate", "Lane"]);
+      assert.equal(ps[2].scoringAvg, undefined, "a blank cell is missing, not zero");
+    },
+  },
+  {
+    name: "Drip Golf name lookup matches on either box, ignoring case and accents",
+    run: (assert) => {
+      const ps = [
+        { id: "1", firstName: "José", lastName: "Ruiz" },
+        { id: "2", firstName: "Joseph", lastName: "Ray" },
+        { id: "3", firstName: "Sam", lastName: "Rudd" },
+      ];
+      const ids = (f, l) => matchPlayers(ps, f, l).map((p) => p.id).join(",");
+      assert.equal(ids("JOSE", "ru"), "1", "accent and case folded");
+      assert.equal(ids("jos", ""), "1,2");
+      assert.equal(ids("", "ru"), "1,3");
+      assert.equal(ids("j", "ra"), "2");
+      assert.equal(ids("", ""), "", "nothing typed, nothing suggested");
+    },
+  },
+  {
+    name: "Drip Golf profile yields age and JGS rank",
+    run: (assert) => {
+      const page = `<div class="agetext playerprof">Age: 15</div>
+        <div class="profileJGSRank">Overall JGS Rank: 1929</div>
+        <div class="profileTUGRRank profiletugrrank">TUGR Rank: 658</div>`;
+      assert.deepEqual(parseProfile(page), { age: 15, jgsRank: 1929, tugrRank: 658 });
+      assert.deepEqual(parseProfile("<p>redesigned</p>"),
+        { age: undefined, jgsRank: undefined, tugrRank: undefined });
     },
   },
 ];

@@ -16,6 +16,7 @@
  */
 import { html, raw, formData, initials } from "../lib/dom.js";
 import { normalizeLive } from "../data/live.js";
+import { loadRoster, loadProfile, matchPlayers } from "../data/dripgolf.js";
 
 export const MOCK_KEY = "dg.demo.signup";
 
@@ -39,9 +40,12 @@ const STEPS = [
   {
     key: "about",
     title: "About the player",
-    blurb: "The basics a coach sees first.",
+    blurb: "The basics a coach sees first. Play on the Drip Golf Tour? Start typing your name and pick yourself to fill in what the tour already has.",
     fields: [
-      { name: "name", label: "Full name", required: true, wide: true, placeholder: "Luke Thomas Selzer" },
+      { name: "firstName", label: "First name", required: true,
+        placeholder: "Ava", autocomplete: "given-name" },
+      { name: "lastName", label: "Last name", required: true,
+        placeholder: "Reed", autocomplete: "family-name" },
       { name: "hometown", label: "Hometown", placeholder: "Charlotte, NC" },
       { name: "age", label: "Age", type: "number", placeholder: "13" },
       { name: "height", label: "Height", placeholder: "5'4\"" },
@@ -143,6 +147,7 @@ function field(f) {
       <label for="${id}">${f.label}${raw(f.required ? ' <span aria-hidden="true">*</span>' : "")}</label>
       ${raw(control)}
       ${f.hint ? raw(html`<span class="field-hint">${f.hint}</span>`) : ""}
+      ${f.name === "firstName" ? raw(html`<ul class="drip-suggest" id="su-drip" role="listbox" hidden></ul>`) : ""}
     </div>`;
 }
 
@@ -166,6 +171,7 @@ export function signupView() {
               <legend class="serif survey-title">${s.title}</legend>
               <p class="muted survey-blurb">${s.blurb}</p>
               <div class="survey-grid">${each(s.fields, field)}</div>
+              ${s.key === "about" ? raw(html`<p class="drip-filled" id="su-drip-note" aria-live="polite" hidden></p>`) : ""}
             </fieldset>`)}
 
           <div class="row row-between">
@@ -305,6 +311,7 @@ export function bindSignup(root, { onDone }) {
   };
 
   back.addEventListener("click", () => show(Math.max(0, at - 1)));
+  bindLookup(form);
 
   form.addEventListener("submit", (e) => {
     e.preventDefault();
@@ -317,10 +324,123 @@ export function bindSignup(root, { onDone }) {
     if (at < steps.length - 1) return show(at + 1);
 
     const answers = formData(form);
+    answers.name = [answers.firstName, answers.lastName].map((s) => s.trim()).filter(Boolean).join(" ");
     delete answers.password; // never leaves the form, not even into the preview
     sessionStorage.setItem(MOCK_KEY, JSON.stringify(answers));
     onDone();
   });
 
   show(0);
+}
+
+// ---------------------------------------------------------------------------
+// Drip Golf lookup: type a name, pick yourself, the survey fills in
+// ---------------------------------------------------------------------------
+
+/** Set a control's value; a <select> without that option gets one added. */
+function put(form, name, value) {
+  const el = form.elements[name];
+  if (!el || value == null || value === "") return false;
+  if (el.tagName === "SELECT" && ![...el.options].some((o) => o.value === String(value))) {
+    el.add(new Option(String(value), String(value)));
+  }
+  el.value = String(value);
+  return true;
+}
+
+/**
+ * The suggestion list under First name. It searches both name boxes, so
+ * "Ph" + "Bu" narrows to Phoenix Button. Picking a player overwrites what the
+ * tour knows -- the golfer asked for it by picking -- and everything stays
+ * editable afterwards. If the lookup is down the list never appears.
+ */
+function bindLookup(form) {
+  const list = form.querySelector("#su-drip");
+  const note = form.querySelector("#su-drip-note");
+  const first = form.elements.firstName;
+  const last = form.elements.lastName;
+  if (!list || !first || !last) return;
+  loadRoster(); // warm it up while they fill in step 1
+  let matches = [];
+  let active = -1;
+  let picked = null;
+
+  const paint = () => {
+    list.innerHTML = matches.map((p, i) => html`
+      <li role="option" id="su-drip-${i}" data-i="${i}" aria-selected="${String(i === active)}">
+        <b>${p.name}</b>
+        <span>${[p.hometown, p.classYear && `Class of ${p.classYear}`, p.division].filter(Boolean).join(" · ")}</span>
+      </li>`).join("");
+    list.hidden = !matches.length;
+    for (const el of [first, last]) {
+      el.setAttribute("aria-expanded", String(!!matches.length));
+      el.setAttribute("aria-activedescendant", active >= 0 ? `su-drip-${active}` : "");
+    }
+  };
+
+  const close = () => {
+    matches = [];
+    active = -1;
+    paint();
+  };
+
+  const search = async () => {
+    const roster = await loadRoster();
+    matches = matchPlayers(roster, first.value, last.value);
+    // Already picked and still spelled the same: nothing more to suggest.
+    if (picked && matches.length === 1 && matches[0].id === picked) matches = [];
+    active = -1;
+    paint();
+  };
+
+  const pick = async (p) => {
+    picked = p.id;
+    close();
+    put(form, "firstName", p.firstName);
+    put(form, "lastName", p.lastName);
+    const filled = ["name"];
+    if (put(form, "hometown", p.hometown)) filled.push("hometown");
+    if (put(form, "classYear", p.classYear && `Class of ${p.classYear}`)) filled.push("class year");
+    put(form, "gender", "men"); // every division searched is a boys' division
+    if (put(form, "scoringAvg", p.scoringAvg)) filled.push("scoring average");
+    note.hidden = false;
+    note.textContent = `Found ${p.name} on the Drip Golf Tour. Looking up the rest...`;
+
+    const prof = await loadProfile(p.id);
+    if (picked !== p.id) return; // picked someone else while this was loading
+    if (put(form, "age", prof.age)) filled.push("age");
+    if (put(form, "nationalRank", prof.jgsRank)) filled.push("JGS rank");
+    note.textContent = `Filled from the Drip Golf Tour: ${filled.join(", ")}. Check each step and change anything that is off.`;
+  };
+
+  for (const el of [first, last]) {
+    el.setAttribute("role", "combobox");
+    el.setAttribute("aria-controls", "su-drip");
+    el.setAttribute("aria-autocomplete", "list");
+    el.setAttribute("aria-expanded", "false");
+    el.addEventListener("input", search);
+    el.addEventListener("blur", () => setTimeout(close, 150));
+    el.addEventListener("keydown", (e) => {
+      if (list.hidden) return;
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        const step = e.key === "ArrowDown" ? 1 : -1;
+        active = (active + step + matches.length) % matches.length;
+        paint();
+      } else if (e.key === "Enter" && active >= 0) {
+        e.preventDefault(); // pick, do not submit the step
+        pick(matches[active]);
+      } else if (e.key === "Escape") {
+        close();
+      }
+    });
+  }
+
+  // mousedown, not click: it lands before the input's blur hides the list.
+  list.addEventListener("mousedown", (e) => {
+    const li = e.target.closest("li[data-i]");
+    if (!li) return;
+    e.preventDefault();
+    pick(matches[Number(li.dataset.i)]);
+  });
 }

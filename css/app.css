@@ -885,3 +885,35 @@ table.data tbody tr:hover { background: var(--cream-2); }
   font-size: 0.7rem; letter-spacing: 0.09em; text-transform: uppercase;
   font-weight: 600; color: var(--muted);
 }
+
+/* Drip Golf lookup: the suggestion list hangs under First name. */
+.field:has(> .drip-suggest) { position: relative; }
+.drip-suggest {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 20;
+  width: max(100%, 280px);
+  max-width: calc(100vw - 32px);
+  margin: 4px 0 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+}
+.drip-suggest[hidden] { display: none; }
+.drip-suggest li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.drip-suggest li span { font-size: 0.76rem; color: var(--muted); }
+.drip-suggest li:hover,
+.drip-suggest li[aria-selected="true"] { background: var(--cream); }
+.drip-filled { font-size: 0.82rem; color: var(--sage); margin: 0; }
+.drip-filled[hidden] { display: none; }
