@@ -363,7 +363,8 @@ function bindLookup(form) {
   loadRoster(); // warm it up while they fill in step 1
   let matches = [];
   let active = -1;
-  let picked = null;
+  let picked = null; // cleared by any edit to the name
+  let latest = null;  // the last pick; only a new pick supersedes its profile lookup
 
   const paint = () => {
     list.innerHTML = matches.map((p, i) => html`
@@ -386,15 +387,17 @@ function bindLookup(form) {
 
   const search = async () => {
     const roster = await loadRoster();
-    matches = matchPlayers(roster, first.value, last.value);
-    // Already picked and still spelled the same: nothing more to suggest.
-    if (picked && matches.length === 1 && matches[0].id === picked) matches = [];
+    // Just picked and the boxes still say exactly that: nothing more to suggest.
+    // Any edit -- a backspace included -- reopens the search.
+    const unchanged = picked && first.value === picked.firstName && last.value === picked.lastName;
+    if (!unchanged) picked = null;
+    matches = unchanged ? [] : matchPlayers(roster, first.value, last.value);
     active = -1;
     paint();
   };
 
   const pick = async (p) => {
-    picked = p.id;
+    picked = latest = p;
     close();
     put(form, "firstName", p.firstName);
     put(form, "lastName", p.lastName);
@@ -407,7 +410,7 @@ function bindLookup(form) {
     note.textContent = `Found ${p.name} on the Drip Golf Tour. Looking up the rest...`;
 
     const prof = await loadProfile(p.id);
-    if (picked !== p.id) return; // picked someone else while this was loading
+    if (latest !== p) return; // picked someone else while this was loading
     if (put(form, "age", prof.age)) filled.push("age");
     if (put(form, "nationalRank", prof.jgsRank)) filled.push("JGS rank");
     note.textContent = `Filled from the Drip Golf Tour: ${filled.join(", ")}. Check each step and change anything that is off.`;
