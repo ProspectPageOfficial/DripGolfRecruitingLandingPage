@@ -363,8 +363,7 @@ function bindLookup(form) {
   loadRoster(); // warm it up while they fill in step 1
   let matches = [];
   let active = -1;
-  let picked = null; // cleared by any edit to the name
-  let latest = null;  // the last pick; only a new pick supersedes its profile lookup
+  let picked = null;
 
   const paint = () => {
     list.innerHTML = matches.map((p, i) => html`
@@ -387,17 +386,17 @@ function bindLookup(form) {
 
   const search = async () => {
     const roster = await loadRoster();
-    // Just picked and the boxes still say exactly that: nothing more to suggest.
-    // Any edit -- a backspace included -- reopens the search.
-    const unchanged = picked && first.value === picked.firstName && last.value === picked.lastName;
-    if (!unchanged) picked = null;
-    matches = unchanged ? [] : matchPlayers(roster, first.value, last.value);
+    // A box still holding the picked player's name does not narrow the search.
+    // Otherwise, after picking Fenton Scott, backspacing "Fenton" only ever
+    // finds Scotts -- the golfer is starting over, so search what they type.
+    const typed = (el, key) => (picked && el.value === picked[key] ? "" : el.value);
+    matches = matchPlayers(roster, typed(first, "firstName"), typed(last, "lastName"));
     active = -1;
     paint();
   };
 
   const pick = async (p) => {
-    picked = latest = p;
+    picked = p;
     close();
     put(form, "firstName", p.firstName);
     put(form, "lastName", p.lastName);
@@ -410,7 +409,7 @@ function bindLookup(form) {
     note.textContent = `Found ${p.name} on the Drip Golf Tour. Looking up the rest...`;
 
     const prof = await loadProfile(p.id);
-    if (latest !== p) return; // picked someone else while this was loading
+    if (picked !== p) return; // picked someone else while this was loading
     if (put(form, "age", prof.age)) filled.push("age");
     if (put(form, "nationalRank", prof.jgsRank)) filled.push("JGS rank");
     note.textContent = `Filled from the Drip Golf Tour: ${filled.join(", ")}. Check each step and change anything that is off.`;
