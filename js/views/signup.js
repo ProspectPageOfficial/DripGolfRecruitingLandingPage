@@ -16,7 +16,7 @@
  */
 import { html, raw, formData, initials } from "../lib/dom.js";
 import { normalizeLive } from "../data/live.js";
-import { loadRoster, loadProfile, matchPlayers } from "../data/dripgolf.js";
+import { loadRoster, loadProfile, matchPlayers, isGirlsDivision } from "../data/dripgolf.js";
 
 export const MOCK_KEY = "dg.demo.signup";
 
@@ -369,7 +369,7 @@ function bindLookup(form) {
     list.innerHTML = matches.map((p, i) => html`
       <li role="option" id="su-drip-${i}" data-i="${i}" aria-selected="${String(i === active)}">
         <b>${p.name}</b>
-        <span>${[p.hometown, p.classYear && `Class of ${p.classYear}`, p.division].filter(Boolean).join(" · ")}</span>
+        <span>${[p.hometown, p.classYear && `Class of ${p.classYear}`, p.season ? `${p.division}, ${p.season}` : p.division].filter(Boolean).join(" · ")}</span>
       </li>`).join("");
     list.hidden = !matches.length;
     for (const el of [first, last]) {
@@ -403,7 +403,7 @@ function bindLookup(form) {
     const filled = ["name"];
     if (put(form, "hometown", p.hometown)) filled.push("hometown");
     if (put(form, "classYear", p.classYear && `Class of ${p.classYear}`)) filled.push("class year");
-    put(form, "gender", "men"); // every division searched is a boys' division
+    put(form, "gender", isGirlsDivision(p.division) ? "women" : "men");
     if (put(form, "scoringAvg", p.scoringAvg)) filled.push("scoring average");
     note.hidden = false;
     note.textContent = `Found ${p.name} on the Drip Golf Tour. Looking up the rest...`;

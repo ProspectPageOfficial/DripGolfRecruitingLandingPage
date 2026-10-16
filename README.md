@@ -184,6 +184,8 @@ js/
   data/
     colleges.js         program database: 27 hand-set rows + the generated list
     colleges-ncaa.js    GENERATED - every NCAA D1-D3 golf program (tools/gen-colleges.mjs)
+    dripgolf.js         sign-up name lookup against the Drip Golf Tour standings
+    dripgolf-history.js GENERATED - every past tour season's golfers (tools/gen-dripgolf-history.mjs)
     golfer.js           the golfer, assembled from the site. No writes.
     live.js             reads lukethomasselzer.com/api/personal
     luke-season.js      GENERATED - Luke's 29 real tournaments
@@ -297,6 +299,17 @@ The CSV is the "Most Recent Cohorts - Institution" download from
 <https://collegescorecard.ed.gov/data/>. NAIA programs are not in the NCAA
 directory and naia.org blocks scripted downloads, so only the four hand-set
 NAIA rows are included for now.
+
+The sign-up name lookup searches every Drip Golf Tour season. The current
+season is fetched live by `/api/drip-golf`; past seasons are a snapshot,
+regenerated with:
+
+```
+node tools/gen-dripgolf-history.mjs
+```
+
+When a season ends, add it to `PAST_SEASONS` in that script, bump `SEASON_ID`
+in `js/data/dripgolf.js`, and re-run it.
 
 Placeholder junk on the live site (`"Test Coach Name"`, instagram `"TEST"`,
 `"High School for really cool students"`) was deliberately **not** imported.

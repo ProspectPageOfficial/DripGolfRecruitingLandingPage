@@ -9,7 +9,10 @@
  * the site publishes and the one recomputed from the results it also publishes.
  * If those ever diverge, every fit score is built on the disagreement.
  */
-import { parseStandings, parseProfile, matchPlayers, splitName } from "../js/data/dripgolf.js";
+import {
+  parseStandings, parseProfile, matchPlayers, splitName, mergeRosters, isGirlsDivision, PLAYER_ID,
+} from "../js/data/dripgolf.js";
+import { DRIP_HISTORY } from "../js/data/dripgolf-history.js";
 import { hasAcademics, graduationYear, scoreSchool } from "../js/lib/fit.js";
 import { rollingScoringAvg, RANKING_WINDOW_EVENTS } from "../js/lib/trend.js";
 import {
@@ -401,6 +404,35 @@ export const dataCases = [
       assert.equal(ids("", "ru"), "1,3");
       assert.equal(ids("j", "ra"), "2");
       assert.equal(ids("", ""), "", "nothing typed, nothing suggested");
+    },
+  },
+  {
+    name: "Drip Golf roster: this season's row wins, past seasons fill in the rest",
+    run: (assert) => {
+      const current = [{ id: "1", hometown: "Cary, NC" }, { id: "2", hometown: "Apex, NC" }];
+      const past = [{ id: "2", hometown: "Durham, NC", season: "2023" }, { id: "3", season: "2021-2022" }];
+      const merged = mergeRosters(current, past);
+      assert.deepEqual(merged.map((p) => p.id), ["1", "2", "3"]);
+      assert.equal(merged[1].hometown, "Apex, NC", "a golfer still playing keeps this season's row");
+      assert.deepEqual(mergeRosters([], past).map((p) => p.id), ["2", "3"], "live half down, history still matches");
+    },
+  },
+  {
+    name: "Drip Golf girls' division picks the women's team",
+    run: (assert) => {
+      assert.equal(isGirlsDivision("Female Elite"), true);
+      assert.equal(isGirlsDivision("HS Fresh/Soph (Boys)"), false);
+      assert.equal(isGirlsDivision(undefined), false);
+    },
+  },
+  {
+    name: "Drip Golf history snapshot is well-formed",
+    run: (assert) => {
+      assert.ok(DRIP_HISTORY.length > 1000, "snapshot looks truncated");
+      assert.equal(new Set(DRIP_HISTORY.map((p) => p.id)).size, DRIP_HISTORY.length, "one row per golfer");
+      for (const p of DRIP_HISTORY) {
+        assert.ok(PLAYER_ID.test(p.id) && p.firstName && p.season, `bad row ${JSON.stringify(p)}`);
+      }
     },
   },
   {

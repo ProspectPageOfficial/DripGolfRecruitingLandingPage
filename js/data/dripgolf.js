@@ -19,15 +19,19 @@
  * survey simply works as it did before -- type the name, fill the fields. A
  * lookup that fails quietly costs a few keystrokes; one that throws costs a
  * sign-up.
+ *
+ * Past seasons are not fetched at all: they never change, so
+ * tools/gen-dripgolf-history.mjs snapshots them into data/dripgolf-history.js
+ * and loadRoster() merges that with the live current season.
  */
 
 const TOUR_ORIGIN = "https://www.dripgolftour.com";
 const SEASON_ID = 1178; // 2026-27
 
 /**
- * The standings pages searched. High School Boys is the page the lookup was
- * specced against; the two younger boys' divisions sit beside it on the same
- * season, so a middle-schooler signing up is found too.
+ * The current season's standings pages, fetched live. High School Boys is the
+ * page the lookup was specced against; the two younger boys' divisions sit
+ * beside it on the same season, so a middle-schooler signing up is found too.
  */
 export const DRIP_DIVISIONS = Object.freeze([
   { id: 4074, name: "High School Boys" },
@@ -35,9 +39,11 @@ export const DRIP_DIVISIONS = Object.freeze([
   { id: 354, name: "Future Stars Boys" },
 ]);
 
-export const standingsUrl = (divisionId) =>
-  `${TOUR_ORIGIN}/Public/Standings?TourID=17&TourSeasonID=${SEASON_ID}&DivisionID=${divisionId}&TourRankingSystemID=0`;
+export const standingsUrl = (divisionId, seasonId = SEASON_ID) =>
+  `${TOUR_ORIGIN}/Public/Standings?TourID=17&TourSeasonID=${seasonId}&DivisionID=${divisionId}&TourRankingSystemID=0`;
 
+// Age and JGS rank on a profile are the player's, whatever season the URL
+// names, so a golfer found only in a past season looks up the same way.
 export const profileUrl = (playerId) =>
   `${TOUR_ORIGIN}/Public/PlayerProfile?PlayerID=${playerId}&TourSeasonID=${SEASON_ID}`;
 
@@ -119,13 +125,36 @@ export function matchPlayers(players, first, last, limit = 6) {
     .slice(0, limit);
 }
 
-/** Lazy, once per page load: every player across DRIP_DIVISIONS, or [] if the lookup is down. */
+/**
+ * One row per golfer: everyone this season, then anyone from a past season not
+ * already listed. A golfer who still plays keeps this season's row -- their
+ * hometown and scoring average from now, not from 2021.
+ */
+export function mergeRosters(current, past) {
+  const seen = new Set(current.map((p) => p.id));
+  return [...current, ...past.filter((p) => !seen.has(p.id))];
+}
+
+/** A girls' division ("Female Elite"); every other division on the tour is boys'. */
+export const isGirlsDivision = (division) => /female|girls|women/i.test(division || "");
+
+/**
+ * Lazy, once per page load: this season (live, via /api/drip-golf) plus every
+ * past season (the generated snapshot). Either half can fail on its own --
+ * under `python serve.py` there is no /api, and past seasons still match.
+ * The snapshot is a dynamic import so the landing page never downloads it.
+ */
 let roster;
 export function loadRoster() {
-  roster ??= fetch("/api/drip-golf")
-    .then((r) => (r.ok ? r.json() : { players: [] }))
-    .then((d) => (Array.isArray(d.players) ? d.players : []))
-    .catch(() => []);
+  roster ??= Promise.all([
+    fetch("/api/drip-golf")
+      .then((r) => (r.ok ? r.json() : { players: [] }))
+      .then((d) => (Array.isArray(d.players) ? d.players : []))
+      .catch(() => []),
+    import("./dripgolf-history.js")
+      .then((m) => m.DRIP_HISTORY)
+      .catch(() => []),
+  ]).then(([current, past]) => mergeRosters(current, past));
   return roster;
 }
 
