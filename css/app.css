@@ -923,5 +923,32 @@ table.data tbody tr:hover { background: var(--cream-2); }
 .drip-suggest li span { font-size: 0.76rem; color: var(--muted); }
 .drip-suggest li:hover,
 .drip-suggest li[aria-selected="true"] { background: var(--cream); }
-.drip-filled { font-size: 0.82rem; color: var(--sage); margin: 0; }
+/* The confirmation under step 2: a quiet sage panel with a check once the
+   lookup finishes, a pulsing dot while the profile is still loading. */
+.drip-filled {
+  display: flex;
+  gap: var(--s-2);
+  align-items: baseline;
+  font-size: 0.82rem;
+  color: var(--sage-deep);
+  margin: 0;
+  padding: var(--s-2) var(--s-3);
+  background: color-mix(in srgb, var(--sage) 12%, transparent);
+  border-radius: var(--radius-sm);
+  animation: drip-in 0.25s ease-out;
+}
+.drip-filled::before { content: "\2713"; font-weight: 700; color: var(--sage); }
+.drip-filled.is-loading::before { content: "\2022"; animation: drip-pulse 1s ease-in-out infinite; }
 .drip-filled[hidden] { display: none; }
+/* Each box the tour filled in glows sage for a moment, then settles. */
+.field .drip-autofilled { animation: drip-glow 1.6s ease-out; }
+@keyframes drip-glow {
+  0%, 30% {
+    border-color: var(--sage);
+    background-color: color-mix(in srgb, var(--sage) 16%, transparent);
+  }
+}
+@keyframes drip-in { from { opacity: 0; transform: translateY(-3px); } }
+@keyframes drip-pulse { 50% { opacity: 0.25; } }
+/* Under the step blurb: the lookup is a shortcut, not a gate. */
+.survey-note { margin: 0; }

@@ -41,6 +41,7 @@ const STEPS = [
     key: "about",
     title: "About the player",
     blurb: "The basics a coach sees first. Play on the Drip Golf Tour? Start typing your name and pick yourself to fill in what the tour already has.",
+    note: "Not in Drip Golf's database? That's OK. Fill these in yourself and create your account as normal.",
     fields: [
       { name: "firstName", label: "First name", required: true,
         placeholder: "Ava", autocomplete: "given-name" },
@@ -170,6 +171,7 @@ export function signupView() {
             <fieldset class="survey-step stack-sm" data-step="${i}" ${raw(i ? "hidden" : "")}>
               <legend class="serif survey-title">${s.title}</legend>
               <p class="muted survey-blurb">${s.blurb}</p>
+              ${s.note ? raw(html`<p class="field-hint survey-note">${s.note}</p>`) : ""}
               <div class="survey-grid">${each(s.fields, field)}</div>
               ${s.key === "about" ? raw(html`<p class="drip-filled" id="su-drip-note" aria-live="polite" hidden></p>`) : ""}
             </fieldset>`)}
@@ -337,7 +339,12 @@ export function bindSignup(root, { onDone }) {
 // Drip Golf lookup: type a name, pick yourself, the survey fills in
 // ---------------------------------------------------------------------------
 
-/** Set a control's value; a <select> without that option gets one added. */
+/**
+ * Set a control's value; a <select> without that option gets one added. The
+ * control flashes sage so the golfer sees what the tour filled in. A control
+ * on a later step flashes when that step is shown: animations do not run on
+ * hidden elements.
+ */
 function put(form, name, value) {
   const el = form.elements[name];
   if (!el || value == null || value === "") return false;
@@ -345,6 +352,10 @@ function put(form, name, value) {
     el.add(new Option(String(value), String(value)));
   }
   el.value = String(value);
+  el.classList.remove("drip-autofilled");
+  void el.offsetWidth; // restart the flash when a second pick refills the same box
+  el.classList.add("drip-autofilled");
+  el.addEventListener("animationend", () => el.classList.remove("drip-autofilled"), { once: true });
   return true;
 }
 
@@ -406,13 +417,15 @@ function bindLookup(form) {
     put(form, "gender", isGirlsDivision(p.division) ? "women" : "men");
     if (put(form, "scoringAvg", p.scoringAvg)) filled.push("scoring average");
     note.hidden = false;
-    note.textContent = `Found ${p.name} on the Drip Golf Tour. Looking up the rest...`;
+    note.classList.add("is-loading");
+    note.textContent = `Found ${p.name} on the Drip Golf Tour. Looking up age and JGS rank...`;
 
     const prof = await loadProfile(p.id);
     if (picked !== p) return; // picked someone else while this was loading
     if (put(form, "age", prof.age)) filled.push("age");
     if (put(form, "nationalRank", prof.jgsRank)) filled.push("JGS rank");
-    note.textContent = `Filled from the Drip Golf Tour: ${filled.join(", ")}. Check each step and change anything that is off.`;
+    note.classList.remove("is-loading");
+    note.textContent = `Found you, ${p.firstName}! Filled from the Drip Golf Tour: ${filled.join(", ")}. Check each step and change anything that is off.`;
   };
 
   for (const el of [first, last]) {
