@@ -101,6 +101,13 @@ button, input, select, textarea { font: inherit; color: inherit; }
    and went ink-on-ink on hover. */
 .nav-links a.btn, .nav-links a.btn:hover { color: var(--cream); padding-bottom: 0.42rem; border-bottom: 1px solid var(--ink); }
 .nav-links a.btn-ghost, .nav-links a.btn-ghost:hover { color: var(--ink); }
+/* Phone width: "Sign in" + "Create account" plus the wordmark don't fit on one
+   row, and the buttons wrap onto a second line. The logo image already reads
+   "Drip Golf", so the text beside it is the thing to drop. */
+@media (max-width: 480px) {
+  .nav-brand span { display: none; }
+  .nav-links { gap: var(--s-2); }
+}
 
 /* ---------------- buttons ---------------- */
 .btn {

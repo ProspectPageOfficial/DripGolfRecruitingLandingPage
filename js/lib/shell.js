@@ -9,8 +9,8 @@ import { html, raw, initials, isExternal, extLink } from "./dom.js";
 import { PUBLIC_SITE } from "../config.js";
 
 export function nav(user, golfer, active, mock = false) {
-  // Signed-out visitors get no nav links — the "Sign in" button below is the
-  // only affordance they need. Anything else (like a "The Page" tab) is noise
+  // Signed-out visitors get no nav links — the "Sign in" and "Create account"
+  // buttons below are the only affordances they need. Anything else (like a "The Page" tab) is noise
   // for someone who hasn't opted in yet, and duplicating "Sign In" here would
   // just repeat the button rendered a few lines down.
   // The sign-up demo's mock dashboard gets the signed-in tabs, pointed at its
@@ -63,7 +63,8 @@ export function nav(user, golfer, active, mock = false) {
               ? html`<button class="btn btn-sm btn-ghost" data-action="signout">
                     Sign out (${initials(golfer?.name ?? user.email)})
                   </button>`
-              : html`<a class="btn btn-sm" href="#/login">Sign in</a>`
+              : html`<a class="btn btn-sm" href="#/login">Sign in</a>
+                  <a class="btn btn-sm btn-ghost" href="#/signup">Create account</a>`
           )}
         </div>
       </nav>
