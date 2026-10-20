@@ -76,9 +76,12 @@ export const footer = () => html`
   <div class="container">
     <div class="footer row row-between">
       <span>Drip Golf Recruiting &mdash; recruiting page demo.</span>
-      <a href="#/data" style="text-decoration:underline">
-        Roster ranks are estimates &mdash; see sources
-      </a>
+      <span class="row">
+        <a href="#/faq" style="text-decoration:underline">FAQ</a>
+        <a href="#/data" style="text-decoration:underline">
+          Roster ranks are estimates &mdash; see sources
+        </a>
+      </span>
     </div>
   </div>
 `;

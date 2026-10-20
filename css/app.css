@@ -952,3 +952,32 @@ table.data tbody tr:hover { background: var(--cream-2); }
 @keyframes drip-pulse { 50% { opacity: 0.25; } }
 /* Under the step blurb: the lookup is a shortcut, not a gate. */
 .survey-note { margin: 0; }
+
+/* ---------------- FAQ ----------------
+   Native <details>, so it opens with the keyboard and works with JS off. */
+.faq { max-width: 760px; }
+.faq-title { font-size: clamp(1.9rem, 4vw, 2.8rem); margin: var(--s-2) 0; }
+.faq-lede { font-size: 0.95rem; max-width: 62ch; margin-bottom: var(--s-5); }
+.faq-group { margin-bottom: var(--s-5); }
+.faq-group h2 { font-size: 1.35rem; margin-bottom: var(--s-2); }
+.faq-item { border-top: 1px solid var(--line); }
+.faq-item:last-child { border-bottom: 1px solid var(--line); }
+.faq-item summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding: var(--s-3) 0;
+  font-weight: 600;
+}
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-item summary::after { content: "+"; color: var(--sage); font-size: 1.2rem; line-height: 1; }
+.faq-item[open] summary::after { content: "\2212"; }
+.faq-answer { padding-bottom: var(--s-3); color: var(--ink-soft); font-size: 0.92rem; }
+.faq-answer p + p, .faq-answer p + ul, .faq-answer ul + p { margin-top: var(--s-2); }
+.faq-answer ul { padding-left: 1.2rem; display: grid; gap: var(--s-1); margin-top: var(--s-2); }
+.faq-answer a { text-decoration: underline; }
+.faq-cta { display: flex; flex-direction: column; gap: var(--s-2); }
+.landing-faq { margin-top: var(--s-4); text-align: center; font-size: 0.9rem; }
+.landing-faq a { color: var(--cream); font-weight: 600; text-decoration: underline; }

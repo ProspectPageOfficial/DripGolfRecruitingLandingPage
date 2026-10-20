@@ -16,6 +16,7 @@ import { landing } from "../js/views/landing.js";
 import { authView } from "../js/views/auth.js";
 import { signupView, mockGolfer, mockPagePanel, mockBanner } from "../js/views/signup.js";
 import { provenanceView } from "../js/views/provenance.js";
+import { faqView } from "../js/views/faq.js";
 import { buildGolfer } from "../js/data/golfer.js";
 import { rankSchools, pickHighlight } from "../js/lib/fit.js";
 import { colleges } from "../js/data/colleges.js";
@@ -39,6 +40,13 @@ export const viewCases = [
   {
     name: "landing view renders",
     run: (assert) => rendersFine(assert, "landing", () => landing()),
+  },
+  {
+    name: "FAQ view renders and is linked from the landing page",
+    run: (assert) => {
+      rendersFine(assert, "faqView", () => faqView());
+      assert.ok(landing().includes('href="#/faq"'), "landing page has no FAQ link");
+    },
   },
   {
     name: "auth view renders",
