@@ -17,6 +17,7 @@
 import { html, raw, formData, initials } from "../lib/dom.js";
 import { normalizeLive } from "../data/live.js";
 import { loadRoster, loadProfile, matchPlayers, isGirlsDivision } from "../data/dripgolf.js";
+import { domainStep, bindDomainStep, checkoutStep, bindCheckoutStep, setupTracker } from "./domain.js";
 
 export const MOCK_KEY = "dg.demo.signup";
 
@@ -109,6 +110,21 @@ const STEPS = [
       { name: "website", label: "Website", type: "url", wide: true, placeholder: "https://" },
     ],
   },
+  // Custom steps render their own markup (views/domain.js) instead of a field grid.
+  {
+    key: "domain",
+    title: "Choose your web address",
+    blurb: "Your own .com that opens your recruiting page. It is included with your plan.",
+    fields: [],
+    custom: domainStep,
+  },
+  {
+    key: "checkout",
+    title: "Review & pay",
+    blurb: "Pick your plan. Your domain is only bought once payment goes through.",
+    fields: [],
+    custom: checkoutStep,
+  },
 ];
 
 const PAGE_ROWS = [
@@ -172,7 +188,7 @@ export function signupView() {
               <legend class="serif survey-title">${s.title}</legend>
               <p class="muted survey-blurb">${s.blurb}</p>
               ${s.note ? raw(html`<p class="field-hint survey-note">${s.note}</p>`) : ""}
-              <div class="survey-grid">${each(s.fields, field)}</div>
+              ${s.custom ? raw(s.custom()) : raw(html`<div class="survey-grid">${each(s.fields, field)}</div>`)}
               ${s.key === "about" ? raw(html`<p class="drip-filled" id="su-drip-note" aria-live="polite" hidden></p>`) : ""}
             </fieldset>`)}
 
@@ -270,9 +286,11 @@ export const mockBanner = (a) => html`
   <div class="banner-demo row row-between">
     <span>
       <b>Demo preview.</b> This dashboard is built from ${a.name}'s survey
-      answers. No account was created and nothing left this browser tab.
+      answers. No account was created, nothing was charged and nothing left
+      this browser tab.
     </span>
   </div>
+  ${raw(a.domain ? setupTracker(a) : "")}
 `;
 
 export function bindSignup(root, { onDone }) {
@@ -286,11 +304,22 @@ export function bindSignup(root, { onDone }) {
   const msg = root.querySelector("#su-msg");
   let at = 0;
 
+  // Custom steps, keyed by STEPS[].key: onShow() refreshes them, problem()
+  // adds a check the generic required/email/number rules cannot express.
+  const domain = bindDomainStep(form);
+  const checkout = bindCheckoutStep(form);
+  const custom = { domain, checkout };
+  const isLast = () => at === steps.length - 1;
+  const nextLabel = () => (isLast() ? checkout.payLabel() : "Next");
+  form.querySelectorAll("input[name='plan']").forEach((r) =>
+    r.addEventListener("change", () => (next.textContent = nextLabel())));
+
   const show = (i) => {
     at = i;
     steps.forEach((s, j) => (s.hidden = j !== i));
     back.style.visibility = i ? "visible" : "hidden";
-    next.textContent = i === steps.length - 1 ? "Create account" : "Next";
+    custom[STEPS[i].key]?.onShow();
+    next.textContent = nextLabel();
     bar.style.width = `${((i + 1) / steps.length) * 100}%`;
     count.textContent = `Step ${i + 1} of ${steps.length}`;
     msg.innerHTML = "";
@@ -309,6 +338,8 @@ export function bindSignup(root, { onDone }) {
       if (el.type === "number" && el.validity.badInput)
         return { el, text: `${label} must be a number.` };
     }
+    const text = custom[STEPS[at].key]?.problem?.();
+    if (text) return { el: steps[at].querySelector("input"), text };
     return null;
   };
 

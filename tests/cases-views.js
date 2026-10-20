@@ -17,6 +17,7 @@ import { authView } from "../js/views/auth.js";
 import { signupView, mockGolfer, mockPagePanel, mockBanner } from "../js/views/signup.js";
 import { provenanceView } from "../js/views/provenance.js";
 import { faqView } from "../js/views/faq.js";
+import { normalizeDomain, isTaken, suggestDomains, freeSlug, setupTracker } from "../js/views/domain.js";
 import { buildGolfer } from "../js/data/golfer.js";
 import { rankSchools, pickHighlight } from "../js/lib/fit.js";
 import { colleges } from "../js/data/colleges.js";
@@ -93,6 +94,37 @@ export const viewCases = [
       assert.ok(out.includes('href="#/welcome/fit"'), "Best Fit link should stay in the mock");
       assert.ok(!out.includes("<iframe"), "mock must not frame Luke's live site");
       assert.ok(!out.includes("<b>fast</b>"), "bio must be escaped");
+    },
+  },
+  {
+    name: "sign-up survey asks for a web address and a plan",
+    run: (assert) => {
+      const out = signupView();
+      assert.ok(out.includes('name="domain"'), "web address step missing");
+      assert.ok(out.includes('name="plan"'), "plan choice missing");
+      assert.ok(!/card.?number|cvc/i.test(out), "the demo checkout must never ask for a card");
+    },
+  },
+  {
+    name: "web address helpers normalise, suggest only free names, and slug the free address",
+    run: (assert) => {
+      assert.equal(normalizeDomain("  https://www.AvaReed.com/page "), "avareed.com");
+      assert.equal(normalizeDomain("avareed"), "avareed.com");
+      assert.equal(freeSlug("Mary-Kate", "O'Neil"), "marykate-oneil");
+      const picks = suggestDomains("Ava", "Reed", "Class of 2029");
+      assert.ok(picks.length > 0, "no suggestions");
+      assert.ok(picks.every((d) => !isTaken(d)), "suggested a taken domain");
+      assert.ok(isTaken("johnsmith.com"), "common names should demo as taken");
+    },
+  },
+  {
+    name: "setup tracker prints the domain but never links it",
+    run: (assert) => {
+      const out = setupTracker({ firstName: "Ava", lastName: "Reed", domain: "avareedgolf.com", plan: "member" });
+      assert.ok(out.includes("avareedgolf.com") && out.includes("dripgolfrecruiting.com/ava-reed"));
+      assert.ok(!out.includes('href="http'), "a demo domain may belong to someone else; do not link it");
+      const owned = setupTracker({ firstName: "Ava", lastName: "Reed", domain: "avareed.com", ownDomain: "on" });
+      assert.ok(owned.includes("is-waiting") && !owned.includes("Domain bought"), "owned domains are connected, not bought");
     },
   },
   {

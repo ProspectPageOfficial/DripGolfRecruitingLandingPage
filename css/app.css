@@ -985,3 +985,78 @@ table.data tbody tr:hover { background: var(--cream-2); }
 .faq-cta { display: flex; flex-direction: column; gap: var(--s-2); }
 .landing-faq { margin-top: var(--s-4); text-align: center; font-size: 0.9rem; }
 .landing-faq a { color: var(--cream); font-weight: 600; text-decoration: underline; }
+
+/* ---------------- sign-up demo: web address + checkout ---------------- */
+.dom-status { font-size: 0.8rem; margin-top: var(--s-1); min-height: 1.2em; color: var(--muted); }
+.dom-status.is-ok  { color: var(--sage-deep); }
+.dom-status.is-ok::before  { content: "\2713  "; }
+.dom-status.is-bad { color: var(--rust); }
+.dom-status.is-loading { font-style: italic; }
+.dom-suggest { list-style: none; padding: 0; margin: var(--s-1) 0 0; display: flex; flex-wrap: wrap; gap: var(--s-1); }
+.dom-chip {
+  display: inline-flex; align-items: baseline; gap: var(--s-1);
+  border: 1px solid var(--line); background: var(--card); color: var(--ink);
+  border-radius: 999px; padding: 0.35rem 0.75rem; font: inherit; font-size: 0.82rem; cursor: pointer;
+}
+.dom-chip:hover { border-color: var(--sage); }
+.dom-chip small { color: var(--sage); font-size: 0.7rem; }
+.dom-own { display: flex; gap: var(--s-1); align-items: center; font-size: 0.84rem; }
+.dom-free {
+  font-size: 0.82rem; color: var(--ink-soft); background: var(--cream-2);
+  border-radius: var(--radius-sm); padding: var(--s-2) var(--s-3); overflow-wrap: anywhere;
+}
+
+.dom-plans { display: grid; gap: var(--s-2); }
+.dom-plan {
+  display: flex; gap: var(--s-2); align-items: flex-start; cursor: pointer;
+  border: 1px solid var(--line); border-radius: var(--radius-sm); padding: var(--s-2) var(--s-3);
+}
+.dom-plan:has(input:checked) { border-color: var(--sage); background: var(--tier-likely-bg); }
+.dom-plan input { margin-top: 0.25rem; }
+.dom-plan small { display: block; color: var(--ink-soft); font-size: 0.78rem; }
+.dom-receipt { border: 1px dashed var(--line); border-radius: var(--radius-sm); padding: var(--s-3); font-size: 0.85rem; }
+.dom-receipt dl { margin: 0; display: grid; gap: var(--s-1); }
+.dom-receipt dl div { display: flex; justify-content: space-between; gap: var(--s-3); }
+.dom-receipt dd { margin: 0; white-space: nowrap; }
+.dom-receipt s { color: var(--muted); }
+.dom-total {
+  display: flex; justify-content: space-between; margin-top: var(--s-2); padding-top: var(--s-2);
+  border-top: 1px solid var(--line); font-size: 1rem;
+}
+
+/* The tracker. Each row starts "Working..." and ticks to "Done" after its own
+   --d delay, so the webhook chain plays out with no JS timers. Rows marked
+   .is-waiting (connecting a domain the family already owns) never tick. */
+.dom-track { margin-bottom: var(--s-3); display: grid; gap: var(--s-3); }
+.dom-track-domain { font-size: 0.95rem; overflow-wrap: anywhere; }
+.dom-steps { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--s-2); }
+.dom-steps li { display: grid; grid-template-columns: auto 1fr auto; gap: var(--s-2); align-items: start; }
+.dom-dot {
+  width: 0.9rem; height: 0.9rem; margin-top: 0.15rem; border-radius: 50%;
+  border: 2px solid var(--line); background: transparent;
+}
+.dom-step-text { display: grid; color: var(--muted); }
+.dom-step-text b { font-size: 0.88rem; font-weight: 600; }
+.dom-step-text small { font-size: 0.76rem; overflow-wrap: anywhere; }
+.dom-step-state { display: grid; font-size: 0.72rem; text-align: right; }
+.dom-step-state > span { grid-area: 1 / 1; }
+.when-pending { color: var(--muted); font-style: italic; }
+.when-done { color: var(--sage-deep); font-weight: 600; opacity: 0; }
+
+.dom-steps li:not(.is-waiting) .dom-dot       { animation: dom-dot 0.3s var(--d) forwards; }
+.dom-steps li:not(.is-waiting) .dom-step-text { animation: dom-ink 0.3s var(--d) forwards; }
+.dom-steps li:not(.is-waiting) .when-done     { animation: dom-show 0.3s var(--d) forwards; }
+.dom-steps li:not(.is-waiting) .when-pending  { animation: dom-hide 0.3s var(--d) forwards; }
+@keyframes dom-dot  { to { background: var(--sage); border-color: var(--sage); } }
+@keyframes dom-ink  { to { color: var(--ink); } }
+@keyframes dom-show { to { opacity: 1; } }
+@keyframes dom-hide { to { opacity: 0; } }
+
+/* Reduced motion switches every animation off, which would leave the tracker
+   stuck on "Working..." forever. Show the finished state instead. */
+@media (prefers-reduced-motion: reduce) {
+  .dom-steps li:not(.is-waiting) .dom-dot { background: var(--sage); border-color: var(--sage); }
+  .dom-steps li:not(.is-waiting) .dom-step-text { color: var(--ink); }
+  .dom-steps li:not(.is-waiting) .when-done { opacity: 1; }
+  .dom-steps li:not(.is-waiting) .when-pending { opacity: 0; }
+}
