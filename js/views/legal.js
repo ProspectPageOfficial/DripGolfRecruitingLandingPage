@@ -20,18 +20,19 @@
 import { html, raw } from "../lib/dom.js";
 
 export const LEGAL = Object.freeze({
-  company: "[Company legal name, e.g. Drip Golf Recruiting LLC]",
+  company: "Drip Golf Recruiting",
   brand: "Drip Golf Recruiting",
-  email: "[privacy / support email]",
-  state: "[State]",
-  effective: "[Effective date]",
+  email: "support@dripgolfrecruiting.com",
+  // Placeholder until the business is registered; governs the Terms.
+  state: "the state in which Drip Golf Recruiting is organized",
+  effective: "October 21, 2026",
 });
 
 const draftNote = () => html`
-  <div class="alert alert-error legal-draft">
-    <b>Draft for legal review.</b> Bracketed items still need real details,
-    and this text should be checked by a lawyer before it is relied on.
-  </div>
+  <p class="field-hint legal-draft">
+    Placeholder terms while the service is in development. They will be
+    finalised before paid accounts open.
+  </p>
 `;
 
 const page = (eyebrow, title, body) => html`
@@ -151,7 +152,7 @@ export const privacyView = () => page("Privacy", "Privacy Policy", html`
     information, we will email you before the change takes effect.</p>
 
   <h2>9. Contact</h2>
-  <p>${LEGAL.company}, ${LEGAL.state}. Email ${LEGAL.email}.</p>
+  <p>${LEGAL.company}. Email ${LEGAL.email}.</p>
 `);
 
 // ---------------------------------------------------------------------------
@@ -212,12 +213,11 @@ export const termsView = () => page("Terms", "Terms of Service", html`
       membership is active.</li>
     <li>Subscriptions renew automatically until cancelled. You can cancel at
       any time, effective at the end of the current billing period.
-      [Refund policy, e.g. setup fees are non-refundable once the page is
-      live.]</li>
+      The setup fee is non-refundable once your page is live, and monthly
+      fees are not prorated.</li>
     <li>If a web address is included with your plan, we register it on your
       behalf for as long as your subscription is active.
-      [Who owns the domain if you cancel, e.g. it can be transferred to you
-      on request.]</li>
+      If you cancel, you can ask us to transfer the domain to you.</li>
     <li>We may change prices with at least 30 days’ notice by email.</li>
   </ul>
 
