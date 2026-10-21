@@ -12,7 +12,10 @@ import "./setup.js";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { cases } from "./cases.js";
+// Node only: these exercise tools/gen-coaches.mjs, which needs node:fs, so
+// they cannot load in the browser runner.
+import { coachCases } from "./cases-coaches.js";
 
-for (const c of cases) {
+for (const c of [...cases, ...coachCases]) {
   test(c.name, () => c.run(assert));
 }

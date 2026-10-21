@@ -108,8 +108,14 @@ export const PROVENANCE = Object.freeze([
   {
     group: "Coach outreach",
     status: "real",
-    what: "Head coach name, title, email and phone for each program's men's team",
+    what: "Head coach name, title, email, phone and photo for the 27 original programs' men's teams",
     source: "Copied by hand from each program's official athletics staff page (URL kept per row in data/coaches.js), verified Sep 2026. Coach turnover is ~10-15% per year, so re-verify every August. Email or phone shows as 'not published' where the school does not list one; never guessed",
+  },
+  {
+    group: "Coach outreach",
+    status: "real",
+    what: "Head coach name, title, email, phone and photo for every other men's and women's program",
+    source: "Read automatically off each school's own athletics 'Coaches' page by tools/gen-coaches.mjs (source URL kept per entry in data/coaches-ncaa.js). Exactly as the school publishes it; a school whose page could not be read shows 'Contact not on file yet'. Re-run before each season",
   },
 ]);
 

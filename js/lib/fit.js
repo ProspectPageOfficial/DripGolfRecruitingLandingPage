@@ -288,6 +288,7 @@ export function headCoachFor(school, gender = "men") {
     email: clean(coach.email),
     phone: clean(coach.phone),
     photo: photo && /^https:\/\//i.test(photo) ? photo : null,
+    checked: clean(coach.checked),
   };
 }
 

@@ -45,7 +45,8 @@
  *                            a blank placeholder icon.
  */
 
-import { HEAD_COACHES } from "./coaches.js";
+import { HEAD_COACHES, COACHES_VERIFIED } from "./coaches.js";
+import { NCAA_COACHES, COACHES_SCRAPED } from "./coaches-ncaa.js";
 import { NCAA_GOLF_PROGRAMS } from "./colleges-ncaa.js";
 
 export const DIVISIONS = ["D1", "D2", "D3", "NAIA"];
@@ -125,7 +126,24 @@ export const colleges = [
     rankSource: "hand-set",
   })),
   ...NCAA_GOLF_PROGRAMS.filter((p) => !handIds.has(p.ncaaId)),
-].map((row) => ({ ...row, headCoaches: HEAD_COACHES[row.id] ?? null }));
+].map((row) => ({ ...row, headCoaches: coachesFor(row) }));
+
+/**
+ * Head coaches for one row, per team: the hand-verified entry in coaches.js
+ * when there is one, else the one read off the school's athletics site by
+ * tools/gen-coaches.mjs. Each carries the date it was checked, which the
+ * coach card prints.
+ */
+function coachesFor(row) {
+  const hand = HEAD_COACHES[row.id] || {};
+  const scraped = NCAA_COACHES[row.ncaaId ?? NCAA_ID[row.id]] || {};
+  const out = {};
+  for (const team of ["men", "women"]) {
+    if (hand[team]) out[team] = { ...hand[team], checked: COACHES_VERIFIED };
+    else if (scraped[team]) out[team] = { ...scraped[team], checked: COACHES_SCRAPED };
+  }
+  return Object.keys(out).length ? out : null;
+}
 
 /** Lookup by id. O(1) beats Array.find in a render loop. */
 export const collegeById = Object.fromEntries(colleges.map((c) => [c.id, c]));

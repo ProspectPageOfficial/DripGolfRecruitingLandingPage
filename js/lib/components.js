@@ -196,7 +196,7 @@ export function coachCard(coach, style = "prominent") {
         <b class="coach-card-name">${coach.name}</b>
         <span class="coach-card-title muted">${coach.title}</span>
         <span class="coach-card-contact">${raw(email)}${raw(phone)}</span>
-        <span class="coach-card-verified">Verified ${monthYear(COACHES_VERIFIED)}</span>
+        <span class="coach-card-verified">Checked ${monthYear(coach.checked || COACHES_VERIFIED)}</span>
       </div>
     </div>
   `;

@@ -550,16 +550,19 @@ export const fitCases = [
     name: "every college row with a coach on file has a name and a source",
     run: (assert) => {
       for (const c of colleges) {
-        const men = c.headCoaches?.men;
-        if (!men) continue;
-        assert.ok(men.name && men.name.trim(), `${c.id}: coach name missing`);
-        assert.ok(/^https:\/\//.test(men.source), `${c.id}: coach source URL missing`);
-        if (men.email) assert.ok(/^[^@\s]+@[^@\s]+\.[a-z]+$/i.test(men.email), `${c.id}: bad email`);
-        if (men.photo) assert.ok(/^https:\/\//.test(men.photo), `${c.id}: photo must be https`);
+        for (const team of ["men", "women"]) {
+          const coach = c.headCoaches?.[team];
+          if (!coach) continue;
+          assert.ok(coach.name && coach.name.trim(), `${c.id} ${team}: coach name missing`);
+          assert.ok(/^https:\/\//.test(coach.source), `${c.id} ${team}: coach source URL missing`);
+          assert.ok(/^\d{4}-\d{2}-\d{2}$/.test(coach.checked), `${c.id} ${team}: no checked date`);
+          if (coach.email) assert.ok(/^[^@\s]+@[^@\s]+\.[a-z]+$/i.test(coach.email), `${c.id} ${team}: bad email`);
+          if (coach.photo) assert.ok(/^https:\/\//.test(coach.photo), `${c.id} ${team}: photo must be https`);
+        }
       }
-      // Every hand-set program but one (WashU lists no men's team) carries a coach.
+      // Every hand-set program but one (WashU lists no men's team) carries a men's coach.
       const handSet = colleges.filter((c) => c.rankSource === "hand-set");
-      assert.equal(colleges.filter((c) => c.headCoaches?.men).length, handSet.length - 1);
+      assert.equal(handSet.filter((c) => c.headCoaches?.men).length, handSet.length - 1);
     },
   },
   {
