@@ -81,6 +81,8 @@ export const footer = () => html`
       <span>Drip Golf Recruiting &mdash; recruiting page demo.</span>
       <span class="row">
         <a href="#/faq" style="text-decoration:underline">FAQ</a>
+        <a href="#/terms" style="text-decoration:underline">Terms</a>
+        <a href="#/privacy" style="text-decoration:underline">Privacy</a>
         <a href="#/data" style="text-decoration:underline">
           Roster ranks are estimates &mdash; see sources
         </a>

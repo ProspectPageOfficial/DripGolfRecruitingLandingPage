@@ -1060,3 +1060,23 @@ table.data tbody tr:hover { background: var(--cream-2); }
   .dom-steps li:not(.is-waiting) .when-done { opacity: 1; }
   .dom-steps li:not(.is-waiting) .when-pending { opacity: 0; }
 }
+
+/* ---------------- legal pages + sign-up consent ---------------- */
+.legal { max-width: 760px; }
+.legal-title { font-size: clamp(1.9rem, 4vw, 2.8rem); margin: var(--s-2) 0 0; }
+.legal-meta { font-size: 0.82rem; margin-bottom: var(--s-3); }
+.legal-draft { margin-bottom: var(--s-4); }
+.legal-lede { font-size: 0.98rem; line-height: 1.65; margin-bottom: var(--s-4); }
+.legal h2 { font-family: var(--font-display); font-size: 1.25rem; margin: var(--s-5) 0 var(--s-2); }
+.legal p, .legal li { font-size: 0.9rem; line-height: 1.65; color: var(--ink-soft); }
+.legal p + p { margin-top: var(--s-2); }
+.legal ul { padding-left: 1.2rem; display: grid; gap: var(--s-2); }
+.legal a { text-decoration: underline; }
+/* .field label / .field input style form boxes; a sentence + checkbox needs neither. */
+.field .consent-check {
+  display: flex; gap: var(--s-2); align-items: flex-start; cursor: pointer;
+  font-size: 0.84rem; line-height: 1.5; letter-spacing: normal; text-transform: none;
+  font-weight: 400; color: var(--ink-soft);
+}
+.field .consent-check input { width: auto; padding: 0; margin-top: 0.2rem; flex: none; accent-color: var(--sage); }
+.consent-check a { text-decoration: underline; }

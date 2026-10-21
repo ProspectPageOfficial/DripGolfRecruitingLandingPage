@@ -30,12 +30,16 @@ const STEPS = [
   {
     key: "account",
     title: "Create your account",
-    blurb: "This is how you will sign in to edit your page and see your fit scores.",
+    blurb: "Accounts are for parents and guardians. You will use this to sign in, edit your golfer's page and see fit scores.",
     fields: [
       { name: "email", label: "Email", type: "email", required: true, wide: true,
         placeholder: "you@example.com", autocomplete: "email" },
       { name: "password", label: "Password", type: "password", required: true, wide: true,
         placeholder: "At least 8 characters", autocomplete: "new-password", minLength: 8 },
+      // Children's privacy rests on this: the account holder is an adult
+      // responsible for the golfer, never the child (see views/legal.js).
+      { name: "guardian", type: "consent", required: true, wide: true,
+        label: "I am 18 or older and the parent or legal guardian of the golfer, and I agree to the Terms of Service and Privacy Policy." },
     ],
   },
   {
@@ -143,6 +147,17 @@ function field(f) {
   const id = `su-${f.name}`;
   const common = html`id="${id}" name="${f.name}" ${raw(f.required ? "required" : "")}`;
   let control;
+  if (f.type === "consent") {
+    return html`
+      <div class="field survey-wide">
+        <label class="consent-check" for="${id}">
+          <input type="checkbox" id="${id}" name="${f.name}" required />
+          <span>${f.label}
+            <a href="#/terms" target="_blank" rel="noopener">Terms</a> &middot;
+            <a href="#/privacy" target="_blank" rel="noopener">Privacy</a></span>
+        </label>
+      </div>`;
+  }
   if (f.type === "select") {
     control = html`<select ${raw(common)}>
       <option value="">Choose...</option>
@@ -330,6 +345,8 @@ export function bindSignup(root, { onDone }) {
   const problem = () => {
     for (const el of steps[at].querySelectorAll("input, select, textarea")) {
       const label = el.labels[0]?.textContent.replace("*", "").trim();
+      if (el.type === "checkbox" && el.required && !el.checked)
+        return { el, text: "Please confirm you are the golfer's parent or legal guardian to continue." };
       if (el.required && !el.value.trim()) return { el, text: `${label} is required.` };
       if (el.type === "email" && el.value && !/^\S+@\S+\.\S+$/.test(el.value))
         return { el, text: "Enter a valid email address." };

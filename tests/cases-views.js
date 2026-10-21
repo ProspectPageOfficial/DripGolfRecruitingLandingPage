@@ -17,6 +17,7 @@ import { authView } from "../js/views/auth.js";
 import { signupView, mockGolfer, mockPagePanel, mockBanner } from "../js/views/signup.js";
 import { provenanceView } from "../js/views/provenance.js";
 import { faqView } from "../js/views/faq.js";
+import { termsView, privacyView } from "../js/views/legal.js";
 import { normalizeDomain, isTaken, suggestDomains, freeSlug, setupTracker } from "../js/views/domain.js";
 import { buildGolfer } from "../js/data/golfer.js";
 import { rankSchools, pickHighlight } from "../js/lib/fit.js";
@@ -47,6 +48,26 @@ export const viewCases = [
     run: (assert) => {
       rendersFine(assert, "faqView", () => faqView());
       assert.ok(landing().includes('href="#/faq"'), "landing page has no FAQ link");
+    },
+  },
+  {
+    name: "terms and privacy pages render and put parents in charge of accounts",
+    run: (assert) => {
+      const terms = termsView();
+      const privacy = privacyView();
+      rendersFine(assert, "termsView", () => terms);
+      rendersFine(assert, "privacyView", () => privacy);
+      assert.ok(/parent or legal guardian/i.test(terms), "terms must say accounts are for parents/guardians");
+      assert.ok(/under 13/i.test(privacy), "privacy policy must cover children under 13");
+    },
+  },
+  {
+    name: "sign-up requires the parent/guardian confirmation",
+    run: (assert) => {
+      const out = signupView();
+      assert.ok(/name="guardian"[^>]*required|required[^>]*name="guardian"/.test(out.replace(/\s+/g, " ")) ||
+        /type="checkbox" id="su-guardian" name="guardian" required/.test(out), "guardian checkbox missing or not required");
+      assert.ok(out.includes('href="#/privacy"'), "sign-up should link the privacy policy");
     },
   },
   {

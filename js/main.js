@@ -25,6 +25,7 @@ import { dashboardView } from "./views/dashboard.js";
 import { fitView, bindFit } from "./views/fit.js";
 import { provenanceView } from "./views/provenance.js";
 import { faqView } from "./views/faq.js";
+import { termsView, privacyView } from "./views/legal.js";
 
 const root = document.getElementById("app");
 
@@ -75,6 +76,8 @@ const ROUTES = [
   { path: /^\/welcome\/fit$/, key: "welcome-fit", mock: true, render: (ctx) => fitView(ctx.mock) },
   { path: /^\/data$/,      key: "data",      render: () => provenanceView() },
   { path: /^\/faq$/,       key: "faq",       render: () => faqView() },
+  { path: /^\/terms$/,     key: "terms",     render: () => termsView() },
+  { path: /^\/privacy$/,   key: "privacy",   render: () => privacyView() },
 
   // The public page is a separate deployment, so this app no longer renders a
   // copy of it. The route survives purely so links already sitting in a coach's
