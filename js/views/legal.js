@@ -162,7 +162,7 @@ export const privacyView = () => page("Privacy", "Privacy Policy", html`
 export const termsView = () => page("Terms", "Terms of Service", html`
   <p class="legal-lede">
     These terms are an agreement between you and ${LEGAL.company}
-    (“${LEGAL.brand}”, “we”, “us”) for using the website and service. By
+    (“we”, “us”) for using the website and service. By
     creating an account you agree to them and to our
     <a href="#/privacy">Privacy Policy</a>.
   </p>
