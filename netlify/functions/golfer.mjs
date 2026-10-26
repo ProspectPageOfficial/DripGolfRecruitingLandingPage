@@ -48,6 +48,9 @@ export default async function handler(req) {
     storage: {
       url: process.env.SUPABASE_URL || null,
       key: process.env.SUPABASE_PUBLISHABLE_KEY || null,
+      // Largest file Supabase Storage accepts, in MB. 50 on Supabase's free
+      // plan; raise UPLOAD_MAX_MB in Netlify after upgrading the project.
+      maxUploadMB: Number(process.env.UPLOAD_MAX_MB) || 50,
     },
   });
 }

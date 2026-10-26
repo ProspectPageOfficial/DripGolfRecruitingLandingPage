@@ -60,6 +60,7 @@ test("sign-up creates a page at /<first>-<last> with the survey answers on it", 
   assert.equal(page.status, 200);
   assert.equal(page.body.name, "Ava Reed");
   assert.equal(page.body.ownerConfirmed, true, "dev accounts count as confirmed");
+  assert.equal(page.body.storage.maxUploadMB, 50, "the page is told the upload limit (Supabase free plan)");
   assert.equal(page.body.portfolio.golf.stats["Overall JGS Rank"], "850");
   assert.equal(page.body.portfolio.team, "men", "team is saved for the coach cards");
   const bio = await call(personal, "personal", { golfer: "ava-reed" });
@@ -245,4 +246,17 @@ test("rankings are owner-only and must be real numbers", async () => {
   assert.equal(bad.status, 400);
   assert.deepEqual(cleanRank(" 0 "), { error: cleanRank("x").error });
   assert.deepEqual(cleanRank("12,080"), { value: "12080" });
+});
+
+test("every inline script on the golfer page parses", async () => {
+  // A single broken character in golfer.html takes every golfer's page down,
+  // and none of the API tests above would notice. Parse (not run) each
+  // inline <script> so a syntax error fails here instead of in production.
+  const { readFileSync } = await import("node:fs");
+  const html = readFileSync(new URL("../../golfer.html", import.meta.url), "utf8");
+  const scripts = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+  assert.ok(scripts.length >= 3, "expected the page's inline scripts");
+  scripts.forEach((code, i) => {
+    assert.doesNotThrow(() => new Function(code), `inline script #${i + 1} has a syntax error`);
+  });
 });

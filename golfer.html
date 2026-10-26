@@ -1977,7 +1977,7 @@ body.is-owner .visitor-only { display: none !important; }
                  a file uploads it to the Supabase `photos` bucket and
                  auto-fills the URL below. Save still runs one shared
                  handleSubmit() for either path (SRP preserved). -->
-            <span>Upload a Profile Picture</span>
+            <span>Upload a Profile Picture (up to <span data-upload-limit>50</span> MB)</span>
             <span class="personal-photo-upload">
               <input type="file" id="personal-photo-file" accept="image/*">
               <span class="swing-upload-status" id="personal-photo-status"
@@ -2235,7 +2235,7 @@ body.is-owner .visitor-only { display: none !important; }
           <div class="swing-or-divider" aria-hidden="true">— or —</div>
 
           <label class="swing-field">
-            <span>📁 Choose a file from this device (.mp4, .webm, or .mov)</span>
+            <span>📁 Choose a file from this device (.mp4, .webm, or .mov, up to <span data-upload-limit>50</span> MB)</span>
             <!-- accept is broad on purpose: iPhones record .mov (video/quicktime).
                  Files upload directly to Supabase Storage — no Netlify Functions
                  payload cap, no in-browser re-encode dance. -->
@@ -4070,7 +4070,29 @@ const PORTFOLIO_DATA = {
 
     // uploadFile(file)              → uses DEFAULT_BUCKET (back-compat)
     // uploadFile(file, "photos")    → uploads to the photos bucket
+    /** The upload limit in MB (from /api/golfer), 50 if not given. */
+    const maxUploadMB = () => Number(config().maxUploadMB) || 50;
+
+    /**
+     * "This video is 87.4 MB. The most you can upload is 50 MB." plus what
+     * to do about it. Used before uploading AND if Supabase still refuses.
+     */
+    function tooBigMessage(file, maxMB) {
+      const size = file.size / (1024 * 1024);
+      const shown = size < 10 ? size.toFixed(1) : String(Math.round(size));
+      const isVideo = /^video\//.test(file.type) || /\.(mp4|webm|mov)$/i.test(file.name || "");
+      const kind = isVideo ? "video" : /^image\//.test(file.type) ? "photo" : "file";
+      return `This ${kind} is ${shown} MB. The most you can upload is ${maxMB} MB. ` +
+        (isVideo
+          ? "Trim it shorter, or upload it to YouTube (unlisted is fine) and paste the link instead."
+          : "Try a smaller version of the photo.");
+    }
+
     async function uploadFile(file, bucket) {
+      // Check here, before the upload starts: waiting through a long upload
+      // just to be told it was too big is the worst way to find out.
+      const maxMB = maxUploadMB();
+      if (file && file.size > maxMB * 1024 * 1024) throw new Error(tooBigMessage(file, maxMB));
       const pageBucket = bucket || DEFAULT_BUCKET;
       const bucketName = PLATFORM_BUCKETS[pageBucket] || pageBucket;
       const fallbackType = BUCKET_DEFAULTS[pageBucket] || "application/octet-stream";
@@ -4084,13 +4106,16 @@ const PORTFOLIO_DATA = {
         cacheControl: "3600",
         upsert: false,
       });
-      if (error) throw new Error("Supabase upload failed: " + error.message);
+      if (error) {
+        if (/maximum allowed size|too large|payload/i.test(error.message)) throw new Error(tooBigMessage(file, maxMB));
+        throw new Error("Upload failed: " + error.message);
+      }
       const { data } = sb.storage.from(bucketName).getPublicUrl(path);
       if (!data || !data.publicUrl) throw new Error("Couldn't resolve public URL after upload.");
       return data.publicUrl;
     }
 
-    return { uploadFile };
+    return { uploadFile, maxUploadMB };
   })();
 
   // ---------- SwingVideos module: owner-curated public gallery ----------
@@ -5830,6 +5855,9 @@ const PORTFOLIO_DATA = {
     // Gate first so the body.is-owner class is set before edit UI renders.
     OwnerGate.init();
     RankEditor.init();
+    document.querySelectorAll("[data-upload-limit]").forEach((el) => {
+      el.textContent = String(window.SupabaseStorage ? window.SupabaseStorage.maxUploadMB() : 50);
+    });
     // ThemeEditor + PersonalBio both fetch from the server and apply
     // their state before the first render. Run them in parallel —
     // they're independent (theme = CSS vars, bio = data) so Promise.all
