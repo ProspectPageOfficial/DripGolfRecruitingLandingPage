@@ -105,6 +105,28 @@ export function supabaseDb() {
       return !error && !!data?.user?.email_confirmed_at;
     },
 
+    async deleteAccount(userId, golferIds) {
+      // Uploaded files first: they live under <golfer id>/ in each bucket and
+      // nothing in Postgres cascades into Storage.
+      for (const bucket of ["golfer-videos", "golfer-photos"]) {
+        for (const gid of golferIds) {
+          const { data, error } = await admin.storage.from(bucket).list(gid, { limit: 1000 });
+          if (error) throw new Error(error.message);
+          const paths = (data || []).map((f) => `${gid}/${f.name}`);
+          if (paths.length) {
+            const { error: rmError } = await admin.storage.from(bucket).remove(paths);
+            if (rmError) throw new Error(rmError.message);
+          }
+        }
+      }
+      // golfers -> golfer_docs cascade. Deleting the user would cascade to
+      // golfers too; doing it explicitly keeps this right if that key changes.
+      const { error } = await admin.from("golfers").delete().eq("owner_id", userId);
+      if (error) throw new Error(error.message);
+      const { error: authError } = await admin.auth.admin.deleteUser(userId);
+      if (authError) throw new Error(authError.message);
+    },
+
     async userFromToken(token) {
       const { data, error } = await admin.auth.getUser(token);
       return error || !data?.user ? null : { id: data.user.id, email: data.user.email };

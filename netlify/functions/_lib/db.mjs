@@ -19,6 +19,8 @@
  *   refresh(refreshToken)          -> session | null
  *   userFromToken(accessToken)     -> { id, email } | null
  *   isConfirmed(userId)            -> has the account confirmed its email?
+ *   deleteAccount(userId, golferIds) -> removes the user, their golfers,
+ *                                       docs and uploaded files
  *
  * A golfer is { id, owner_id, slug, name, domain }. A session is
  * { access_token, refresh_token, expires_at, user: { id, email } }.

@@ -40,7 +40,10 @@ import { PUBLIC_SITE } from "../config.js";
  * Best Fit link at the mock's own fit page, and drops the notices that talk
  * about Luke's site.
  *
- * @param {{pagePanel:string, banner:string, fitHref:string}} [mock]
+ * `canDelete` is set only for a real account (#/my): it adds the
+ * delete-account section at the bottom.
+ *
+ * @param {{pagePanel:string, banner:string, fitHref:string, canDelete?:boolean}} [mock]
  */
 export function dashboardView(profile, liveOk = true, mock = null) {
   const ranked = isScorable(profile) ? rankSchools(profile, colleges) : [];
@@ -64,6 +67,8 @@ export function dashboardView(profile, liveOk = true, mock = null) {
       </div>
 
       ${raw(mock || academics || !isScorable(profile) ? "" : academicsNotice())}
+
+      ${raw(mock?.canDelete ? deleteAccountPanel(profile) : "")}
 
     </div>
   `;
@@ -185,6 +190,84 @@ const academicsNotice = () => html`
     ${raw(extLink(PUBLIC_SITE.url, "Add on my site", "btn btn-sm btn-sage"))}
   </div>
 `;
+
+/**
+ * Bottom of a real account's dashboard. The button only opens the form; the
+ * delete itself needs the password typed again, because nothing about it can
+ * be undone.
+ */
+const deleteAccountPanel = (profile) => html`
+  <div class="card danger-zone">
+    <div class="row row-between">
+      <span>
+        <b>Delete account</b><br>
+        <span class="field-hint">Permanently removes your account, ${firstName(profile.name)}'s page,
+        and every photo, video and edit on it.</span>
+      </span>
+      <button type="button" class="btn btn-sm btn-danger" data-action="delete-open">Delete account</button>
+    </div>
+    <form class="stack danger-form" data-delete-form hidden novalidate>
+      <div class="alert alert-error">
+        This can't be undone. The page stops working for anyone you've sent the link to.
+      </div>
+      <div class="field">
+        <label for="delete-password">Type your password to confirm</label>
+        <input id="delete-password" type="password" autocomplete="current-password" required>
+      </div>
+      <div data-delete-msg role="status" aria-live="polite"></div>
+      <div class="row">
+        <button type="submit" class="btn btn-sm btn-danger">Delete my account forever</button>
+        <button type="button" class="btn btn-sm btn-ghost" data-action="delete-cancel">Cancel</button>
+      </div>
+    </form>
+  </div>
+`;
+
+/**
+ * Wires the delete section. `onDeleted` runs after the server confirms; the
+ * caller signs the tab out and leaves.
+ */
+export function bindDeleteAccount(root, { email, onDeleted }) {
+  const form = root.querySelector("[data-delete-form]");
+  if (!form) return;
+  const openBtn = root.querySelector("[data-action='delete-open']");
+  const msg = form.querySelector("[data-delete-msg]");
+  const input = form.querySelector("#delete-password");
+  const submit = form.querySelector("button[type='submit']");
+  const say = (text) => { msg.innerHTML = text ? html`<div class="alert alert-error">${text}</div>` : ""; };
+
+  openBtn.addEventListener("click", () => {
+    form.hidden = false;
+    openBtn.hidden = true;
+    input.focus();
+  });
+  form.querySelector("[data-action='delete-cancel']").addEventListener("click", () => {
+    form.hidden = true;
+    openBtn.hidden = false;
+    input.value = "";
+    say("");
+  });
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!input.value) return say("Type your password to confirm.");
+    submit.disabled = true;
+    say("");
+    try {
+      const res = await fetch("/api/delete-account", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password: input.value }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) return say(body.error || "Couldn't delete the account. Please try again.");
+      onDeleted();
+    } catch {
+      say("Couldn't reach the server. Check your connection and try again.");
+    } finally {
+      submit.disabled = false;
+    }
+  });
+}
 
 const firstName = (name) => String(name || "there").split(" ")[0];
 

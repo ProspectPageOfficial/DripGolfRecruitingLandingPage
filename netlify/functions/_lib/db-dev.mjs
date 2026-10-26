@@ -90,6 +90,15 @@ export function devDb(file = process.env.DRIP_DEV_DB || ".dev-data/db.json") {
     // The dev backend has no confirmation emails: every account is confirmed.
     async isConfirmed(userId) { return load().users.some((u) => u.id === userId); },
 
+    async deleteAccount(userId, golferIds) {
+      const d = load();
+      d.users = d.users.filter((u) => u.id !== userId);
+      d.golfers = d.golfers.filter((g) => g.owner_id !== userId);
+      for (const k of Object.keys(d.docs)) if (golferIds.includes(k.split("/")[0])) delete d.docs[k];
+      for (const [k, t] of Object.entries(d.tokens)) if (t.userId === userId) delete d.tokens[k];
+      save(d);
+    },
+
     async userFromToken(token) {
       const d = load();
       const t = d.tokens[token];

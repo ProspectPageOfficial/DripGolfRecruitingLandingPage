@@ -23,7 +23,7 @@ import {
   livePagePanel,
 } from "./views/signup.js";
 import { loadAccount, saveAccount, clearAccount, fetchAccountGolfer } from "./data/account.js";
-import { dashboardView } from "./views/dashboard.js";
+import { dashboardView, bindDeleteAccount } from "./views/dashboard.js";
 import { fitView, bindFit } from "./views/fit.js";
 import { provenanceView } from "./views/provenance.js";
 import { faqView } from "./views/faq.js";
@@ -80,7 +80,7 @@ const ROUTES = [
   // A real parent account (sign-up survey + Supabase). Guarded by having
   // signed in on this tab; the golfer is read from the page's own API.
   { path: /^\/my$/,        key: "my",        account: true, render: (ctx) => dashboardView(ctx.mine, true, {
-      pagePanel: livePagePanel({ liveSlug: ctx.account.slug }, "#/my/edit"), banner: "", fitHref: "#/my/fit",
+      pagePanel: livePagePanel({ liveSlug: ctx.account.slug }, "#/my/edit"), banner: "", fitHref: "#/my/fit", canDelete: true,
     }) },
   { path: /^\/my\/fit$/,   key: "my-fit",    account: true, render: (ctx) => fitView(ctx.mine) },
   // Opens the golfer page already signed in (owner mode), same tab.
@@ -193,6 +193,16 @@ function paint(ctx, active, body) {
 /** Per-route event wiring. Views stay pure-ish; binding is explicit. */
 function bindFor(key, ctx = {}) {
   if (key === "my-fit") bindFit(root, { profile: ctx.mine });
+  if (key === "my") {
+    bindDeleteAccount(root, {
+      email: ctx.account.session?.user?.email || "",
+      onDeleted: () => {
+        clearAccount();
+        try { sessionStorage.setItem(AUTH_NOTICE_KEY, "Your account and page have been deleted."); } catch { /* storage blocked */ }
+        location.hash = "#/login";
+      },
+    });
+  }
   if (key === "login") {
     bindAuth(root, {
       onDone: () => {

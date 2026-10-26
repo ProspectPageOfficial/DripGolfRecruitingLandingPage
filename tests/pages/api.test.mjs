@@ -20,6 +20,7 @@ import myPage from "../../netlify/functions/my-page.mjs";
 import golfStats, { cleanRank } from "../../netlify/functions/golf-stats.mjs";
 import personal from "../../netlify/functions/personal.mjs";
 import tournaments from "../../netlify/functions/tournaments.mjs";
+import deleteAccount from "../../netlify/functions/delete-account.mjs";
 import { portfolioFromHtml } from "../../tools/import-golfer.mjs";
 
 const db = devDb(join(mkdtempSync(join(tmpdir(), "dgp-")), "db.json"));
@@ -259,4 +260,25 @@ test("every inline script on the golfer page parses", async () => {
   scripts.forEach((code, i) => {
     assert.doesNotThrow(() => new Function(code), `inline script #${i + 1} has a syntax error`);
   });
+});
+
+test("deleting an account needs the password and removes the page and its data", async () => {
+  await ready;
+  const made = (await call(signup, "signup", { method: "POST", body: {
+    guardian: true, email: "gone@example.com", password: "gone-password-1", firstName: "Gone", lastName: "Soon" } })).body;
+  await call(personal, "personal", { method: "PUT", golfer: made.slug, token: made.session.access_token, body: { hometown: "Reno, NV" } });
+
+  const { id: golferId } = await db.getGolferBySlug(made.slug);
+  const wrong = await call(deleteAccount, "delete-account", { method: "POST", body: { email: "gone@example.com", password: "nope" } });
+  assert.equal(wrong.status, 401);
+  assert.equal((await call(golfer, "golfer", { golfer: made.slug })).status, 200, "a wrong password deletes nothing");
+
+  const ok = await call(deleteAccount, "delete-account", { method: "POST", body: { email: "gone@example.com", password: "gone-password-1" } });
+  assert.equal(ok.status, 200);
+  assert.deepEqual(ok.body.deleted, [made.slug]);
+  assert.equal((await call(golfer, "golfer", { golfer: made.slug })).status, 404, "the page is gone");
+  assert.equal(await db.getDoc(golferId, "personal-overrides"), null, "its saved data is gone");
+  const again = await call(myPage, "my-page", { method: "POST", body: { email: "gone@example.com", password: "gone-password-1" } });
+  assert.equal(again.status, 401, "the account can no longer sign in");
+  assert.equal((await call(golfer, "golfer", { golfer: "ava-reed" })).status, 200, "other families are untouched");
 });

@@ -138,6 +138,13 @@ button, input, select, textarea { font: inherit; color: inherit; }
    default button is ink-on-ink and reads as bare text -- which is exactly how
    the "popular" pricing tier's CTA rendered before this existed. */
 .btn-cream  { background: var(--cream); border-color: var(--cream); color: var(--ink); }
+/* Destructive actions only (delete account). Rust, never ink, so it can't be
+   mistaken for a primary button. */
+.btn-danger { background: var(--rust); border-color: var(--rust); color: var(--cream); }
+.danger-zone { border-color: var(--rust); margin-top: var(--s-4, 2rem); }
+.danger-form { margin-top: 1rem; }
+/* .btn sets display, which would otherwise beat the [hidden] attribute. */
+.danger-zone [hidden] { display: none !important; }
 .btn-sm     { padding: 0.42rem 0.85rem; font-size: 0.78rem; }
 .btn-block  { width: 100%; }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
