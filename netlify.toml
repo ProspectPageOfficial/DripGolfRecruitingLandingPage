@@ -8,6 +8,10 @@
 [build]
   publish = "."
 
+# The golfer-page functions use @supabase/supabase-js, which wants Node 22+.
+[build.environment]
+  NODE_VERSION = "22"
+
 # ---------------- Cache headers ----------------
 # `no-cache` is a name-trap: it does NOT mean "don't store." It means "you may
 # store this, but you MUST revalidate with the server before using it." That
@@ -56,16 +60,20 @@
 # The test harness and the local dev server are committed on purpose (they are
 # how you verify a change) but there is no reason to serve them to the public.
 # Netlify has no "exclude" for a static publish dir, so we 404 them explicitly.
+# force = true matters: without it Netlify serves an existing file before it
+# looks at redirects, and every one of these rules silently did nothing.
 
 [[redirects]]
   from = "/tests/*"
   to = "/index.html"
   status = 404
+  force = true
 
 [[redirects]]
   from = "/serve.py"
   to = "/index.html"
   status = 404
+  force = true
 
 # mockup.html is an internal design study, already marked noindex. Committed so
 # the concept work is not lost, 404'd so it is not mistaken for the product.
@@ -74,6 +82,37 @@
   from = "/mockup.html"
   to = "/index.html"
   status = 404
+  force = true
+
+# Server code, tooling and the database schema: nothing secret (keys live in
+# Netlify's environment variables, never in files), but not for the public.
+[[redirects]]
+  from = "/netlify/*"
+  to = "/index.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/supabase/*"
+  to = "/index.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/tools/*"
+  to = "/index.html"
+  status = 404
+  force = true
+
+# ---------------- Golfer pages ----------------
+# dripgolfrecruiting.com/ava-reed is Ava's recruiting page: one template,
+# golfer.html, filled from the database by the /api/* functions (each declares
+# its own path). One path segment only, and NOT forced, so real files and the
+# rules above win first. The app itself stays at "/" with hash routes.
+[[redirects]]
+  from = "/:slug"
+  to = "/golfer.html"
+  status = 200
 
 # NOTE: there is deliberately no SPA catch-all (/* -> /index.html) here.
 # Routing is hash-based (#/fit, #/dashboard), and a fragment is never sent to

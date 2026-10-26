@@ -297,16 +297,53 @@ export function mockPagePanel(a) {
 }
 
 /** Shown above the mock dashboard so nobody mistakes the preview for a real account. */
+/** After a real sign-up: where the page lives, and the one thing left to do. */
+const liveBanner = (a) => html`
+  <div class="alert alert-ok live-banner">
+    <b>${a.firstName}'s page is live.</b>
+    It's at <a href="/${a.liveSlug}" target="_blank" rel="noopener">dripgolfrecruiting.com/${a.liveSlug}</a>.
+    ${a.needsEmailConfirm
+      ? html`Check ${a.email} for a link to confirm your account; you'll need it to sign in and edit the page.`
+      : "Open it and choose Owner to sign in and edit."}
+  </div>
+`;
+
 export const mockBanner = (a) => html`
+  ${raw(a.liveSlug ? liveBanner(a) : html`
   <div class="banner-demo row row-between">
     <span>
       <b>Demo preview.</b> This dashboard is built from ${a.name}'s survey
       answers. No account was created, nothing was charged and nothing left
       this browser tab.
     </span>
-  </div>
+  </div>`)}
   ${raw(a.domain ? setupTracker(a) : "")}
 `;
+
+/**
+ * POST the survey to /api/signup (netlify/functions/signup.mjs), which makes
+ * the Supabase account and the golfer's page in one step.
+ *
+ *   { slug, needsEmailConfirm }  account and page created
+ *   { error }                    something the parent can fix (shown on the step)
+ *   {}                           sign-ups closed or no server: demo preview
+ */
+async function createAccount(answers) {
+  let res;
+  try {
+    res = await fetch("/api/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...answers, guardian: answers.guardian === "on" }),
+    });
+  } catch {
+    return {};
+  }
+  if (res.status === 403 || res.status === 404 || res.status === 405) return {};
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) return { error: body.error || "Something went wrong creating your account. Please try again." };
+  return { slug: body.slug, needsEmailConfirm: !!body.needsEmailConfirm };
+}
 
 export function bindSignup(root, { onDone }) {
   const form = root.querySelector("#signup-form");
@@ -363,8 +400,9 @@ export function bindSignup(root, { onDone }) {
   back.addEventListener("click", () => show(Math.max(0, at - 1)));
   bindLookup(form);
 
-  form.addEventListener("submit", (e) => {
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
+    if (next.disabled) return; // a sign-up is already on its way
     const bad = problem();
     if (bad) {
       msg.innerHTML = html`<div class="alert alert-error">${bad.text}</div>`;
@@ -375,7 +413,25 @@ export function bindSignup(root, { onDone }) {
 
     const answers = formData(form);
     answers.name = [answers.firstName, answers.lastName].map((s) => s.trim()).filter(Boolean).join(" ");
-    delete answers.password; // never leaves the form, not even into the preview
+
+    // Create the real account and page. While sign-ups are closed (or with
+    // no server, e.g. serve.py) this falls back to the demo preview.
+    const label = next.textContent;
+    next.disabled = true;
+    next.textContent = "Creating your page...";
+    const result = await createAccount(answers);
+    next.disabled = false;
+    next.textContent = label;
+    if (result.error) {
+      msg.innerHTML = html`<div class="alert alert-error">${result.error}</div>`;
+      return;
+    }
+    if (result.slug) {
+      answers.liveSlug = result.slug;
+      answers.needsEmailConfirm = result.needsEmailConfirm;
+    }
+
+    delete answers.password; // never stored in the browser, not even for the preview
     sessionStorage.setItem(MOCK_KEY, JSON.stringify(answers));
     onDone();
   });

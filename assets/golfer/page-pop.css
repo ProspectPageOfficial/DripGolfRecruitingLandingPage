@@ -1,0 +1,342 @@
+/* ======================================================================
+   page-pop.css — extend the hero's "Broadcast Leaderboard" bed to the
+   entire page, so the whole site pops instead of dying into an ivory
+   half below the hero.
+
+   Loaded AFTER hero-pop.css. Additive skin only — no colour is
+   hardcoded, everything derives from the same --green / --sand tokens
+   the Theme Editor already writes to. Change a token, change the whole
+   page. (DRY over the base sheet AND over hero-pop.css.)
+
+   Layers, top to bottom:
+     1. Body bed        — the page-wide popping gradient
+     2. Hero seam kill  — remove the fade-into-ivory pseudo
+     3. Content polish  — cards get a little extra shadow so they lift
+                          off the darker backdrop instead of drowning
+     4. Bottom rail     — symmetry with the hero's top brand rail
+   ====================================================================== */
+
+/* ---------- 1. One continuous stage ----------
+   The previous approach painted a gradient bed on <body> AND left the
+   hero painting its OWN gradient bed inside .hero. Two independent
+   beds meeting at the hero's bottom edge = a visible seam, no matter
+   how carefully you match the colours (different angles, different
+   stops, different radial spotlights — one of them always leaks a
+   band of the wrong shade at the boundary).
+
+   The DRY fix: one shared stage on <html> spanning the whole document.
+   <body> is transparent. .hero drops its own base linear-gradient and
+   keeps only its decorative spotlights + brand rail, so it now paints
+   ON TOP of the shared stage instead of next to it. One source of
+   truth for the bed, one continuous surface from the top of the page
+   to the bottom, no seam.
+
+   The stage itself is tuned so its natural progression (dark → green
+   → dark) reads as a single cinematic frame: the hero sits in the
+   dark cinematic top, the tab panels sit in the green middle, and
+   the bottom rail closes on a dark cinematic bottom. */
+html {
+  background:
+    radial-gradient(90% 50% at 50% 100%,
+      color-mix(in srgb, var(--green-soft) 28%, transparent) 0%, transparent 60%),
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--green-deep) 88%, #000) 0%,
+      var(--green-deep) 18%,
+      color-mix(in srgb, var(--green-deep) 80%, var(--green)) 42%,
+      var(--green) 72%,
+      color-mix(in srgb, var(--green-deep) 78%, #000) 100%);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  min-height: 100vh;
+}
+body {
+  background: transparent;
+  color: var(--charcoal);
+  min-height: 100vh;
+}
+
+/* ---------- 2. Hero paints on the shared stage ----------
+   Strip .hero's own linear-gradient base (defined in hero-pop.css) so
+   the html stage shows through. Keep the two decorative spotlights
+   that give the hero its warm-highlight character — those still make
+   sense as an overlay on the shared bed.
+
+   Also kill:
+     - .hero::after (the old ivory-fade band — already dead, kept for
+       safety in case the base sheet changes)
+     - the trailing bottom padding that was reserving room for that
+       fade — the container's -2.5rem pull-up now feels intentional. */
+.hero {
+  background:
+    radial-gradient(120% 90% at 78% 8%,
+      color-mix(in srgb, var(--green-soft) 55%, transparent) 0%, transparent 55%),
+    radial-gradient(90% 70% at 12% 0%,
+      color-mix(in srgb, var(--sand) 22%, transparent) 0%, transparent 50%);
+  background-color: transparent;
+  padding-bottom: 3.5rem;
+}
+.hero::after { display: none; }
+
+/* ---------- 3. Content polish ----------
+   The tab strip and tab panels are white cards. On ivory they read as
+   "same-ish, slightly framed". On the new dark bed they already pop;
+   we just give them a beefier shadow so the lift looks deliberate and
+   not accidental. Border radius + specificity match the base sheet. */
+.tabs,
+.tab-panel {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.35) inset,
+    0 18px 44px rgba(0, 0, 0, 0.28),
+    0 4px 12px rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+/* Container gets a wider max-width sibling of a "stage floor" — a very
+   soft halo behind the cards to marry them to the bed. Pure decoration,
+   so it's a pseudo-element on .container (which is already position:
+   relative in the base sheet). */
+.container::before {
+  content: "";
+  position: absolute;
+  inset: -1.5rem -1.5rem auto -1.5rem;
+  height: 60%;
+  background: radial-gradient(60% 100% at 50% 0%,
+    rgba(0, 0, 0, 0.28) 0%, transparent 70%);
+  filter: blur(20px);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* ---------- 4. Bottom rail ----------
+   Mirror the animated tri-tone rail the hero has at the top of the
+   page. Attached to <body> so it lives under everything, fixed to the
+   viewport bottom so it's the last thing your eye lands on. Same
+   4px height + gradient recipe as .hero::before for visual rhyme. */
+body::after {
+  content: "";
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 4px;
+  background: linear-gradient(90deg,
+    var(--sand) 0%,
+    var(--green-soft) 38%,
+    var(--sand) 62%,
+    var(--green-soft) 100%);
+  background-size: 200% 100%;
+  animation: hero-rail 9s linear infinite; /* reuse the hero's keyframes */
+  z-index: 5;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::after { animation: none; }
+}
+
+/* ======================================================================
+   5. Broadcast bottom-half
+   ----------------------------------------------------------------------
+   The hero already speaks "sports broadcast": dark emerald stage, sand
+   accents, glassy stat tiles. Everything below it used to speak
+   "wedding RSVP form": bright white cards, beige input fields, green-
+   deep headings. Same page, two visual languages — jarring.
+
+   This block re-skins the tab strip, tab panels, and their common
+   inner components in the same glass idiom the hero uses. Nothing
+   here forks the base sheet; it just overrides colours and adds the
+   broadcast garnish (glass fill, edge, sand accents). Every value
+   derives from the existing --green* / --sand tokens the Theme Editor
+   already writes to. (DRY + Open/Closed: change a token, change the
+   whole page.)
+
+   Tokens mirror the ones hero-pop.css defines scoped to .hero, promoted
+   to :root here so the same names are available outside the hero. The
+   .hero-scoped declarations still win inside the hero (nearer ancestor),
+   so this is additive — not competing.
+   ====================================================================== */
+
+:root {
+  --pg-ink:       #f2ede0;                              /* cream body text     */
+  --pg-ink-dim:   rgba(242, 237, 224, 0.72);            /* de-emphasised copy  */
+  --pg-ink-faint: rgba(242, 237, 224, 0.58);            /* labels, meta        */
+  --pg-glass:     rgba(6, 24, 14, 0.42);                /* dark glass base     */
+  --pg-glass-hi:  rgba(255, 255, 255, 0.09);            /* sheen highlight     */
+  --pg-edge:      rgba(255, 255, 255, 0.18);            /* card edge           */
+  --pg-edge-hot:  color-mix(in srgb, var(--sand) 55%, transparent);
+  --pg-card-r:    16px;
+}
+
+/* ---------- 5a. Tab strip ----------
+   Was a flat white pill bar. Now a dark glass rail, same recipe as
+   .hero-analytics-tiles li. The active tab lights up with a sand-
+   tinted lens instead of the flat green-deep block, which read as
+   "off" against the dark bed. */
+.tabs {
+  background:
+    linear-gradient(160deg, var(--pg-glass-hi), transparent 60%),
+    var(--pg-glass);
+  border: 1px solid var(--pg-edge);
+  border-radius: var(--pg-card-r);
+  padding: 0.45rem;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.14) inset,
+    0 18px 44px rgba(0, 0, 0, 0.32),
+    0 4px 12px rgba(0, 0, 0, 0.18);
+}
+
+.tab {
+  color: var(--pg-ink-dim);
+  border: 1px solid transparent;
+}
+.tab:hover {
+  color: var(--sand);
+  background: rgba(255, 255, 255, 0.05);
+}
+.tab.active {
+  background:
+    linear-gradient(160deg,
+      color-mix(in srgb, var(--sand) 22%, transparent),
+      transparent 65%),
+    color-mix(in srgb, var(--green-deep) 88%, #000);
+  color: var(--sand);
+  border-color: var(--pg-edge-hot);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.18) inset,
+    0 6px 16px rgba(0, 0, 0, 0.45);
+}
+
+/* ---------- 5b. Tab panels ----------
+   The big white slab problem. Same glass recipe as the hero-analytics
+   surround so the tab body reads as another panel in the same
+   broadcast, not a document that fell out of the sky. */
+.tab-panel {
+  background:
+    linear-gradient(160deg, var(--pg-glass-hi), transparent 55%),
+    var(--pg-glass);
+  border: 1px solid var(--pg-edge);
+  color: var(--pg-ink);
+  padding: 2rem;
+}
+
+/* Headings inside the panels used to be --green-deep. On a dark green
+   bed that's practically invisible. Sand is the hero's accent colour,
+   so panel titles now rhyme with the hero name/eyebrow instead of
+   fighting the backdrop. */
+.tab-panel h2,
+.tab-panel h3 { color: var(--sand); }
+
+/* .muted was designed for grey-on-white. Rebind it inside panels to
+   the dim cream so it reads as intentionally quiet, not broken. */
+.tab-panel .muted { color: var(--pg-ink-dim); }
+
+/* ---------- 5c. Bio field tiles ----------
+   .profile-list li was an ivory tile with a green-soft left rail —
+   classic "form field on a beige form". Same tile, dark glass fill,
+   sand left rail = a stat card that belongs next to the hero's
+   scoring-avg tile. */
+.tab-panel .profile-list li {
+  background:
+    linear-gradient(160deg, var(--pg-glass-hi), transparent 65%),
+    var(--pg-glass);
+  border: 1px solid var(--pg-edge);
+  border-left: 3px solid var(--pg-edge-hot);
+  color: var(--pg-ink);
+}
+.tab-panel .profile-list .label { color: var(--pg-ink-faint); }
+
+/* ---------- 5d. Social pills ----------
+   Cream-on-glass pills instead of green-deep-on-ivory. Hover swaps to
+   a sand-tinted lens for that same "active leaderboard tab" feel. */
+.tab-panel .social-link {
+  background: var(--pg-glass);
+  border-color: var(--pg-edge);
+  color: var(--pg-ink);
+}
+.tab-panel .social-link:hover {
+  background: color-mix(in srgb, var(--sand) 14%, var(--pg-glass));
+  border-color: var(--pg-edge-hot);
+  color: var(--sand);
+}
+
+/* ---------- 5e. Coach card ----------
+   Reuses the same glass recipe. No hardcoded #fff. */
+.tab-panel .coach-card {
+  background:
+    linear-gradient(160deg, var(--pg-glass-hi), transparent 60%),
+    var(--pg-glass);
+  border: 1px solid var(--pg-edge);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.10) inset,
+    0 14px 36px rgba(0, 0, 0, 0.28);
+}
+
+/* ---------- 5f. Season-history year buttons ----------
+   Same tab language as the top strip, half-size. Kept as its own
+   ruleset only because the base sheet gave .year-btn its own colours;
+   we're overriding, not restyling from scratch. */
+.tab-panel .year-btn {
+  background: var(--pg-glass);
+  border: 1px solid var(--pg-edge);
+  color: var(--pg-ink-dim);
+}
+.tab-panel .year-btn:hover { color: var(--sand); }
+.tab-panel .year-btn.active {
+  background:
+    linear-gradient(160deg,
+      color-mix(in srgb, var(--sand) 22%, transparent),
+      transparent 65%),
+    color-mix(in srgb, var(--green-deep) 88%, #000);
+  color: var(--sand);
+  border-color: var(--pg-edge-hot);
+}
+
+/* ---------- 5g. Tournament cards ----------
+   Was an ivory brick per event. Now a glass card matching the hero's
+   recent-form leaderboard rows in hero-pop.css. Text switches to
+   cream, meta to dim cream, name to sand — same hierarchy the base
+   sheet used, just retuned for a dark surface. */
+.tab-panel .tournament {
+  background:
+    linear-gradient(160deg, var(--pg-glass-hi), transparent 65%),
+    var(--pg-glass);
+  border: 1px solid var(--pg-edge);
+  color: var(--pg-ink);
+}
+.tab-panel .tournament:hover {
+  border-color: var(--pg-edge-hot);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
+}
+.tab-panel .tnmt-name { color: var(--sand); }
+.tab-panel .tnmt-meta { color: var(--pg-ink-faint); }
+
+/* Position pill: keep the sand ring the base sheet gave it, but let
+   the inside be dark glass with a sand number instead of a white pill
+   with a green number — same visual DNA as the hero's stat tile
+   trend indicators. */
+.tab-panel .tnmt-place {
+  background: color-mix(in srgb, var(--green-deep) 82%, #000);
+  color: var(--sand);
+  border-color: var(--pg-edge-hot);
+}
+
+/* Round line-items: base sheet hardcoded #fff. Rebind to glass so
+   they don't punch bright holes in the card. */
+.tab-panel .rounds-list li {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--pg-ink);
+}
+
+/* ---------- 5h. Panel headers + edit buttons ----------
+   The pencil-edit ghost buttons on Personal/Coach were designed for
+   a white card. Give them cream ink so they don't vanish. */
+.tab-panel .swing-ghost-btn {
+  color: var(--pg-ink-dim);
+  border-color: var(--pg-edge);
+  background: transparent;
+}
+.tab-panel .swing-ghost-btn:hover {
+  color: var(--sand);
+  border-color: var(--pg-edge-hot);
+  background: rgba(255, 255, 255, 0.05);
+}

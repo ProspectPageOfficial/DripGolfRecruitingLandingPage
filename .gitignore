@@ -16,3 +16,6 @@ desktop.ini
 # Netlify CLI state from `netlify dev`.
 .netlify/
 tools/.cache/
+
+# Local golfer-page test data (tools/pages-dev.mjs). Never commit.
+.dev-data/

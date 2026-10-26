@@ -3,10 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Drip Golf Recruiting - College Best Fit demo, reading one golfer's live site.",
+  "description": "Drip Golf Recruiting: the recruiting app, College Best Fit, and every golfer's recruiting page.",
   "scripts": {
-    "test": "node tests/fit.test.mjs",
+    "test": "node tests/fit.test.mjs && node --test tests/pages/",
     "serve": "python serve.py 8080",
-    "sync": "python _ref/gen_luke.py"
+    "sync": "python _ref/gen_luke.py",
+    "pages": "node tools/pages-dev.mjs",
+    "import-golfer": "node tools/import-golfer.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.58.0"
   }
 }

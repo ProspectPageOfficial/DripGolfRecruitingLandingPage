@@ -404,3 +404,31 @@ templates, saved school list, payments.
 The existing `ltselzer-portfolio.html` already solves several of these - it is
 6,215 lines in a single file, so lifting those features out into modules is
 worth doing as part of the migration rather than after it.
+
+---
+
+## Golfer pages (dripgolfrecruiting.com/&lt;name&gt;)
+
+Every golfer's public recruiting page is served by this same site from one
+template, `golfer.html` (Luke's page turned into a template), filled from
+Supabase by the functions in `netlify/functions/`. `/ava-reed` is Ava's page;
+the app stays at `/` with its hash routes.
+
+| Piece | Where |
+|---|---|
+| Page template + its scripts | `golfer.html`, `assets/golfer/` |
+| Which golfer, sign-in token on every request | `assets/golfer/tenant.js` |
+| API: golfer, login, signup, personal, tournaments, swing videos, theme... | `netlify/functions/*.mjs` |
+| Which golfer a request is for + is the caller its owner | `netlify/functions/_lib/tenant.mjs` |
+| Database schema (run once in Supabase's SQL Editor) | `supabase/schema.sql` |
+| Move an existing golfer site over | `tools/import-golfer.mjs` |
+
+Netlify environment variables: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`,
+`SUPABASE_SERVICE_ROLE_KEY` (secret), and `SIGNUPS_ENABLED=true` to let the
+"Create account" survey create real accounts. Without it, the survey falls
+back to the demo preview. Sign-up requires the parent/guardian confirmation.
+
+```
+npm run pages    # app + golfer pages + API locally, on a local test database
+npm test         # app tests + golfer-page API tests (incl. cross-golfer isolation)
+```
