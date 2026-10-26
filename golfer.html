@@ -1379,13 +1379,18 @@ input[type="date"]:focus::-webkit-datetime-edit  { color: var(--charcoal); }
 /* ---------- Owner Gate / Visitor mode ----------
    Visitors are the default (untrusted). When auth succeeds we add
    `.is-owner` to <body>, which reveals `.owner-only` elements.
-   ⚠️ This is UX-level gating. Real verification happens server-side
-   in /api/auth against the OWNER_PASSWORD_HASH env var (SHA-256).
+   ⚠️ This is UX-level gating. Real verification happens server-side:
+   every save sends the owner's sign-in token, and the server checks the
+   account owns this golfer (netlify/functions/_lib/tenant.mjs).
    The `.owner-only` reveal is purely cosmetic — protected mutations
-   still re-check the password on the server, so a clever visitor
+   still re-check ownership on the server, so a clever visitor
    toggling `.is-owner` in devtools gains nothing but disappointment. */
 .owner-only { display: none !important; }
 body.is-owner .owner-only { display: revert !important; }
+/* ...unless the page has hidden it on purpose. Without this, the !important
+   above beat [hidden], so in owner mode "Gallery is full" showed with no
+   videos and the upload form never hid at the limit. */
+body.is-owner .owner-only[hidden] { display: none !important; }
 
 .gate-overlay {
   position: fixed; inset: 0; z-index: 1000;
