@@ -264,7 +264,7 @@ export function mockGolfer(a) {
  * frame Luke's dashboard shows of his site, pointed at /<slug>. "Edit" goes
  * through Sign in, which lands the parent on the page in owner mode.
  */
-function livePagePanel(a) {
+export function livePagePanel(a, editHref = "#/login") {
   const site = {
     url: `/${a.liveSlug}`,
     previewUrl: `/${a.liveSlug}?role=visitor`,
@@ -281,7 +281,7 @@ function livePagePanel(a) {
 
       <div class="row panel-foot">
         <a class="btn btn-sm" href="${site.url}" target="_blank" rel="noopener">Open my page</a>
-        <a class="btn btn-sm btn-ghost" href="#/login">Edit my page</a>
+        <a class="btn btn-sm btn-ghost" href="${editHref}">Edit my page</a>
       </div>
     </div>
   `;
@@ -338,9 +338,8 @@ const liveBanner = (a) => html`
     <b>${a.firstName}'s page is live.</b>
     It's at <a href="/${a.liveSlug}" target="_blank" rel="noopener">dripgolfrecruiting.com/${a.liveSlug}</a>.
     One last step: open the email we sent to ${a.email} and click the link to
-    confirm your account. It takes you straight to the page, signed in and
-    ready to edit. After that, use Sign in at the top of this site with the
-    same email and password.
+    confirm your account. It signs you in to your dashboard. After that, use
+    Sign in at the top of this site with the same email and password.
   </div>
 `;
 

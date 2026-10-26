@@ -15,6 +15,7 @@ import { fitView } from "../js/views/fit.js";
 import { landing } from "../js/views/landing.js";
 import { authView } from "../js/views/auth.js";
 import { signupView, mockGolfer, mockPagePanel, mockBanner } from "../js/views/signup.js";
+import { nav } from "../js/lib/shell.js";
 import { provenanceView } from "../js/views/provenance.js";
 import { faqView } from "../js/views/faq.js";
 import { termsView, privacyView } from "../js/views/legal.js";
@@ -166,6 +167,15 @@ export const viewCases = [
       const done = mockBanner({ ...base, needsEmailConfirm: false });
       assert.ok(!done.includes("One last step") && !done.includes("live-banner"), "no reminder once confirmed");
       assert.ok(!done.includes("Demo preview"), "a real account never shows the demo banner");
+    },
+  },
+  {
+    name: "a signed-in parent gets their own nav: dashboard, fit, edit, sign out",
+    run: (assert) => {
+      const out = nav(null, { name: "Dylan Daner" }, "my", { account: "dylan-daner" });
+      for (const href of ["#/my", "#/my/fit", "#/my/edit"]) assert.ok(out.includes(`href="${href}"`), `missing ${href}`);
+      assert.ok(out.includes('data-action="account-signout"'), "missing sign out");
+      assert.ok(!out.includes('href="#/login"'), "a signed-in parent should not see Sign in");
     },
   },
   {

@@ -94,6 +94,8 @@ export default async function handler(req) {
   if (body.scoringAvg) stats["Scoring Average"] = String(body.scoringAvg);
   await db.setDoc(golfer.id, "portfolio", {
     ...EMPTY_PORTFOLIO,
+    // Men's or women's golf: which coach the dashboard shows for each school.
+    team: body.gender === "women" ? "women" : "men",
     personal: { name, class_year: personal.class_year || "", hometown: personal.hometown || "" },
     golf: { ...EMPTY_PORTFOLIO.golf, stats },
   });

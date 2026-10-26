@@ -1711,6 +1711,14 @@ body.is-owner .visitor-only { display: none !important; }
   <!-- Motion + interaction for the hero. Observes the DOM rather than
        being called by renderHero(), so re-renders are handled for free. -->
   <script defer src="/assets/golfer/hero-pop.js"></script>
+  <style>
+    /* The app link inside the owner pill (golfer.html only). */
+    .mode-pill-dashboard {
+      color: inherit; font-weight: 600; text-decoration: none; margin-right: .4rem;
+      padding-right: .55rem; border-right: 1px solid rgba(255,255,255,.25);
+    }
+    .mode-pill-dashboard:hover { text-decoration: underline; }
+  </style>
 </head>
 <body>
   <!-- ---------- Owner gate (UX-level password protection) ---------- -->
@@ -1758,6 +1766,7 @@ body.is-owner .visitor-only { display: none !important; }
          floating in the viewport. Hidden on first paint until OwnerGate
          decides whether to show the gate or the saved role. -->
     <div id="mode-pill" class="mode-pill" hidden>
+      <a id="mode-pill-dashboard" class="mode-pill-dashboard" href="/#/my" hidden>← Dashboard</a>
       <span id="mode-pill-label">🔑 Owner mode</span>
       <button type="button" id="mode-pill-switch">Switch to Visitor</button>
     </div>
@@ -4845,6 +4854,14 @@ const PORTFOLIO_DATA = {
       const switchBtn = document.getElementById("mode-pill-switch");
       if (!pill || !label || !switchBtn) return;
       pill.hidden = false;
+      // "← Dashboard" for an owner signed in on the app in this tab
+      // (data/account.js saves dg.account for this golfer).
+      const dash = document.getElementById("mode-pill-dashboard");
+      if (dash) {
+        let mine = false;
+        try { mine = (JSON.parse(sessionStorage.getItem("dg.account")) || {}).slug === window.DripTenant.slug; } catch { /* no account */ }
+        dash.hidden = !(role === "owner" && mine);
+      }
       if (role === "owner") {
         pill.classList.remove("is-visitor");
         label.textContent     = "🔑 Owner mode";

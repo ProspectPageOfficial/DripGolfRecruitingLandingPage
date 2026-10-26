@@ -60,6 +60,7 @@ test("sign-up creates a page at /<first>-<last> with the survey answers on it", 
   assert.equal(page.body.name, "Ava Reed");
   assert.equal(page.body.ownerConfirmed, true, "dev accounts count as confirmed");
   assert.equal(page.body.portfolio.golf.stats["Overall JGS Rank"], "850");
+  assert.equal(page.body.portfolio.team, "men", "team is saved for the coach cards");
   const bio = await call(personal, "personal", { golfer: "ava-reed" });
   assert.equal(bio.body.hometown, "Austin, TX");
   assert.equal(bio.body.class_year, "Class of 2029", "survey classYear maps to class_year");

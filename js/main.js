@@ -20,7 +20,9 @@ import { landing } from "./views/landing.js";
 import { authView, bindAuth } from "./views/auth.js";
 import {
   signupView, bindSignup, bindWelcome, loadAnswers, mockGolfer, mockPagePanel, mockBanner, MOCK_KEY,
+  livePagePanel,
 } from "./views/signup.js";
+import { loadAccount, saveAccount, clearAccount, fetchAccountGolfer } from "./data/account.js";
 import { dashboardView } from "./views/dashboard.js";
 import { fitView, bindFit } from "./views/fit.js";
 import { provenanceView } from "./views/provenance.js";
@@ -75,6 +77,14 @@ const ROUTES = [
       pagePanel: mockPagePanel(ctx.answers), banner: mockBanner(ctx.answers), fitHref: "#/welcome/fit",
     }) },
   { path: /^\/welcome\/fit$/, key: "welcome-fit", mock: true, render: (ctx) => fitView(ctx.mock) },
+  // A real parent account (sign-up survey + Supabase). Guarded by having
+  // signed in on this tab; the golfer is read from the page's own API.
+  { path: /^\/my$/,        key: "my",        account: true, render: (ctx) => dashboardView(ctx.mine, true, {
+      pagePanel: livePagePanel({ liveSlug: ctx.account.slug }, "#/my/edit"), banner: "", fitHref: "#/my/fit",
+    }) },
+  { path: /^\/my\/fit$/,   key: "my-fit",    account: true, render: (ctx) => fitView(ctx.mine) },
+  // Opens the golfer page already signed in (owner mode), same tab.
+  { path: /^\/my\/edit$/,  key: "my-edit",   account: true, editPage: true },
   { path: /^\/data$/,      key: "data",      render: () => provenanceView() },
   { path: /^\/faq$/,       key: "faq",       render: () => faqView() },
   { path: /^\/terms$/,     key: "terms",     render: () => termsView() },
@@ -142,14 +152,36 @@ async function router() {
     return;
   }
 
+  if (route.account) {
+    ctx.account = loadAccount();
+    if (!ctx.account) {
+      location.hash = "#/login";
+      return;
+    }
+    if (route.editPage) {
+      // Swap this history entry for the dashboard first, so Back from the
+      // page lands on #/my instead of re-entering this hop.
+      history.replaceState(null, "", "#/my");
+      return openMyPage(ctx.account.slug, ctx.account.session);
+    }
+    ctx.mine = await fetchAccountGolfer(ctx.account.slug);
+    if (!ctx.mine) return paint(ctx, route.key, accountUnavailable());
+  }
+
   paint(ctx, route.key, route.render(ctx));
-  bindFor(route.key);
+  bindFor(route.key, ctx);
 }
 
 function paint(ctx, active, body) {
-  root.innerHTML = ctx.mock
+  root.innerHTML = ctx.account
+    ? page(null, ctx.mine, active, body, { account: ctx.account.slug })
+    : ctx.mock
     ? page(null, ctx.mock, active, body, true)
     : page(ctx.user, ctx.golfer, active, body);
+  root.querySelector("[data-action='account-signout']")?.addEventListener("click", () => {
+    clearAccount();
+    location.hash = "#/";
+  });
   root.querySelector("[data-action='signout']")?.addEventListener("click", async () => {
     await auth.signOut();
     location.hash = "#/";
@@ -159,7 +191,8 @@ function paint(ctx, active, body) {
 }
 
 /** Per-route event wiring. Views stay pure-ish; binding is explicit. */
-function bindFor(key) {
+function bindFor(key, ctx = {}) {
+  if (key === "my-fit") bindFit(root, { profile: ctx.mine });
   if (key === "login") {
     bindAuth(root, {
       onDone: () => {
@@ -187,6 +220,14 @@ function bindFor(key) {
     bindFit(root, { profile: buildGolfer(ui.live) });
   }
 }
+
+/** The account is signed in but its page could not be read (network, or deleted). */
+const accountUnavailable = () => html`
+  <div class="container section">
+    ${raw(empty("We couldn't load your golfer's page just now. Check your connection and try again."))}
+    <p class="center" style="margin-top:1rem"><a class="btn btn-ghost" href="#/my">Try again</a></p>
+  </div>
+`;
 
 const notFound = () => html`
   <div class="container section">
@@ -225,8 +266,9 @@ async function finishEmailLink() {
     expiresAt: Number(params.get("expires_at")) || null,
   });
   if (found.slug) {
-    openMyPage(found.slug, found.session);
-    return true;
+    saveAccount(found.slug, found.session);
+    location.replace("#/my");
+    return false; // let boot() continue and route to the dashboard
   }
   notice(("Your email is confirmed. " + (found.error || "") + " Sign in below.").replace(/\s+/g, " "));
   return false;

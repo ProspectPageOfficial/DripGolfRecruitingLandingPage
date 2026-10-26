@@ -4,13 +4,14 @@
  * Two kinds of sign-in share this form:
  *   - the demo account (Luke) -- browser-only, opens the demo dashboard
  *   - a real parent account (made by the sign-up survey) -- checked by
- *     /api/my-page, then the parent lands on their golfer's page, signed in
- *     and ready to edit (lib/mypage.js)
+ *     /api/my-page, then the parent lands on their dashboard (#/my), with
+ *     "Edit my page" one click away (data/account.js, lib/mypage.js)
  */
 import { html, raw, formData, extLink } from "../lib/dom.js";
 import { auth } from "../auth/store.js";
 import { DEMO_LOGIN, PUBLIC_SITE } from "../config.js";
-import { findMyPage, openMyPage, AUTH_NOTICE_KEY } from "../lib/mypage.js";
+import { findMyPage, AUTH_NOTICE_KEY } from "../lib/mypage.js";
+import { saveAccount } from "../data/account.js";
 
 /** A one-time message left by the confirmation-email link (main.js). */
 function takeNotice() {
@@ -32,8 +33,8 @@ export function authView() {
           <span class="eyebrow">Welcome back</span>
           <h1 class="serif" style="margin-top:.5rem">Sign in.</h1>
           <p class="muted" style="font-size:.88rem">
-            Parents: use the email and password you signed up with. You'll go
-            straight to your golfer's page, ready to edit.
+            Parents: use the email and password you signed up with to open your
+            dashboard, fit scores and page editor.
           </p>
         </div>
 
@@ -110,7 +111,11 @@ export function bindAuth(root, { onDone }) {
     }
 
     const found = await findMyPage({ email, password });
-    if (found.slug) return openMyPage(found.slug, found.session);
+    if (found.slug) {
+      saveAccount(found.slug, found.session);
+      location.hash = "#/my";
+      return;
+    }
     msg.innerHTML = html`<div class="alert alert-error">${found.error}</div>`;
     button.disabled = false;
   });

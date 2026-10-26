@@ -8,14 +8,27 @@
 import { html, raw, initials, isExternal, extLink } from "./dom.js";
 import { PUBLIC_SITE } from "../config.js";
 
+/**
+ * `mock` is one of:
+ *   false                  signed out, or the Luke demo account (`user`)
+ *   true                   the sign-up demo's preview dashboard
+ *   { account: "<slug>" }  a real parent account (data/account.js)
+ */
 export function nav(user, golfer, active, mock = false) {
+  const account = mock && typeof mock === "object" ? mock.account : null;
   // Signed-out visitors get no nav links — the "FAQ", "Sign in" and "Create
   // account" buttons below are the only affordances they need. Anything else (like a "The Page" tab) is noise
   // for someone who hasn't opted in yet, and duplicating "Sign In" here would
   // just repeat the button rendered a few lines down.
   // The sign-up demo's mock dashboard gets the signed-in tabs, pointed at its
   // own routes, so the preview looks like the real thing without an account.
-  const links = mock
+  const links = account
+    ? [
+        ["#/my", "Dashboard", "my"],
+        ["#/my/fit", "College Best Fit", "my-fit"],
+        ["#/my/edit", "Edit my page", "my-edit"],
+      ]
+    : mock
     ? [
         ["#/welcome", "Dashboard", "welcome"],
         ["#/welcome/fit", "College Best Fit", "welcome-fit"],
@@ -61,7 +74,11 @@ export function nav(user, golfer, active, mock = false) {
                sign up is exactly who has questions. -->
           <a class="btn btn-sm btn-ghost${active === "faq" ? " active" : ""}" href="#/faq">FAQ</a>
           ${raw(
-            mock
+            account
+              ? html`<button class="btn btn-sm btn-ghost" data-action="account-signout">
+                    Sign out (${initials(golfer?.name)})
+                  </button>`
+              : mock
               ? html`<a class="btn btn-sm btn-ghost" href="#/signup">
                     Exit preview (${initials(golfer?.name)})
                   </a>`
