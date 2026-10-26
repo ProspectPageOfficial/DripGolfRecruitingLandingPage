@@ -17,6 +17,7 @@ import signup, { baseSlug } from "../../netlify/functions/signup.mjs";
 import login from "../../netlify/functions/login.mjs";
 import golfer from "../../netlify/functions/golfer.mjs";
 import myPage from "../../netlify/functions/my-page.mjs";
+import golfStats, { cleanRank } from "../../netlify/functions/golf-stats.mjs";
 import personal from "../../netlify/functions/personal.mjs";
 import tournaments from "../../netlify/functions/tournaments.mjs";
 import { portfolioFromHtml } from "../../tools/import-golfer.mjs";
@@ -209,4 +210,39 @@ test("the survey can ask whether sign-ups are open", async () => {
   process.env.SIGNUPS_ENABLED = "false";
   try { assert.equal((await call(signup, "signup")).body.open, false); }
   finally { process.env.SIGNUPS_ENABLED = "true"; }
+});
+
+test("an owner can edit their rankings and every reader sees them", async () => {
+  await ready;
+  const put = await call(golfStats, "golf-stats", { method: "PUT", golfer: "ava-reed", token: ava.session.access_token,
+    body: { "Overall JGS Rank": "#1,234", "TUGR Rank": "900", "CGA Rank": "n/a", "Drip Golf Rank": "12" } });
+  assert.equal(put.status, 200);
+  assert.deepEqual(put.body, { "Overall JGS Rank": "1234", "TUGR Rank": "900", "CGA Rank": "N/A", "Drip Golf Rank": "12" });
+
+  // /api/golfer layers them over the sign-up value (850), which is what the
+  // page, the dashboard and College Best Fit read.
+  const page = await call(golfer, "golfer", { golfer: "ava-reed" });
+  assert.equal(page.body.portfolio.golf.stats["Overall JGS Rank"], "1234");
+  assert.equal(page.body.portfolio.golf.stats["CGA Rank"], "N/A");
+
+  // A blank box drops the owner's value and falls back to the original.
+  await call(golfStats, "golf-stats", { method: "PUT", golfer: "ava-reed", token: ava.session.access_token,
+    body: { "Overall JGS Rank": "" } });
+  const back = await call(golfer, "golfer", { golfer: "ava-reed" });
+  assert.equal(back.body.portfolio.golf.stats["Overall JGS Rank"], "850");
+  assert.equal(back.body.portfolio.golf.stats["TUGR Rank"], "900", "other ranks untouched");
+});
+
+test("rankings are owner-only and must be real numbers", async () => {
+  await ready;
+  const anon = await call(golfStats, "golf-stats", { method: "PUT", golfer: "ava-reed", body: { "TUGR Rank": "1" } });
+  assert.equal(anon.status, 401);
+  const other = await call(golfStats, "golf-stats", { method: "PUT", golfer: "ava-reed", token: luke.session.access_token,
+    body: { "TUGR Rank": "1" } });
+  assert.equal(other.status, 401, "another family cannot set Ava's ranks");
+  const bad = await call(golfStats, "golf-stats", { method: "PUT", golfer: "ava-reed", token: ava.session.access_token,
+    body: { "Overall JGS Rank": "top 10" } });
+  assert.equal(bad.status, 400);
+  assert.deepEqual(cleanRank(" 0 "), { error: cleanRank("x").error });
+  assert.deepEqual(cleanRank("12,080"), { value: "12080" });
 });

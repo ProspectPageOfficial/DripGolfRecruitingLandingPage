@@ -34,13 +34,17 @@ export default async function handler(req) {
   if (t.error) return t.error;
   const { golfer, store } = t;
 
-  const saved = await store.get("portfolio");
+  const [saved, ranks] = await Promise.all([store.get("portfolio"), store.get("golf-stats")]);
+  const portfolio = { ...EMPTY_PORTFOLIO, ...(saved || {}) };
+  // The owner's own rankings (/api/golf-stats) over the imported ones, so
+  // the page, resume, dashboard and College Best Fit all follow an edit.
+  portfolio.golf = { ...portfolio.golf, stats: { ...(portfolio.golf?.stats || {}), ...(ranks || {}) } };
   return json(200, {
     id: golfer.id,
     slug: golfer.slug,
     name: golfer.name,
     ownerConfirmed: await t.db.isConfirmed(golfer.owner_id),
-    portfolio: { ...EMPTY_PORTFOLIO, ...(saved || {}) },
+    portfolio,
     storage: {
       url: process.env.SUPABASE_URL || null,
       key: process.env.SUPABASE_PUBLISHABLE_KEY || null,

@@ -1569,6 +1569,7 @@ body.is-owner .visitor-only { display: none !important; }
    form an evenly-spaced stack. */
 .resume-pill { top: 4.25rem; }
 .theme-pill  { top: 7.5rem;  }
+.rank-pill   { top: 10.75rem; }
 
 @media (max-width: 480px) {
   .resume-pill,
@@ -1580,6 +1581,7 @@ body.is-owner .visitor-only { display: none !important; }
   }
   .resume-pill { top: 3.5rem; }
   .theme-pill  { top: 6.3rem; }
+  .rank-pill   { top: 9.1rem; }
 }
 .mode-pill button {
   background: rgba(255,255,255,0.18);
@@ -1693,6 +1695,16 @@ body.is-owner .visitor-only { display: none !important; }
   display: flex; flex-wrap: wrap; gap: 0.5rem;
   margin-top: 1.2rem;
 }
+/* Rankings pop-up: same card as the theme editor, text boxes not swatches. */
+.theme-field input.rank-input {
+  width: 9rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid rgba(31, 77, 43, 0.3);
+  border-radius: 8px;
+  font: inherit;
+  text-align: right;
+}
+.theme-field input.rank-input:focus { outline: 2px solid var(--green); outline-offset: 1px; }
 
 </style>
 
@@ -1790,6 +1802,13 @@ body.is-owner .visitor-only { display: none !important; }
             title="Edit site theme colors"
             aria-label="Edit site theme colors">
       🎨 Edit Site Theme
+    </button>
+    <!-- Owner-only, same pill styling, one step further down the stack. -->
+    <button type="button" id="rank-edit-btn"
+            class="theme-pill rank-pill owner-only"
+            title="Edit your rankings"
+            aria-label="Edit your JGS, TUGR, CGA and Drip Golf rankings">
+      ✏️ Edit Rankings
     </button>
 
     <div class="hero-content">
@@ -2279,6 +2298,35 @@ body.is-owner .visitor-only { display: none !important; }
         <button type="button" id="theme-cancel-btn" class="swing-ghost-btn" data-theme-close>Cancel</button>
         <button type="button" id="theme-reset-btn" class="swing-ghost-btn personal-reset">Reset to Defaults</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Rankings editor. Same modal pattern as the theme editor above. -->
+  <div id="rank-modal" class="theme-modal" hidden role="dialog"
+       aria-labelledby="rank-modal-title" aria-modal="true">
+    <div class="theme-modal-backdrop" data-rank-close></div>
+    <div class="theme-modal-card" role="document">
+      <h3 id="rank-modal-title">✏️ Your Rankings</h3>
+      <p class="theme-modal-help">
+        Update these whenever your rankings change. Type a number, <strong>N/A</strong>,
+        or leave a box blank to go back to the original value. Your
+        <strong>JGS rank</strong> also updates your College Best Fit scores.
+      </p>
+      <form id="rank-form" novalidate>
+        <label class="theme-field"><span>JGS Rank</span>
+          <input class="rank-input" name="Overall JGS Rank" inputmode="numeric" autocomplete="off" placeholder="e.g. 850"></label>
+        <label class="theme-field"><span>TUGR Rank</span>
+          <input class="rank-input" name="TUGR Rank" inputmode="numeric" autocomplete="off" placeholder="e.g. 1200"></label>
+        <label class="theme-field"><span>CGA Rank</span>
+          <input class="rank-input" name="CGA Rank" inputmode="numeric" autocomplete="off" placeholder="N/A"></label>
+        <label class="theme-field"><span>Drip Golf Rank</span>
+          <input class="rank-input" name="Drip Golf Rank" inputmode="numeric" autocomplete="off" placeholder="e.g. 12"></label>
+        <p id="rank-status" class="swing-upload-status" role="status" aria-live="polite"></p>
+        <div class="theme-modal-actions">
+          <button type="submit" id="rank-save-btn" class="swing-upload-btn">💾 Save</button>
+          <button type="button" class="swing-ghost-btn" data-rank-close>Cancel</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -4815,6 +4863,72 @@ const PORTFOLIO_DATA = {
   })();
 
 
+  // ---------- RankEditor: the owner's JGS / TUGR / CGA / Drip Golf ranks ----------
+  // Saves to /api/golf-stats (owner only). /api/golfer layers the saved
+  // values over the imported stats on every load, so after a save the page
+  // updates in place here, and the dashboard / College Best Fit pick the new
+  // JGS rank up the next time they load.
+  const RankEditor = (() => {
+    const API = "/api/golf-stats";
+    const FIELDS = ["Overall JGS Rank", "TUGR Rank", "CGA Rank", "Drip Golf Rank"];
+
+    function open() {
+      const form = document.getElementById("rank-form");
+      const stats = PORTFOLIO_DATA.golf.stats || {};
+      for (const f of FIELDS) form.elements[f].value = stats[f] && stats[f] !== "—" ? stats[f] : "";
+      document.getElementById("rank-status").textContent = "";
+      document.getElementById("rank-modal").hidden = false;
+      setTimeout(() => form.elements[FIELDS[0]].focus(), 30);
+    }
+    const close = () => { document.getElementById("rank-modal").hidden = true; };
+
+    async function save(e) {
+      e.preventDefault();
+      const form = e.currentTarget;
+      const status = document.getElementById("rank-status");
+      const btn = document.getElementById("rank-save-btn");
+      const body = {};
+      for (const f of FIELDS) body[f] = form.elements[f].value.trim();
+      btn.disabled = true;
+      status.textContent = "Saving…";
+      try {
+        const res = await fetch(API, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        if (res.status === 401) {
+          status.textContent = "Please sign in again to save.";
+          if (window.OwnerGate) window.OwnerGate.promptForOwner();
+          return;
+        }
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) { status.textContent = data.error || "Couldn't save. Please try again."; return; }
+        // Re-read so a cleared box shows the original value again.
+        const fresh = await fetch("/api/golfer", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+        PORTFOLIO_DATA.golf.stats = fresh?.portfolio?.golf?.stats || { ...PORTFOLIO_DATA.golf.stats, ...data };
+        if (window.rerenderHero) window.rerenderHero();
+        if (window.rerenderGolf) window.rerenderGolf();
+        close();
+      } catch {
+        status.textContent = "Couldn't reach the server. Check your connection.";
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function init() {
+      document.getElementById("rank-edit-btn")?.addEventListener("click", open);
+      document.getElementById("rank-form")?.addEventListener("submit", save);
+      document.querySelectorAll("[data-rank-close]").forEach((el) => el.addEventListener("click", close));
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && !document.getElementById("rank-modal").hidden) close();
+      });
+    }
+    return { init, open };
+  })();
+  window.RankEditor = RankEditor;
+
   // ---------- Owner Gate (real server-side auth) ----------
   // Password verification happens via POST /api/auth, which compares the
   // submitted password against the OWNER_PASSWORD_HASH env var set on
@@ -5715,6 +5829,7 @@ const PORTFOLIO_DATA = {
     }
     // Gate first so the body.is-owner class is set before edit UI renders.
     OwnerGate.init();
+    RankEditor.init();
     // ThemeEditor + PersonalBio both fetch from the server and apply
     // their state before the first render. Run them in parallel —
     // they're independent (theme = CSS vars, bio = data) so Promise.all
