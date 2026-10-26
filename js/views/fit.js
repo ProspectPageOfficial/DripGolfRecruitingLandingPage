@@ -329,7 +329,20 @@ function versusStack(profile, school, fit, size) {
  * @param {Object} opts.profile  the golfer whose numbers score the schools.
  *   Required, because live search re-runs `rankSchools` on every keystroke.
  */
+/**
+ * The row listeners live on `root` (the app container), which outlives every
+ * screen. Each bindFit() call aborts the previous call's listeners first:
+ * without that, visiting College Best Fit twice left two click handlers, and
+ * a click opened the school and closed it again in the same moment.
+ */
+const fitListeners = new WeakMap();
+
 export function bindFit(root, { profile }) {
+  fitListeners.get(root)?.abort();
+  const listeners = new AbortController();
+  fitListeners.set(root, listeners);
+  const { signal } = listeners;
+
   const searchEl = root.querySelector("#p-search");
   const resultsEl = root.querySelector("#fit-results");
 
@@ -371,12 +384,12 @@ export function bindFit(root, { profile }) {
     }
     const row = e.target.closest(".school-row");
     if (row) toggle(row);
-  });
+  }, { signal });
   root.addEventListener("keydown", (e) => {
     if (e.key !== "Enter" && e.key !== " ") return;
     const row = e.target.closest(".school-row");
     if (!row) return;
     e.preventDefault();
     toggle(row);
-  });
+  }, { signal });
 }
