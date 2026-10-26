@@ -149,6 +149,16 @@ export const viewCases = [
     },
   },
   {
+    name: "after a real sign-up the dashboard frames the live page, not the draft",
+    run: (assert) => {
+      const live = mockPagePanel({ name: "Dylan Daner", liveSlug: "dylan-daner" });
+      assert.ok(live.includes('src="/dylan-daner?role=visitor"'), "live page should be framed");
+      assert.ok(live.includes('href="/dylan-daner"'), "Open my page should link the page");
+      assert.ok(!live.includes("Draft"), "a live page is not a draft");
+      assert.ok(mockPagePanel({ name: "Demo Golfer" }).includes("Draft"), "demo sign-ups keep the draft preview");
+    },
+  },
+  {
     name: "provenance view renders",
     run: (assert) => rendersFine(assert, "provenanceView", () => provenanceView()),
   },

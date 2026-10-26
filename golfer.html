@@ -4972,9 +4972,16 @@ const PORTFOLIO_DATA = {
       // Only the LOW-privilege role can be pre-selected this way: owner
       // still has to earn the pill by typing the password. Anything else
       // would reduce a real auth check to "add a query string".
+      //
+      // Display only: nothing is written to sessionStorage. The app's
+      // dashboard frames this page with ?role=visitor on the SAME origin, so
+      // the frame shares the tab's sessionStorage; signing out here would
+      // sign the parent out of their own page in the tab they are using.
       const urlRole = new URLSearchParams(location.search).get("role");
       if (urlRole === "visitor") {
-        switchToVisitor();
+        document.body.classList.remove("is-owner");
+        updatePill("visitor");
+        showGate(false);
         return;
       }
 

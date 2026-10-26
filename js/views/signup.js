@@ -14,7 +14,8 @@
  * lands, the finish step becomes `auth.signUp()` plus an insert into the
  * `golfer` table, and the survey itself does not change.
  */
-import { html, raw, formData, initials } from "../lib/dom.js";
+import { html, raw, formData, initials, extLink } from "../lib/dom.js";
+import { sitePreview } from "../lib/thumbs.js";
 import { normalizeLive } from "../data/live.js";
 import { loadRoster, loadProfile, matchPlayers, isGirlsDivision } from "../data/dripgolf.js";
 import { domainStep, bindDomainStep, checkoutStep, bindCheckoutStep, setupTracker } from "./domain.js";
@@ -258,7 +259,36 @@ export function mockGolfer(a) {
  * The left half of the mock dashboard. Luke's shows a live frame of his real
  * site; a new golfer has no site yet, so this renders what theirs would say.
  */
+/**
+ * After a real sign-up the page exists, so show it: the same live, scaled
+ * frame Luke's dashboard shows of his site, pointed at /<slug>. "Edit" goes
+ * through Sign in, which lands the parent on the page in owner mode.
+ */
+function livePagePanel(a) {
+  const site = {
+    url: `/${a.liveSlug}`,
+    previewUrl: `/${a.liveSlug}?role=visitor`,
+    host: `dripgolfrecruiting.com/${a.liveSlug}`,
+  };
+  return html`
+    <div class="card">
+      <div class="row row-between">
+        <span class="eyebrow">Your page &mdash; ${site.host}</span>
+        <span class="pill pill-likely">Live</span>
+      </div>
+
+      ${raw(sitePreview(site))}
+
+      <div class="row panel-foot">
+        <a class="btn btn-sm" href="${site.url}" target="_blank" rel="noopener">Open my page</a>
+        <a class="btn btn-sm btn-ghost" href="#/login">Edit my page</a>
+      </div>
+    </div>
+  `;
+}
+
 export function mockPagePanel(a) {
+  if (a.liveSlug) return livePagePanel(a);
   const socials = SOCIALS.filter((s) => a[s.name]);
   return html`
     <div class="card">
