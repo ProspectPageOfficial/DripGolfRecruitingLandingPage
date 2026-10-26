@@ -100,6 +100,11 @@ export function supabaseDb() {
       return error ? null : toSession(data.session);
     },
 
+    async isConfirmed(userId) {
+      const { data, error } = await admin.auth.admin.getUserById(userId);
+      return !error && !!data?.user?.email_confirmed_at;
+    },
+
     async userFromToken(token) {
       const { data, error } = await admin.auth.getUser(token);
       return error || !data?.user ? null : { id: data.user.id, email: data.user.email };

@@ -58,6 +58,7 @@ test("sign-up creates a page at /<first>-<last> with the survey answers on it", 
   const page = await call(golfer, "golfer", { golfer: "ava-reed" });
   assert.equal(page.status, 200);
   assert.equal(page.body.name, "Ava Reed");
+  assert.equal(page.body.ownerConfirmed, true, "dev accounts count as confirmed");
   assert.equal(page.body.portfolio.golf.stats["Overall JGS Rank"], "850");
   const bio = await call(personal, "personal", { golfer: "ava-reed" });
   assert.equal(bio.body.hometown, "Austin, TX");

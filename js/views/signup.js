@@ -327,19 +327,60 @@ export function mockPagePanel(a) {
 }
 
 /** Shown above the mock dashboard so nobody mistakes the preview for a real account. */
-/** After a real sign-up: where the page lives, and the one thing left to do. */
+/**
+ * After a real sign-up, while the email is still unconfirmed: the one thing
+ * left to do. bindWelcome() removes it as soon as the server says the
+ * account is confirmed. Once confirmed there is nothing left to say -- the
+ * page panel beside it already links the live page.
+ */
 const liveBanner = (a) => html`
   <div class="alert alert-ok live-banner">
     <b>${a.firstName}'s page is live.</b>
     It's at <a href="/${a.liveSlug}" target="_blank" rel="noopener">dripgolfrecruiting.com/${a.liveSlug}</a>.
-    ${a.needsEmailConfirm
-      ? html`One last step: open the email we sent to ${a.email} and click the link to confirm your account. It takes you straight to the page, signed in and ready to edit. After that, use Sign in at the top of this site with the same email and password.`
-      : "To edit it, use Sign in at the top of this site with the email and password you just chose."}
+    One last step: open the email we sent to ${a.email} and click the link to
+    confirm your account. It takes you straight to the page, signed in and
+    ready to edit. After that, use Sign in at the top of this site with the
+    same email and password.
   </div>
 `;
 
+/**
+ * Watch for the confirmation (on load, when the tab is shown again, and every
+ * 15s while visible) and drop the reminder once it lands. Stops when the
+ * banner leaves the page, so navigating away leaves no timer behind.
+ */
+export function bindWelcome(root) {
+  const answers = loadAnswers();
+  const banner = root.querySelector(".live-banner");
+  if (!banner || !answers?.liveSlug || !answers.needsEmailConfirm) return;
+
+  let timer;
+  const stop = () => {
+    clearInterval(timer);
+    document.removeEventListener("visibilitychange", onShow);
+  };
+  const check = async () => {
+    if (!banner.isConnected) return stop();
+    try {
+      const res = await fetch("/api/golfer", { headers: { "X-Golfer": answers.liveSlug }, cache: "no-store" });
+      if (!res.ok || !(await res.json()).ownerConfirmed) return;
+    } catch {
+      return; // offline: try again next time
+    }
+    answers.needsEmailConfirm = false;
+    try { sessionStorage.setItem(MOCK_KEY, JSON.stringify(answers)); } catch { /* fine */ }
+    banner.remove();
+    stop();
+  };
+  const onShow = () => { if (document.visibilityState === "visible") check(); };
+
+  document.addEventListener("visibilitychange", onShow);
+  timer = setInterval(() => { if (document.visibilityState === "visible") check(); }, 15000);
+  check();
+}
+
 export const mockBanner = (a) => html`
-  ${raw(a.liveSlug ? liveBanner(a) : html`
+  ${raw(a.liveSlug ? (a.needsEmailConfirm ? liveBanner(a) : "") : html`
   <div class="banner-demo row row-between">
     <span>
       <b>Demo preview.</b> This dashboard is built from ${a.name}'s survey

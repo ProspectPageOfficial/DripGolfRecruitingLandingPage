@@ -1,7 +1,11 @@
 /**
  * /api/golfer — who this page belongs to, plus their generated portfolio.
  *
- * GET → public. { id, slug, name, portfolio, storage }
+ * GET → public. { id, slug, name, ownerConfirmed, portfolio, storage }
+ *
+ * `ownerConfirmed` lets the sign-up welcome screen drop its "confirm your
+ * email" reminder once the parent has clicked the link (usually in another
+ * tab). It reveals nothing beyond "this page's account is active".
  *
  * `portfolio` is what Luke's page used to carry inline as PORTFOLIO_DATA:
  * scraped seasons, personal defaults and golf stats. It is written by an
@@ -35,6 +39,7 @@ export default async function handler(req) {
     id: golfer.id,
     slug: golfer.slug,
     name: golfer.name,
+    ownerConfirmed: await t.db.isConfirmed(golfer.owner_id),
     portfolio: { ...EMPTY_PORTFOLIO, ...(saved || {}) },
     storage: {
       url: process.env.SUPABASE_URL || null,

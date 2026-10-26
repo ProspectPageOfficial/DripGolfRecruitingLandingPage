@@ -19,7 +19,7 @@ import { empty } from "./lib/components.js";
 import { landing } from "./views/landing.js";
 import { authView, bindAuth } from "./views/auth.js";
 import {
-  signupView, bindSignup, loadAnswers, mockGolfer, mockPagePanel, mockBanner, MOCK_KEY,
+  signupView, bindSignup, bindWelcome, loadAnswers, mockGolfer, mockPagePanel, mockBanner, MOCK_KEY,
 } from "./views/signup.js";
 import { dashboardView } from "./views/dashboard.js";
 import { fitView, bindFit } from "./views/fit.js";
@@ -177,6 +177,7 @@ function bindFor(key) {
     });
   }
 
+  if (key === "welcome") bindWelcome(root);
   if (key === "welcome-fit") bindFit(root, { profile: mockGolfer(loadAnswers()) });
 
   if (key === "fit") {

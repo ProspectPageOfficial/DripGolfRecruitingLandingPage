@@ -159,6 +159,16 @@ export const viewCases = [
     },
   },
   {
+    name: "the confirm-your-email reminder shows only until the email is confirmed",
+    run: (assert) => {
+      const base = { name: "Dylan Daner", firstName: "Dylan", email: "d@example.com", liveSlug: "dylan-daner" };
+      assert.ok(mockBanner({ ...base, needsEmailConfirm: true }).includes("One last step"), "reminder while pending");
+      const done = mockBanner({ ...base, needsEmailConfirm: false });
+      assert.ok(!done.includes("One last step") && !done.includes("live-banner"), "no reminder once confirmed");
+      assert.ok(!done.includes("Demo preview"), "a real account never shows the demo banner");
+    },
+  },
+  {
     name: "provenance view renders",
     run: (assert) => rendersFine(assert, "provenanceView", () => provenanceView()),
   },
