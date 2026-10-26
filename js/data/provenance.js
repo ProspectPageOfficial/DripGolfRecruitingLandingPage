@@ -65,15 +65,15 @@ export const PROVENANCE = Object.freeze([
   },
   {
     group: "College database",
-    status: "fabricated",
+    status: "assumption",
     what: "Every average senior-year JGS rank of the current roster",
-    source: "INVENTED for the 27 original programs; ESTIMATED from conference tier for the other ~860 and marked '(est.)' on screen. Real source would be JGS historical rank snapshots joined against each program's currently published roster (name + grad year). Requires a JGS data agreement -- no legitimate public export exists at the moment",
+    source: "ESTIMATED from conference tier for every program and marked '(est.)' on screen. Women's teams are converted to the girls' rankings by pool size (JGS ranks 4,220 girls vs 12,080 boys, Oct 2026). Real source would be the JGS ranks of each program's recent commits, which needs a JGS data agreement",
   },
   {
     group: "College database",
-    status: "fabricated",
-    what: "GPA, SAT, tuition and acceptance rate for the 27 original programs",
-    source: "INVENTED. Kept because the tests and coach cards are written against them; the generated rows below carry the real figures",
+    status: "real",
+    what: "SAT, tuition and acceptance rate for the 27 original programs",
+    source: "Now the same College Scorecard figures as every other program. The invented numbers these schools used to carry were removed in Oct 2026. No school has an average GPA on file: there is no free public source for it",
   },
   {
     group: "College database",

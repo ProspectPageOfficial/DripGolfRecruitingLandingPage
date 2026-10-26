@@ -62,8 +62,11 @@ const FAQ = [
       },
       {
         q: "Does it work for girls' golf?",
-        a: html`<p>Yes. At sign-up you choose men's or women's golf, and College
-          Best Fit only lists schools that field that team.</p>`,
+        a: html`<p>Yes. At sign-up you choose men's or women's golf. College
+          Best Fit then lists only schools with that team, shows that team's
+          head coach, and compares your golfer with the women's roster on the
+          girls' ranking scale (Junior Golf Scoreboard ranks far fewer girls
+          than boys, so the numbers aren't comparable without adjusting).</p>`,
       },
     ],
   },
@@ -140,17 +143,20 @@ const FAQ = [
         a: html`<p>School names, divisions, conferences, SAT averages, admission
           rates and tuition come from the NCAA member directory and the U.S.
           Department of Education's College Scorecard.</p>
-          <p>The roster ranks behind Athletic Fit are <b>estimates</b> for most
-          programs, based on the school's conference, and are marked "est." on
-          screen. Treat fit scores as a starting point for building a list,
-          not as a measurement. The <a href="#/data">data sources page</a>
+          <p>Head coaches and roster sizes are read from each school's own
+          athletics website. The roster ranks behind Athletic Fit are
+          <b>estimates</b>, based on the school's conference, and are marked
+          "est." on screen. There is no public source for colleges' average
+          GPA, so academic fit uses SAT/ACT. Treat fit scores as a starting
+          point for building a list, not as a measurement. The <a href="#/data">data sources page</a>
           shows exactly what is real and what is estimated.</p>`,
       },
       {
         q: "Does a high fit score mean my child will be recruited?",
         a: html`<p>No. A fit score says how your golfer's numbers compare with a
-          program's &mdash; it can't account for roster openings, a coach's
-          needs or timing. Use it to decide where to reach out, then let the
+          program's. Each school shows how many current players will have
+          graduated by your golfer's first fall, but it can't know a coach's
+          needs, redshirts or timing. Use it to decide where to reach out, then let the
           recruiting page and real conversations with coaches do the rest.</p>`,
       },
     ],

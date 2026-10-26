@@ -294,22 +294,15 @@ export const dataCases = [
     },
   },
   {
-    name: "the invented college data is still declared as invented",
+    name: "no college data is declared as invented any more",
     run: (assert) => {
-      // This case is a tripwire, not a checkmark. It exists so that the day
-      // someone swaps in real college data and forgets to update provenance,
-      // the suite complains. If you have replaced the dataset, update
-      // provenance.js and this case flips to asserting the opposite.
-      assert.equal(
-        hasFabricatedData(), true,
-        "provenance says nothing is fabricated - has the college data really " +
-        "been replaced? If so, update this test."
-      );
-      const invented = PROVENANCE.filter((r) => r.status === "fabricated");
-      assert.ok(
-        invented.some((r) => r.group === "College database"),
-        "the fabricated college data must stay declared until it is replaced"
-      );
+      // This used to be a tripwire asserting the invented college numbers
+      // were still declared. They were replaced (Oct 2026), so it now asserts
+      // the opposite: the college database has no "Invented" rows. Roster
+      // ranks are an estimate, declared as an assumption, not invented.
+      const invented = PROVENANCE.filter((r) => r.status === "fabricated" && r.group === "College database");
+      assert.equal(invented.length, 0, "a College database row is still marked invented");
+      void hasFabricatedData;
     },
   },
   {
@@ -343,13 +336,11 @@ export const dataCases = [
         // schools publish no SAT); a number that IS there must be in range.
         if (c.avgGPA != null) assert.ok(c.avgGPA > 0 && c.avgGPA <= 4.3, `bad GPA: ${c.id}`);
         if (c.avgSAT != null) assert.ok(c.avgSAT > 400 && c.avgSAT <= 1600, `bad SAT: ${c.id}`);
-        assert.ok(["hand-set", "conference-estimate"].includes(c.rankSource), `no rankSource: ${c.id}`);
+        assert.equal(c.rankSource, "conference-estimate", `no rankSource: ${c.id}`);
         if (c.programs) assert.ok(c.programs.men || c.programs.women, `${c.id} fields no golf team`);
       }
-      // The hand-set rows keep full academics, which the fit tests lean on.
-      for (const c of colleges.filter((x) => x.rankSource === "hand-set")) {
-        assert.ok(c.avgGPA != null && c.avgSAT != null, `hand-set row lost academics: ${c.id}`);
-      }
+      // Nothing invented: there is no public source for a school's average GPA.
+      for (const c of colleges) assert.equal(c.avgGPA ?? null, null, `invented GPA on ${c.id}`);
     },
   },
   {

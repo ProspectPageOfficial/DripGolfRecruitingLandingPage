@@ -25,6 +25,7 @@ import {
   TIER_COPY,
   headCoachFor,
   coachGenderFor,
+  rosterOutlook,
 } from "../lib/fit.js";
 import { colleges } from "../data/colleges.js";
 import { provenanceDetails } from "./provenance.js";
@@ -147,6 +148,12 @@ function schoolMeta(school, withTuition = false) {
   ].filter(Boolean).join(" · ");
 }
 
+/** "11 players · 5 will have graduated by fall 2029", when the roster was readable. */
+function rosterNote(school, profile) {
+  const o = rosterOutlook(school, profile);
+  return o ? html`<div class="school-roster">${o.text}</div>` : "";
+}
+
 function tierBlock(tier, rows, profile, expanded = false) {
   if (!rows.length) return "";
   const shown = expanded ? rows : rows.slice(0, PAGE);
@@ -187,6 +194,7 @@ function schoolRow({ school, fit }, profile) {
         <div>
           <div class="school-name">${school.name}</div>
           <div class="school-meta">${schoolMeta(school, true)}</div>
+          ${raw(rosterNote(school, profile))}
           <div class="school-versus">
             <span class="school-versus-side">
               <span class="school-versus-lbl">Your JGS rank</span>

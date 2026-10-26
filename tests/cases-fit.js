@@ -33,6 +33,9 @@ import {
   fieldsTeam,
   TIERS,
   ACADEMIC_GATE,
+  rosterRankFor,
+  JGS_POOL,
+  rosterOutlook,
 } from "../js/lib/fit.js";
 import {
   measureTrend,
@@ -49,8 +52,16 @@ const golfOnly = { scoringAvg: 69.0, nationalRank: 5, gpa: 2.1, sat: 820 };
 /** A middle schooler: real game, no academics on file. Modelled on Luke. */
 const noAcademics = { scoringAvg: 81.12, nationalRank: 10557 };
 const luke = buildGolfer();
-const stanford = collegeById["stanford"];
-const adrian = collegeById["adrian"];
+// Fixture schools for the engine tests: fixed numbers (the old demo values),
+// so these tests check the SCORING and stay put when real data changes. The
+// real Stanford and Adrian in colleges.js carry real data now.
+const stanford = Object.freeze({ id: "fixture-stanford", name: "Stanford University", division: "D1",
+  conference: "ACC", region: "West", type: "Private", avgRosterSeniorJgsRank: 45, avgGPA: 3.95,
+  avgSAT: 1520, tuition: 62484, acceptRate: 4, programs: { men: true, women: true } });
+const adrian = Object.freeze({ id: "fixture-adrian", name: "Adrian College", division: "D3",
+  conference: "MIAA", region: "Midwest", type: "Private", avgRosterSeniorJgsRank: 1100, avgGPA: 3.10,
+  avgSAT: 1020, tuition: 39000, acceptRate: 74, programs: { men: true, women: true } });
+void collegeById;
 /** Two schools identical but for the thing under test. */
 const pick = (division, overall, avgRosterSeniorJgsRank = 300) => ({
   school: { name: division + overall, division, avgRosterSeniorJgsRank },
@@ -561,7 +572,7 @@ export const fitCases = [
         }
       }
       // Every hand-set program but one (WashU lists no men's team) carries a men's coach.
-      const handSet = colleges.filter((c) => c.rankSource === "hand-set");
+      const handSet = colleges.filter((c) => c.handEntered);
       assert.equal(handSet.filter((c) => c.headCoaches?.men).length, handSet.length - 1);
     },
   },
@@ -636,6 +647,54 @@ export const fitCases = [
       assert.equal(t.measurable, true);
       assert.ok(t.strokesPerYear < -2, `expected clear improvement, got ${t.strokesPerYear}`);
       assert.equal(t.reliable, true, "a clean signal should be reported as reliable");
+    },
+  },
+  {
+    name: "girls are compared with a girls'-scale roster number, boys with the boys' one",
+    run: (assert) => {
+      const school = { id: "x", division: "D1", avgRosterSeniorJgsRank: 1208, programs: { men: true, women: true } };
+      assert.equal(rosterRankFor(school, "men"), 1208);
+      assert.equal(rosterRankFor(school, "women"), Math.round(1208 * JGS_POOL.girls / JGS_POOL.boys));
+      assert.equal(rosterRankFor({ ...school, womenRosterRank: 90 }, "women"), 90, "a measured number wins");
+      // The same girl's rank (#422 of 4,220 = top 10%) should look like a
+      // top-10% boy (#1,208 of 12,080) to the engine, not like a much
+      // stronger player than she is.
+      const girl = { nationalRank: 422, gender: "women" };
+      const boy = { nationalRank: 1208, gender: "men" };
+      const g = rankSchools(girl, [school])[0];
+      const b = rankSchools(boy, [school])[0];
+      assert.equal(g.fit.athletic, b.fit.athletic, "same percentile, same athletic fit");
+      assert.equal(g.school.rankScale, "girls");
+      assert.match(g.fit.components.find((c) => c.key === "rank")?.detail ?? JSON.stringify(g.fit), /girls' rankings/);
+    },
+  },
+  {
+    name: "no invented numbers reach a family: hand-entered schools use real data",
+    run: (assert) => {
+      for (const c of colleges.filter((x) => x.handEntered)) {
+        assert.equal(c.avgGPA ?? null, null, `${c.id} still has an invented GPA`);
+        assert.equal(c.rankSource, "conference-estimate", `${c.id} rank is not the labelled estimate`);
+        assert.equal(c.nationalRank, undefined, `${c.id} still has an invented team rank`);
+      }
+      const ok = collegeById["oklahoma-st"];
+      assert.equal(ok.name, "Oklahoma State University");
+      assert.ok(ok.avgSAT !== 1230 || ok.tuition !== 26898, "Oklahoma State should carry Scorecard figures, not the demo ones");
+    },
+  },
+  {
+    name: "roster outlook counts who will have graduated by the golfer's first fall",
+    run: (assert) => {
+      // 2026-27 season: seniors leave after spring 2027, juniors 2028,
+      // sophomores 2029, freshmen 2030; grad students are in their last year.
+      const school = { rosterSeason: "2026-27", rosters: { men: { size: 11, byYear: { 1: 3, 2: 2, 3: 1, 4: 4, 5: 1 } } } };
+      const c27 = rosterOutlook(school, { class_year: "Class of 2027", gender: "men" });
+      assert.equal(c27.leaving, 5, "seniors + grad students");
+      assert.equal(rosterOutlook(school, { class_year: "Class of 2028" }).leaving, 6);
+      assert.equal(rosterOutlook(school, { class_year: "Class of 2029" }).leaving, 8);
+      assert.match(rosterOutlook(school, { class_year: "Class of 2031" }).text, /all will have graduated by fall 2031/);
+      assert.match(rosterOutlook(school, {}).text, /5 in their final season/);
+      assert.equal(rosterOutlook(school, { gender: "women" }), null, "no women's roster on file -> nothing shown");
+      assert.equal(rosterOutlook({ rosterSeason: "2026-27" }, {}), null);
     },
   },
 ];

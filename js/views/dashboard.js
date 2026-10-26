@@ -18,6 +18,7 @@ import {
   isScorable,
   headCoachFor,
   coachGenderFor,
+  rosterOutlook,
 } from "../lib/fit.js";
 import { colleges } from "../data/colleges.js";
 import { PUBLIC_SITE } from "../config.js";
@@ -149,6 +150,7 @@ const topPick = ({ school, fit }, profile, fitHref) => {
             <span class="thumb-meta">
               ${school.division} &middot; ${school.conference}
             </span>
+            ${raw(rosterOutlook(school, profile) ? html`<span class="school-roster">${rosterOutlook(school, profile).text}</span>` : "")}
             <span class="row" style="gap:.4rem;margin-top:.35rem">${raw(tierPill(fit.tier))}</span>
           </span>
           <b class="top-pick-score" style="color:var(--tier-${fit.tier})">${fit.overall}</b>

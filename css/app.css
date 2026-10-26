@@ -1085,3 +1085,7 @@ table.data tbody tr:hover { background: var(--cream-2); }
 /* Sign-up while sign-ups are live but payment is not built yet. */
 .beta-pill { align-self: flex-start; margin: 0; }
 .live-banner { margin-bottom: var(--s-3); }
+
+/* Roster outlook under a school's name (lib/fit.js rosterOutlook). */
+.school-roster { font-size: 0.76rem; color: var(--ink-soft); margin-top: 0.15rem; }
+.top-pick .school-roster { display: block; }

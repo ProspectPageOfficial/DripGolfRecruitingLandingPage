@@ -28,10 +28,10 @@ import { NCAA_GOLF_PROGRAMS } from "../js/data/colleges-ncaa.js";
 
 const OUT = new URL("../js/data/coaches-ncaa.js", import.meta.url);
 const CACHE = new URL("./.cache/coaches/", import.meta.url);
-const DIRECTORY = "https://web3.ncaa.org/directory/api/directory/memberList?type=12&sportCode=";
+export const DIRECTORY = "https://web3.ncaa.org/directory/api/directory/memberList?type=12&sportCode=";
 const REFRESH = process.argv.includes("--refresh");
 const CONCURRENCY = 8;
-const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36";
+export const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0 Safari/537.36";
 
 /** Where each platform keeps a team's coaches page, most common first. */
 const PATHS = {
@@ -207,7 +207,8 @@ const cleanPhone = (p) => (p && /\d{3}.*\d{4}/.test(p) ? p.replace(/\s+/g, " ").
 // Fetching
 // ---------------------------------------------------------------------------
 
-async function getPage(url) {
+/** Cached fetch shared with tools/gen-rosters.mjs. */
+export async function getPage(url) {
   const file = new URL(url.replace(/^https?:\/\//, "").replace(/[^a-z0-9.-]+/gi, "_").slice(0, 180) + ".html", CACHE);
   if (!REFRESH && fs.existsSync(file)) {
     const cached = fs.readFileSync(file, "utf8");
@@ -276,7 +277,7 @@ async function coachFor(site, team) {
 }
 
 
-async function pool(items, n, fn) {
+export async function pool(items, n, fn) {
   let i = 0;
   let done = 0;
   await Promise.all(Array.from({ length: n }, async () => {

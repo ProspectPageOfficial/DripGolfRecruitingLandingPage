@@ -66,6 +66,68 @@ export const BANDS = Object.freeze({
   satWorst: -260,
 });
 
+/**
+ * How many golfers Junior Golf Scoreboard ranks, by gender (JGS rankings
+ * page, read 2026-10-26). A girl's rank and a boy's rank are positions in
+ * different-sized lists: #350 of 4,220 girls is about as far down as #1,000
+ * of 12,080 boys. Roster numbers are on the boys' scale, so a women's team's
+ * number is converted by this ratio before a girl is compared with it.
+ * Re-read both totals when the rankings are refreshed each season.
+ */
+export const JGS_POOL = Object.freeze({ boys: 12080, girls: 4220, asOf: "2026-10-26" });
+
+/**
+ * The roster number to compare a golfer against, on the right scale for the
+ * team they would join. A measured women's number (`womenRosterRank`) wins
+ * when a school has one; otherwise the boys'-scale number is scaled by the
+ * pool sizes above -- still an estimate, and labelled as one on screen.
+ */
+export function rosterRankFor(school, team = "men") {
+  if (team !== "women") return school.avgRosterSeniorJgsRank;
+  if (Number.isFinite(school.womenRosterRank)) return school.womenRosterRank;
+  return Math.max(1, Math.round((school.avgRosterSeniorJgsRank * JGS_POOL.girls) / JGS_POOL.boys));
+}
+
+/** A school as a golfer on `team` sees it: the roster number on their scale. */
+export function schoolForTeam(school, team = "men") {
+  if (team !== "women") return school;
+  return { ...school, avgRosterSeniorJgsRank: rosterRankFor(school, "women"), rankScale: "girls" };
+}
+
+/**
+ * Roster outlook for one team: how many current players will have used up
+ * their college golf by the fall this golfer enrolls (class of Y -> fall Y).
+ *
+ * Read from the team's own roster page (data/rosters-ncaa.js) as counts per
+ * class year. A player in class n (1 = freshman ... 4 = senior) during the
+ * season starting in fall S plays their last spring in S + 1 + (4 - n);
+ * graduate / fifth-year players (5) are in their last season now. This is
+ * the normal path only -- redshirts and extra years shift it -- so the UI
+ * words it as "will have graduated", not as a promise of open spots.
+ *
+ * Shown NEXT TO the score, never inside it: a roster with openings does not
+ * make a golfer a better fit, it makes a good fit more reachable.
+ *
+ * @returns {{size:number, leaving:number, enrollYear:?number, text:string}|null}
+ */
+export function rosterOutlook(school, golfer, team = coachGenderFor(golfer)) {
+  const r = school?.rosters?.[team];
+  const seasonStart = Number(String(school?.rosterSeason || "").slice(0, 4));
+  if (!r || !Number.isFinite(seasonStart)) return null;
+  const leaves = (n) => seasonStart + 1 + (n >= 5 ? 0 : 4 - n);
+  const enrollYear = graduationYear(golfer);
+  const by = enrollYear ?? seasonStart + 1;
+  let leaving = 0;
+  for (const n of [1, 2, 3, 4, 5]) if (leaves(n) <= by) leaving += r.byYear?.[n] ?? 0;
+  const players = `${r.size} ${r.size === 1 ? "player" : "players"}`;
+  const text = enrollYear
+    ? (leaving >= r.size
+      ? `${players} · all will have graduated by fall ${enrollYear}`
+      : `${players} · ${leaving} will have graduated by fall ${enrollYear}`)
+    : `${players} · ${leaving} in their final season`;
+  return { size: r.size, leaving, enrollYear, text };
+}
+
 export const TIERS = Object.freeze({
   likely: 78,
   target: 58,
@@ -211,7 +273,7 @@ function rosterRankComponent(golfer, school) {
   const { phrase } = rankVerdict(golfer.nationalRank, school.avgRosterSeniorJgsRank);
   const detail =
     `You rank #${golfer.nationalRank}; this roster's current players ` +
-    `averaged #${school.avgRosterSeniorJgsRank} at the end of high school. ` +
+    `averaged #${school.avgRosterSeniorJgsRank}${school.rankScale === "girls" ? " in the girls' rankings" : ""} at the end of high school. ` +
     phrase;
   return { score, detail };
 }
@@ -484,6 +546,8 @@ export function rankSchools(golfer, schools, prefs = {}) {
   return schools
     .filter((s) => fieldsTeam(s, team))
     .filter((s) => matchesPrefs(s, prefs))
+    // Every number shown and scored from here on is on the golfer's scale.
+    .map((s) => schoolForTeam(s, team))
     .map((school) => ({ school, fit: scoreSchool(golfer, school) }))
     .filter((row) => row.fit.overall != null)
     .sort((a, b) =>
