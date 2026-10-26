@@ -16,6 +16,7 @@ import { devDb } from "../../netlify/functions/_lib/db-dev.mjs";
 import signup, { baseSlug } from "../../netlify/functions/signup.mjs";
 import login from "../../netlify/functions/login.mjs";
 import golfer from "../../netlify/functions/golfer.mjs";
+import myPage from "../../netlify/functions/my-page.mjs";
 import personal from "../../netlify/functions/personal.mjs";
 import tournaments from "../../netlify/functions/tournaments.mjs";
 import { portfolioFromHtml } from "../../tools/import-golfer.mjs";
@@ -178,4 +179,32 @@ test("the import reads an old page's pasted-in results", () => {
   const p = portfolioFromHtml(html);
   assert.equal(p.seasons["2025"][0].name, "X");
   assert.equal(p.personal.name, "Y");
+});
+
+test("signing in from the homepage finds the parent's own golfer page", async () => {
+  await ready;
+  const ok = await call(myPage, "my-page", { method: "POST", body: { email: "ava@example.com", password: "ava-password-1" } });
+  assert.equal(ok.status, 200);
+  assert.equal(ok.body.slug, "ava-reed");
+  assert.ok(ok.body.session.access_token);
+
+  const wrong = await call(myPage, "my-page", { method: "POST", body: { email: "ava@example.com", password: "wrong-pass-1" } });
+  assert.equal(wrong.status, 401);
+
+  // The confirmation-email link: tokens in, same page out.
+  const viaLink = await call(myPage, "my-page", { method: "POST", token: ok.body.session.access_token,
+    body: { refresh_token: ok.body.session.refresh_token } });
+  assert.equal(viaLink.status, 200);
+  assert.equal(viaLink.body.slug, "ava-reed");
+
+  const forged = await call(myPage, "my-page", { method: "POST", token: "forged", body: {} });
+  assert.equal(forged.status, 401);
+});
+
+test("the survey can ask whether sign-ups are open", async () => {
+  await ready;
+  assert.equal((await call(signup, "signup")).body.open, true);
+  process.env.SIGNUPS_ENABLED = "false";
+  try { assert.equal((await call(signup, "signup")).body.open, false); }
+  finally { process.env.SIGNUPS_ENABLED = "true"; }
 });

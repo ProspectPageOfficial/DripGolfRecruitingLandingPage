@@ -10,6 +10,7 @@
  *
  * Interface (both adapters implement exactly this):
  *   getGolferBySlug(slug) / getGolferByDomain(host)   -> golfer | null
+ *   getGolfersByOwner(userId)                          -> golfer[] (oldest first)
  *   slugTaken(slug)                                    -> boolean
  *   createGolfer({ ownerId, slug, name, domain })      -> golfer
  *   getDoc(golferId, key) / setDoc(...) / deleteDoc(...)

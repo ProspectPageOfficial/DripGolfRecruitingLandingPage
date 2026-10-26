@@ -37,6 +37,12 @@ export function supabaseDb() {
     getGolferBySlug: (slug) => one(admin.from("golfers").select("*").eq("slug", slug)),
     getGolferByDomain: (host) => one(admin.from("golfers").select("*").eq("domain", host)),
 
+    async getGolfersByOwner(ownerId) {
+      const { data, error } = await admin.from("golfers").select("*").eq("owner_id", ownerId).order("created_at");
+      if (error) throw new Error(error.message);
+      return data || [];
+    },
+
     async slugTaken(slug) {
       return !!(await one(admin.from("golfers").select("id").eq("slug", slug)));
     },
@@ -74,6 +80,13 @@ export function supabaseDb() {
       // sign in. With confirmation on, `session` comes back null.
       const { data, error } = await fresh().auth.signUp({ email, password });
       if (error) return { error: error.message };
+      // With "Confirm email" on, Supabase answers a sign-up for an address
+      // that already has an account with a look-alike user and no
+      // identities, rather than an error (so addresses can't be probed).
+      // Creating a page for that user would fail; say so plainly instead.
+      if (!data.user || (Array.isArray(data.user.identities) && data.user.identities.length === 0)) {
+        return { error: "An account with this email already exists. Sign in instead." };
+      }
       return { user: { id: data.user.id, email: data.user.email }, session: toSession(data.session) };
     },
 

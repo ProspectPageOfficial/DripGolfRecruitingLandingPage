@@ -1,6 +1,7 @@
 /**
  * /api/signup — create an account AND the golfer's page in one step.
  *
+ * GET  -> { open }   whether sign-ups are switched on (the survey asks first)
  * POST { email, password, firstName, lastName, guardian: true, ...survey answers }
  *   -> 201 { slug, path, session, needsEmailConfirm }
  *
@@ -45,6 +46,7 @@ export async function freeSlug(db, base) {
 
 export default async function handler(req) {
   if (req.method === "OPTIONS") return preflight();
+  if (req.method === "GET") return json(200, { open: process.env.SIGNUPS_ENABLED === "true" });
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
   if (process.env.SIGNUPS_ENABLED !== "true") {
     return json(403, { error: "Sign-ups are not open yet." });

@@ -26,6 +26,7 @@ import { fitView, bindFit } from "./views/fit.js";
 import { provenanceView } from "./views/provenance.js";
 import { faqView } from "./views/faq.js";
 import { termsView, privacyView } from "./views/legal.js";
+import { findMyPage, openMyPage, AUTH_NOTICE_KEY } from "./lib/mypage.js";
 
 const root = document.getElementById("app");
 
@@ -197,7 +198,42 @@ const notFound = () => html`
 // Boot
 // ---------------------------------------------------------------------------
 
+/**
+ * Supabase's "confirm your email" link comes back to the site root with the
+ * new session in the URL fragment (#access_token=...&refresh_token=...), or
+ * an error (#error=...&error_description=...). Turn that into the parent
+ * landing on their golfer's page, signed in. Returns true when it handled
+ * the URL, so the normal router does not try to route "#access_token=...".
+ */
+async function finishEmailLink() {
+  const params = new URLSearchParams(location.hash.slice(1));
+  if (!params.has("access_token") && !params.has("error") && !params.has("error_description")) return false;
+  history.replaceState(null, "", location.pathname + "#/login");
+
+  const notice = (text) => {
+    try { sessionStorage.setItem(AUTH_NOTICE_KEY, text); } catch { /* shown nowhere; harmless */ }
+  };
+  if (params.has("error") || params.has("error_description")) {
+    notice("That confirmation link has expired or was already used. If you've confirmed before, sign in below.");
+    return false;
+  }
+  root.innerHTML = '<p class="center muted" style="margin-top:20vh">Confirming your email...</p>';
+  const found = await findMyPage({
+    accessToken: params.get("access_token"),
+    refreshToken: params.get("refresh_token"),
+    expiresAt: Number(params.get("expires_at")) || null,
+  });
+  if (found.slug) {
+    openMyPage(found.slug, found.session);
+    return true;
+  }
+  notice(("Your email is confirmed. " + (found.error || "") + " Sign in below.").replace(/\s+/g, " "));
+  return false;
+}
+
 async function boot() {
+  if (await finishEmailLink()) return;
+
   // Retired stores. Removed on every boot so a browser that ran an older build
   // does not keep serving a stale, editable golfer record forever.
   localStorage.removeItem("dg.demo.profiles");

@@ -1,15 +1,30 @@
 /**
  * views/auth.js — sign in.
  *
- * The owner account is still provisioned, not self-served. "Create account"
- * links to the sign-up survey (views/signup.js), which demos onboarding a
- * second golfer without actually creating one.
+ * Two kinds of sign-in share this form:
+ *   - the demo account (Luke) -- browser-only, opens the demo dashboard
+ *   - a real parent account (made by the sign-up survey) -- checked by
+ *     /api/my-page, then the parent lands on their golfer's page, signed in
+ *     and ready to edit (lib/mypage.js)
  */
 import { html, raw, formData, extLink } from "../lib/dom.js";
 import { auth } from "../auth/store.js";
 import { DEMO_LOGIN, PUBLIC_SITE } from "../config.js";
+import { findMyPage, openMyPage, AUTH_NOTICE_KEY } from "../lib/mypage.js";
+
+/** A one-time message left by the confirmation-email link (main.js). */
+function takeNotice() {
+  try {
+    const text = sessionStorage.getItem(AUTH_NOTICE_KEY);
+    sessionStorage.removeItem(AUTH_NOTICE_KEY);
+    return text;
+  } catch {
+    return null;
+  }
+}
 
 export function authView() {
+  const notice = takeNotice();
   return html`
     <div class="container auth-wrap">
       <div class="card auth-card stack">
@@ -17,11 +32,12 @@ export function authView() {
           <span class="eyebrow">Welcome back</span>
           <h1 class="serif" style="margin-top:.5rem">Sign in.</h1>
           <p class="muted" style="font-size:.88rem">
-            Your numbers, your page, your fit scores. Pick up where you left off.
+            Parents: use the email and password you signed up with. You'll go
+            straight to your golfer's page, ready to edit.
           </p>
         </div>
 
-        <div id="auth-msg"></div>
+        <div id="auth-msg">${raw(notice ? html`<div class="alert alert-ok">${notice}</div>` : "")}</div>
 
         <form id="auth-form" class="stack-sm" novalidate>
           <div class="field">
@@ -80,14 +96,22 @@ export function bindAuth(root, { onDone }) {
     msg.innerHTML = "";
 
     const { email, password } = formData(form);
-    const { data, error } = await auth.signInWithPassword({ email, password });
 
-    if (error) {
-      msg.innerHTML = html`<div class="alert alert-error">${error.message}</div>`;
-      button.disabled = false;
+    // The demo account lives only in this browser; everyone else is real.
+    if (email.trim().toLowerCase() === DEMO_LOGIN.email) {
+      const { data, error } = await auth.signInWithPassword({ email, password });
+      if (error) {
+        msg.innerHTML = html`<div class="alert alert-error">${error.message}</div>`;
+        button.disabled = false;
+        return;
+      }
+      onDone(data.user);
       return;
     }
 
-    onDone(data.user);
+    const found = await findMyPage({ email, password });
+    if (found.slug) return openMyPage(found.slug, found.session);
+    msg.innerHTML = html`<div class="alert alert-error">${found.error}</div>`;
+    button.disabled = false;
   });
 }

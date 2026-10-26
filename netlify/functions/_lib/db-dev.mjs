@@ -40,6 +40,7 @@ export function devDb(file = process.env.DRIP_DEV_DB || ".dev-data/db.json") {
   return {
     async getGolferBySlug(slug) { return load().golfers.find((g) => g.slug === slug) || null; },
     async getGolferByDomain(host) { return load().golfers.find((g) => g.domain === host) || null; },
+    async getGolfersByOwner(ownerId) { return load().golfers.filter((g) => g.owner_id === ownerId); },
     async slugTaken(slug) { return load().golfers.some((g) => g.slug === slug); },
 
     async createGolfer({ ownerId, slug, name, domain = null }) {

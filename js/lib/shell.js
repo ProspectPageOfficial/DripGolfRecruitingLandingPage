@@ -30,9 +30,12 @@ export function nav(user, golfer, active, mock = false) {
     : [];
 
   return html`
+    <!-- Was "data lives in your browser only. Nothing is sent anywhere."
+         That stopped being true when Create account started saving real
+         accounts, so it must not come back while sign-ups are live. -->
     <div class="announce">
-      Demo build <span>&mdash;</span> data lives in your browser only.
-      <b>Nothing is sent anywhere.</b>
+      Free beta <span>&mdash;</span> College Best Fit scores are estimates.
+      <a href="#/faq"><b>How they work</b></a>
     </div>
     <div class="container">
       <nav class="nav">

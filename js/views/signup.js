@@ -199,7 +199,7 @@ export function signupView() {
 
         <form id="signup-form" class="stack" novalidate>
           ${each(STEPS, (s, i) => html`
-            <fieldset class="survey-step stack-sm" data-step="${i}" ${raw(i ? "hidden" : "")}>
+            <fieldset class="survey-step stack-sm" data-step="${i}" data-key="${s.key}" ${raw(i ? "hidden" : "")}>
               <legend class="serif survey-title">${s.title}</legend>
               <p class="muted survey-blurb">${s.blurb}</p>
               ${s.note ? raw(html`<p class="field-hint survey-note">${s.note}</p>`) : ""}
@@ -303,8 +303,8 @@ const liveBanner = (a) => html`
     <b>${a.firstName}'s page is live.</b>
     It's at <a href="/${a.liveSlug}" target="_blank" rel="noopener">dripgolfrecruiting.com/${a.liveSlug}</a>.
     ${a.needsEmailConfirm
-      ? html`Check ${a.email} for a link to confirm your account; you'll need it to sign in and edit the page.`
-      : "Open it and choose Owner to sign in and edit."}
+      ? html`One last step: open the email we sent to ${a.email} and click the link to confirm your account. It takes you straight to the page, signed in and ready to edit. After that, use Sign in at the top of this site with the same email and password.`
+      : "To edit it, use Sign in at the top of this site with the email and password you just chose."}
   </div>
 `;
 
@@ -348,7 +348,12 @@ async function createAccount(answers) {
 export function bindSignup(root, { onDone }) {
   const form = root.querySelector("#signup-form");
   if (!form) return;
-  const steps = [...form.querySelectorAll(".survey-step")];
+  let steps = [...form.querySelectorAll(".survey-step")];
+  // While payments and domain buying are not built, a real sign-up skips the
+  // two demo-only steps. "beta" flips on when /api/signup says sign-ups are
+  // open; until then (or with no server) the full demo survey runs.
+  let beta = false;
+  const DEMO_ONLY = ["domain", "checkout"];
   const back = form.querySelector("[data-nav='back']");
   const next = form.querySelector("#su-next");
   const bar = root.querySelector("#su-bar");
@@ -362,7 +367,8 @@ export function bindSignup(root, { onDone }) {
   const checkout = bindCheckoutStep(form);
   const custom = { domain, checkout };
   const isLast = () => at === steps.length - 1;
-  const nextLabel = () => (isLast() ? checkout.payLabel() : "Next");
+  const nextLabel = () => (isLast() ? (beta ? "Create my page" : checkout.payLabel()) : "Next");
+  const keyAt = (i) => steps[i]?.dataset.key;
   form.querySelectorAll("input[name='plan']").forEach((r) =>
     r.addEventListener("change", () => (next.textContent = nextLabel())));
 
@@ -370,7 +376,7 @@ export function bindSignup(root, { onDone }) {
     at = i;
     steps.forEach((s, j) => (s.hidden = j !== i));
     back.style.visibility = i ? "visible" : "hidden";
-    custom[STEPS[i].key]?.onShow();
+    custom[keyAt(i)]?.onShow();
     next.textContent = nextLabel();
     bar.style.width = `${((i + 1) / steps.length) * 100}%`;
     count.textContent = `Step ${i + 1} of ${steps.length}`;
@@ -392,7 +398,7 @@ export function bindSignup(root, { onDone }) {
       if (el.type === "number" && el.validity.badInput)
         return { el, text: `${label} must be a number.` };
     }
-    const text = custom[STEPS[at].key]?.problem?.();
+    const text = custom[keyAt(at)]?.problem?.();
     if (text) return { el: steps[at].querySelector("input"), text };
     return null;
   };
@@ -437,6 +443,19 @@ export function bindSignup(root, { onDone }) {
   });
 
   show(0);
+
+  fetch("/api/signup")
+    .then((r) => (r.ok ? r.json() : {}))
+    .then(({ open }) => {
+      if (!open) return;
+      beta = true;
+      for (const el of steps) if (DEMO_ONLY.includes(el.dataset.key)) el.remove();
+      steps = steps.filter((el) => !DEMO_ONLY.includes(el.dataset.key));
+      root.querySelector(".survey-card h1")?.insertAdjacentHTML("afterend",
+        '<p class="pill pill-likely beta-pill">Free beta &middot; no payment needed</p>');
+      show(Math.min(at, steps.length - 1));
+    })
+    .catch(() => { /* no server (serve.py): stay on the demo survey */ });
 }
 
 // ---------------------------------------------------------------------------

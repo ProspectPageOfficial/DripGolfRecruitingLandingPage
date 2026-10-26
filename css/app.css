@@ -55,6 +55,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
   letter-spacing: 0.02em;
 }
 .announce b { color: var(--cream); }
+.announce a { color: var(--cream); text-decoration: underline; text-underline-offset: 2px; }
 
 .nav {
   display: flex;
@@ -1080,3 +1081,7 @@ table.data tbody tr:hover { background: var(--cream-2); }
 }
 .field .consent-check input { width: auto; padding: 0; margin-top: 0.2rem; flex: none; accent-color: var(--sage); }
 .consent-check a { text-decoration: underline; }
+
+/* Sign-up while sign-ups are live but payment is not built yet. */
+.beta-pill { align-self: flex-start; margin: 0; }
+.live-banner { margin-bottom: var(--s-3); }
