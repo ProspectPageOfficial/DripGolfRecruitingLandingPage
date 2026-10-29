@@ -53,7 +53,7 @@ const STEPS = [
         placeholder: "Ava", autocomplete: "given-name" },
       { name: "lastName", label: "Last name", required: true,
         placeholder: "Reed", autocomplete: "family-name" },
-      { name: "hometown", label: "Hometown", placeholder: "Charlotte, NC" },
+      { name: "hometown", label: "Hometown (City, State)", placeholder: "Charlotte, NC" },
       { name: "age", label: "Age", type: "number", placeholder: "13" },
       { name: "height", label: "Height", placeholder: "5'4\"" },
       { name: "weight", label: "Weight", placeholder: "120 lbs" },
@@ -64,7 +64,6 @@ const STEPS = [
     title: "Contact details",
     blurb: "Where a coach can reach you.",
     fields: [
-      { name: "address", label: "Home address", wide: true, placeholder: "123 Fairway Dr, Charlotte, NC", autocomplete: "street-address" },
       { name: "phone", label: "Phone", type: "tel", wide: true, placeholder: "(555) 555-0123", autocomplete: "tel" },
     ],
   },
@@ -133,7 +132,7 @@ const STEPS = [
 ];
 
 const PAGE_ROWS = [
-  ["Hometown", "hometown"], ["Home address", "address"], ["Phone", "phone"],
+  ["Hometown", "hometown"], ["Phone", "phone"],
   ["Age", "age"], ["Height", "height"], ["Weight", "weight"],
   ["Class year", "classYear"], ["Currently attending", "school"],
   ["GPA", "gpa"], ["SAT / ACT", "sat"],

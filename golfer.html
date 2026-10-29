@@ -1923,7 +1923,7 @@ body.is-owner .visitor-only { display: none !important; }
             <input type="text" name="name" required />
           </label>
           <label class="field">
-            <span>Hometown</span>
+            <span>Hometown (City, State)</span>
             <input type="text" name="hometown" placeholder="e.g. Charlotte, NC" />
           </label>
           <label class="field">
@@ -1967,11 +1967,6 @@ body.is-owner .visitor-only { display: none !important; }
             <span>Phone</span>
             <input type="tel" name="phone" placeholder="e.g. (704) 555-0123"
                    autocomplete="tel" />
-          </label>
-          <label class="field full">
-            <span>Home Address</span>
-            <input type="text" name="home_address" placeholder="e.g. 123 Greenway Dr, Charlotte, NC 28202"
-                   autocomplete="street-address" />
           </label>
           <label class="field full">
             <!-- Two ways to set the bio photo: upload a file (top) OR
@@ -3200,7 +3195,6 @@ const PORTFOLIO_DATA = {
     const items = [
       ["Name",                data.personal.name],
       ["Hometown",            data.personal.hometown],
-      ["Home Address",        data.personal.home_address],
       ["Phone",               data.personal.phone],
       ["Age",                 (data.personal.age || "").replace(/^Age:\s*/i, "")],
       ["Height",              data.personal.height],
@@ -3614,7 +3608,7 @@ const PORTFOLIO_DATA = {
       "name", "hometown", "class_year", "age", "currently_attending",
       "photo", "bio",
       // physical + contact — mirror with ALLOWED_FIELDS in personal.mjs
-      "height", "weight", "home_address", "phone",
+      "height", "weight", "phone",
       // current coach — same blob, different UI surface (Golf Bio tab).
       "coach_name", "coach_phone", "coach_email",
       // academic performance — surfaced on the Personal Bio tab.
@@ -5393,7 +5387,6 @@ const PORTFOLIO_DATA = {
       // them. Bold labels read cleanly and print sharp.)
       y += 6;
       y = drawContactRow(doc, y, "Phone",   p.phone);
-      y = drawContactRow(doc, y, "Address", p.home_address);
       const ig = nonEmpty(p.instagram) ? "@" + p.instagram.replace(/^@/, "") : "";
       y = drawContactRow(doc, y, "Instagram", ig);
       const web = nonEmpty(p.website) ? p.website : "";

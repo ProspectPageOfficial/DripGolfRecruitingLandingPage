@@ -24,7 +24,6 @@ import { EMPTY_PORTFOLIO } from "./golfer.mjs";
 const RENAME = {
   classYear: "class_year",
   school: "currently_attending",
-  address: "home_address",
   sat: "test_scores",
 };
 

@@ -282,3 +282,16 @@ test("deleting an account needs the password and removes the page and its data",
   assert.equal(again.status, 401, "the account can no longer sign in");
   assert.equal((await call(golfer, "golfer", { golfer: "ava-reed" })).status, 200, "other families are untouched");
 });
+
+test("a street address is never accepted or shown, even one saved before", async () => {
+  await ready;
+  const { id } = await db.getGolferBySlug("luke-selzer");
+  await db.setDoc(id, "personal-overrides", { hometown: "Charlotte, NC", home_address: "123 Fairway Dr" });
+  const shown = await call(personal, "personal", { golfer: "luke-selzer" });
+  assert.equal(shown.body.hometown, "Charlotte, NC");
+  assert.equal("home_address" in shown.body, false, "an old saved address is hidden");
+  const saved = await call(personal, "personal", { method: "PUT", golfer: "luke-selzer", token: luke.session.access_token,
+    body: { hometown: "Charlotte, NC", home_address: "123 Fairway Dr" } });
+  assert.equal(saved.status, 200);
+  assert.equal((await db.getDoc(id, "personal-overrides")).home_address, undefined, "a new save drops it");
+});

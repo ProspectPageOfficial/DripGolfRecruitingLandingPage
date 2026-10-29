@@ -84,7 +84,7 @@ export const viewCases = [
     run: (assert) => {
       const out = signupView();
       rendersFine(assert, "signupView", () => out);
-      for (const name of ["email", "password", "firstName", "lastName", "hometown", "address", "phone", "age",
+      for (const name of ["email", "password", "firstName", "lastName", "hometown", "phone", "age",
         "height", "weight", "classYear", "school", "gpa", "sat", "bio", "instagram", "website"]) {
         assert.ok(out.includes(`name="${name}"`), `survey is missing ${name}`);
       }

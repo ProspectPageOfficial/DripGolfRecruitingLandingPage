@@ -35,7 +35,9 @@ export const ALLOWED_FIELDS = new Set([
   // physical / contact details — surfaced on the Personal Bio tab and
   // in the visitor resume PDF. Stored as plain strings; the client
   // decides display formatting.
-  "height", "weight", "home_address", "phone",
+  // No street address: these pages are public and the golfers are minors.
+  // Hometown (City, State) is as precise as a page gets.
+  "height", "weight", "phone",
   // current coach — surfaced at the top of the Golf Bio tab and in the
   // resume PDF. Kept in the personal blob (not a new endpoint) so we
   // don't multiply the number of round-trips needed to hydrate a page.
@@ -92,7 +94,10 @@ export default async function handler(req) {
   // ---- GET: public read ----
   if (req.method === "GET") {
     const data = await store.get(BLOB_KEY, { type: "json" });
-    return json(200, (data && typeof data === "object") ? data : {});
+    if (!data || typeof data !== "object") return json(200, {});
+    // Pages saved before street addresses were dropped may still hold one.
+    const { home_address, ...shown } = data;
+    return json(200, shown);
   }
 
   // ---- PUT: owner saves the full overrides object ----
