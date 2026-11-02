@@ -75,6 +75,9 @@ const ROUTES = [
   // made -- so it is guarded by "finished the survey" instead of by auth.
   { path: /^\/welcome$/,     key: "welcome",     mock: true, render: (ctx) => dashboardView(ctx.mock, true, {
       pagePanel: mockPagePanel(ctx.answers), banner: mockBanner(ctx.answers), fitHref: "#/welcome/fit",
+      // A real sign-up (not the demo) made an account, so it can be deleted
+      // from here too, before the parent has ever signed in.
+      canDelete: !!ctx.answers.liveSlug,
     }) },
   { path: /^\/welcome\/fit$/, key: "welcome-fit", mock: true, render: (ctx) => fitView(ctx.mock) },
   // A real parent account (sign-up survey + Supabase). Guarded by having
@@ -193,12 +196,15 @@ function paint(ctx, active, body) {
 /** Per-route event wiring. Views stay pure-ish; binding is explicit. */
 function bindFor(key, ctx = {}) {
   if (key === "my-fit") bindFit(root, { profile: ctx.mine });
-  if (key === "my") {
+  if (key === "my" || key === "welcome") {
     bindDeleteAccount(root, {
-      email: ctx.account.session?.user?.email || "",
+      email: key === "my" ? ctx.account.session?.user?.email || "" : ctx.answers?.email || "",
       onDeleted: () => {
         clearAccount();
-        try { sessionStorage.setItem(AUTH_NOTICE_KEY, "Your account and page have been deleted."); } catch { /* storage blocked */ }
+        try {
+          sessionStorage.removeItem(MOCK_KEY);
+          sessionStorage.setItem(AUTH_NOTICE_KEY, "Your account and page have been deleted.");
+        } catch { /* storage blocked */ }
         location.hash = "#/login";
       },
     });
