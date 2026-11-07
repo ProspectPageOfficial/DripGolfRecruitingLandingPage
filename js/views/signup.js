@@ -62,7 +62,8 @@ const STEPS = [
     key: "contact",
     title: "Contact details",
     fields: [
-      { name: "phone", label: "Phone", type: "tel", wide: true, placeholder: "(555) 555-0123", autocomplete: "tel" },
+      { name: "phone", label: "Phone", type: "tel", wide: true, placeholder: "(555) 555-0123", autocomplete: "tel",
+        hint: "Optional. Shown publicly on your page, so leave it blank to keep it private." },
     ],
   },
   {
@@ -72,8 +73,8 @@ const STEPS = [
       { name: "classYear", label: "Class year", type: "select", required: true,
         options: ["2027", "2028", "2029", "2030", "2031", "2032", "2033"].map((y) => `Class of ${y}`) },
       { name: "school", label: "Currently attending", placeholder: "Your high school" },
-      { name: "gpa", label: "GPA", placeholder: "3.8" },
-      { name: "sat", label: "SAT / ACT", placeholder: "1400 or 31" },
+      { name: "gpa", label: "GPA", placeholder: "3.8", hint: "Optional. Shown publicly on your page." },
+      { name: "sat", label: "SAT / ACT", placeholder: "1400 or 31", hint: "Optional. Shown publicly on your page." },
     ],
   },
   {

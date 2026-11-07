@@ -33,8 +33,8 @@
 
 <script type="module">
 /**
- * Hand-rolled assert exposing exactly the four methods tests/cases.js uses.
- * Deliberately not a library -- the interface is four functions wide.
+ * Hand-rolled assert exposing exactly the five methods tests/cases.js uses.
+ * Deliberately not a library -- the interface is five functions wide.
  */
 const assert = {
   ok(value, message = "expected truthy") {
@@ -53,6 +53,11 @@ const assert = {
   deepEqual(actual, expected, message) {
     const a = JSON.stringify(actual), b = JSON.stringify(expected);
     if (a !== b) throw new Error(message ?? `expected ${b}, got ${a}`);
+  },
+  match(actual, pattern, message) {
+    if (!pattern.test(actual)) {
+      throw new Error(message ?? `expected ${JSON.stringify(actual)} to match ${pattern}`);
+    }
   },
 };
 

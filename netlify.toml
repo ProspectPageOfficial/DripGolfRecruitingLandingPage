@@ -48,13 +48,37 @@
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
+# assets/golfer/ holds the golfer page's scripts and styles, so it follows the
+# same rule as /js and /css.
+
+[[headers]]
+  for = "/assets/golfer/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
 # Images are the exception: assets/logo.png is content, not code. If it ever
 # changes it will change name, so a long cache is free speed.
 
 [[headers]]
-  for = "/assets/*"
+  for = "/assets/*.png"
   [headers.values]
     Cache-Control = "public, max-age=604800"
+
+[[headers]]
+  for = "/assets/*.webp"
+  [headers.values]
+    Cache-Control = "public, max-age=604800"
+
+# ---------------- Security headers ----------------
+# SAMEORIGIN, not DENY: the dashboard previews a golfer's page in an iframe
+# served from this same site.
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "SAMEORIGIN"
+    Referrer-Policy = "strict-origin-when-cross-origin"
 
 # ---------------- Not published ----------------
 # The test harness and the local dev server are committed on purpose (they are
@@ -80,6 +104,25 @@
 
 [[redirects]]
   from = "/mockup.html"
+  to = "/index.html"
+  status = 404
+  force = true
+
+# Project notes and dependency lists: useful in the repo, not on the website.
+[[redirects]]
+  from = "/README.md"
+  to = "/index.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/package.json"
+  to = "/index.html"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/package-lock.json"
   to = "/index.html"
   status = 404
   force = true

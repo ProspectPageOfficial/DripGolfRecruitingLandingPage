@@ -97,7 +97,7 @@ export function nav(user, golfer, active, mock = false) {
 export const footer = () => html`
   <div class="container">
     <div class="footer row row-between">
-      <span>Drip Golf Recruiting &mdash; recruiting page demo.</span>
+      <span>Drip Golf Recruiting</span>
       <span class="row">
         <a href="#/faq" style="text-decoration:underline">FAQ</a>
         <a href="#/terms" style="text-decoration:underline">Terms</a>

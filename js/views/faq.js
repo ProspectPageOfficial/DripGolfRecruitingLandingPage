@@ -36,7 +36,7 @@ const FAQ = [
           at the Drip Golf Tournament Schedule of events throughout the year,
           and other benefits at
           <a href="https://www.drip-golf.com" target="_blank" rel="noopener noreferrer">www.drip-golf.com</a>.</p>
-          <p>Please see pricing model.</p>`,
+          <p>See "How much does it cost?" below for pricing.</p>`,
       },
       {
         q: "How much does it cost?",
