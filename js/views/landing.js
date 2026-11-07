@@ -121,6 +121,7 @@ export function landing() {
         <div class="ticket">
           ${raw(TIERS.map(ticketHalf).join(""))}
         </div>
+        <p class="ticket-beta">Free during our beta. No payment is needed to create a page right now.</p>
         <ul class="ticket-perks">
           <li class="ticket-perks-lead">Both plans include</li>
           ${raw(PERKS.map((p) => html`<li>${p}</li>`).join(""))}

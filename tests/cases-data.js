@@ -306,12 +306,12 @@ export const dataCases = [
     },
   },
   {
-    name: "Luke's real data is declared real, and the model's guesses are not",
+    name: "golfer data is declared real, and the model's guesses are not",
     run: (assert) => {
       const real = PROVENANCE.filter((r) => r.status === "real");
       assert.ok(
-        real.some((r) => r.source.includes("PORTFOLIO_DATA")),
-        "Luke's sourced stats should be marked real"
+        real.some((r) => r.group === "Golfer profile"),
+        "the golfer's sourced data should be marked real"
       );
       const model = PROVENANCE.filter((r) => r.group === "Fit model");
       assert.ok(model.length >= 3);

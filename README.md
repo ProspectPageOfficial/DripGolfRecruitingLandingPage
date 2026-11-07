@@ -37,7 +37,7 @@ rather than `python -m http.server`: with no build step and no cache headers, a
 browser will happily keep serving ES modules from before your last edit, and you
 end up debugging code that is not running.
 
-**Demo login** (the sign-in page has a one-click button for it):
+**Demo login** ("See a live example" on the home page signs in with it):
 
 | Account | Password | Why it exists |
 |---|---|---|

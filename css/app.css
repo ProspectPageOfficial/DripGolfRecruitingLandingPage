@@ -165,7 +165,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .stack-sm { display: flex; flex-direction: column; gap: var(--s-2); }
 
 .section { padding: var(--s-6) 0; }
-.section-tight { padding: var(--s-5) 0; }
+/* Top and bottom only: these sit on .container, which owns the side margins. */
+.section-tight { padding-top: var(--s-5); padding-bottom: var(--s-5); }
 
 /* ---------------- forms ---------------- */
 .field { display: flex; flex-direction: column; gap: var(--s-1); }
@@ -206,7 +207,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
   min-height: 78vh;
   display: grid;
   place-items: center;
-  padding: var(--s-5) 0;
+  padding-top: var(--s-5);
+  padding-bottom: var(--s-5);
 }
 .auth-card { width: min(430px, 100%); }
 .auth-card h1 { font-size: 1.9rem; margin-bottom: var(--s-1); }
@@ -215,20 +217,6 @@ button, input, select, textarea { font: inherit; color: inherit; }
   background: none; border: none; padding: 0;
   color: var(--sage); font-weight: 600; cursor: pointer;
   text-decoration: underline;
-}
-.demo-hint {
-  background: var(--cream-2);
-  border: 1px dashed var(--line);
-  border-radius: var(--radius-sm);
-  padding: var(--s-2) var(--s-3);
-  font-size: 0.78rem;
-  color: var(--ink-soft);
-}
-.demo-hint code {
-  background: var(--card);
-  padding: 1px 5px;
-  border-radius: 4px;
-  font-size: 0.76rem;
 }
 
 /* ---------------- landing ----------------
@@ -355,6 +343,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .plan-upfront span { display: block; }
 .ticket-featured .plan-upfront { color: var(--tier-likely-bg); }
 
+.ticket-beta { margin-top: var(--s-4); font-weight: 600; text-align: center; }
 .ticket-perks {
   list-style: none;
   display: flex;

@@ -22,7 +22,7 @@ import { html, raw } from "../lib/dom.js";
 export const LEGAL = Object.freeze({
   company: "Drip Golf Recruiting",
   brand: "Drip Golf Recruiting",
-  email: "support@dripgolfrecruiting.com",
+  email: "info@dripgolfrecruiting.com",
   // Placeholder until the business is registered; governs the Terms.
   state: "the state in which Drip Golf Recruiting is organized",
   effective: "October 21, 2026",

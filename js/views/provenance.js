@@ -6,9 +6,13 @@
  * can demo this to an investor, a parent or a coach without the caveat being
  * one click away.
  */
-import { html, raw, extLink } from "../lib/dom.js";
+import { html, raw } from "../lib/dom.js";
 import { PROVENANCE, STATUS, provenanceSummary } from "../data/provenance.js";
-import { PUBLIC_SITE } from "../config.js";
+
+const ESTIMATE_NOTE = html`<b>Fit scores are estimates.</b> Each program's
+  roster rank is estimated from its conference and marked "est." on screen.
+  School facts, SAT and tuition come from public sources. Use fit scores as a
+  starting point for building a list, not as a measurement.`;
 
 function rows() {
   return PROVENANCE.map(
@@ -35,7 +39,7 @@ function table() {
 
 export function provenanceSummaryLine() {
   const t = provenanceSummary();
-  return html`${t.real} real &middot; ${t.fabricated} invented &middot; ${t.assumption} assumptions`;
+  return html`${t.real} from real sources &middot; ${t.assumption} estimates and assumptions`;
 }
 
 /** Collapsed disclosure for embedding under a results screen. */
@@ -48,13 +52,7 @@ export const provenanceDetails = () => html`
       </span>
     </summary>
     <div style="margin-top:1rem">
-      <div class="alert alert-error" style="margin-bottom:1rem">
-        <b>The roster ranks behind every fit score are not measured.</b> Most
-        are estimated from the school's conference (marked "est."), and the 27
-        original programs carry invented numbers throughout. School facts, SAT
-        and tuition for the rest are real. Do not present fit scores to a
-        golfer, a parent or a coach as though they were researched.
-      </div>
+      <p style="font-size:.88rem;margin-bottom:1rem">${raw(ESTIMATE_NOTE)}</p>
       ${raw(table())}
     </div>
   </details>
@@ -66,54 +64,12 @@ export const provenanceView = () => html`
     <div>
       <span class="eyebrow">Data sources</span>
       <h1 class="serif" style="font-size:clamp(1.9rem,4vw,2.8rem);margin:.5rem 0">
-        What is real, and what is not.
+        Where our data comes from.
       </h1>
     </div>
 
-    <div class="alert alert-error">
-      <b>Not shippable as-is.</b> The roster rank each fit score runs on is
-      invented or estimated for every program. Sourcing it is the single
-      largest task between this demo and a product anyone should pay for.
-    </div>
+    <p style="font-size:.92rem;max-width:62ch">${raw(ESTIMATE_NOTE)}</p>
 
     <div class="card">${raw(table())}</div>
-
-    <div class="card stack-sm">
-      <span class="eyebrow">The one thing here that is not a demo</span>
-      <p style="font-size:.9rem">
-        The public recruiting page is real, deployed and independent of this
-        app &mdash; its own repo, its own domain. Every "My Page" link in this
-        interface opens it directly rather than a local imitation, so what you
-        see is what a coach sees.
-      </p>
-      <div class="row">
-        ${raw(extLink(PUBLIC_SITE.url, PUBLIC_SITE.host, "btn btn-sm"))}
-        ${raw(extLink(PUBLIC_SITE.repo, "Source on GitHub", "btn btn-sm btn-ghost"))}
-      </div>
-    </div>
-
-    <div class="card stack-sm">
-      <span class="eyebrow">How to replace the invented data</span>
-      <table class="data">
-        <thead><tr><th>Data</th><th>Source</th><th>Cost</th></tr></thead>
-        <tbody>
-          <tr>
-            <td><b>GPA, SAT, tuition, acceptance rate</b></td>
-            <td>IPEDS / College Scorecard &mdash; US Dept. of Education, bulk CSV + API</td>
-            <td class="muted">Free</td>
-          </tr>
-          <tr>
-            <td><b>Team scoring averages</b></td>
-            <td>Golfstat or Clippd college team season stats</td>
-            <td class="muted">Licensed</td>
-          </tr>
-          <tr>
-            <td><b>Typical recruit rank</b></td>
-            <td>Junior Golf Scoreboard / AJGA ranks of golfers who actually signed</td>
-            <td class="muted">Licensed</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
   </div>
 `;

@@ -59,7 +59,7 @@ export function fitView(profile, prefs = {}) {
       <div>
         <span class="eyebrow">College Best Fit</span>
         <h1 class="serif" style="font-size:clamp(2rem,4.5vw,3rem);margin:.5rem 0">
-          Where you actually stack up.
+          Your best-fit colleges.
         </h1>
       </div>
 

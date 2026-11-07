@@ -7,9 +7,9 @@
  *     /api/my-page, then the parent lands on their dashboard (#/my), with
  *     "Edit my page" one click away (data/account.js, lib/mypage.js)
  */
-import { html, raw, formData, extLink } from "../lib/dom.js";
+import { html, raw, formData } from "../lib/dom.js";
 import { auth } from "../auth/store.js";
-import { DEMO_LOGIN, PUBLIC_SITE } from "../config.js";
+import { DEMO_LOGIN } from "../config.js";
 import { findMyPage, AUTH_NOTICE_KEY } from "../lib/mypage.js";
 import { saveAccount } from "../data/account.js";
 
@@ -55,20 +55,7 @@ export function authView() {
 
         <a class="btn btn-ghost btn-block" href="#/signup">Create account</a>
 
-        <div class="demo-hint stack-sm">
-          <b>Demo login</b> &mdash; click to fill the form.
-          <button class="btn btn-sm btn-ghost btn-block" type="button"
-                  data-fill="${DEMO_LOGIN.email}" data-pw="${DEMO_LOGIN.password}"
-                  style="justify-content:flex-start;text-align:left">
-            ${DEMO_LOGIN.name} &mdash; ${DEMO_LOGIN.note}
-          </button>
-          <span>Nothing leaves this browser.</span>
-        </div>
-
-        <p class="auth-switch center">
-          Coaches do not need an account &mdash;
-          ${raw(extLink(PUBLIC_SITE.url, "view the public page"))}.
-        </p>
+        <p class="auth-switch center">Coaches do not need an account.</p>
       </div>
     </div>
   `;
@@ -78,13 +65,6 @@ export function authView() {
 export function bindAuth(root, { onDone }) {
   const form = root.querySelector("#auth-form");
   const msg = root.querySelector("#auth-msg");
-
-  // Convenience only. Real credentials would never be one click from a form.
-  root.querySelector("[data-fill]")?.addEventListener("click", (e) => {
-    const btn = e.currentTarget;
-    root.querySelector("#f-email").value = btn.dataset.fill;
-    root.querySelector("#f-password").value = btn.dataset.pw;
-  });
 
   form?.addEventListener("submit", async (e) => {
     e.preventDefault();

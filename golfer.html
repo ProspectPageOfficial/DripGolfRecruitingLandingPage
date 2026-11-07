@@ -6,7 +6,7 @@
   <title>Golfer Portfolio</title>
   <!-- Must load first: it wraps fetch() for every script below. -->
   <script src="/assets/golfer/tenant.js"></script>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+DQogIDxjaXJjbGUgY3g9IjMyIiBjeT0iMzIiIHI9IjMwIiBmaWxsPSIjMWY0ZDJiIi8+DQogIDxyZWN0IHg9IjI4IiB5PSIxNCIgd2lkdGg9IjMiIGhlaWdodD0iMzQiIGZpbGw9IiNlN2Q5YTYiLz4NCiAgPHBhdGggZD0iTTMxIDE0IEw1MiAyMCBMMzEgMjYgWiIgZmlsbD0iI2M0M2EzYSIvPg0KICA8ZWxsaXBzZSBjeD0iMzAiIGN5PSI1MCIgcng9IjE0IiByeT0iMyIgZmlsbD0iIzNmYTY2NyIvPg0KPC9zdmc+DQo=" />
+  <link rel="icon" href="/assets/favicon.png" />
 
   <!-- Supabase JS client (used by SupabaseStorage module for direct-to-bucket
        uploads, bypassing the 5 MB Netlify Functions payload cap). -->
@@ -5843,9 +5843,15 @@ const PORTFOLIO_DATA = {
     // Which golfer is this? No golfer at this address -> a plain not-found
     // page rather than an empty template with somebody's layout and no name.
     if (!(await window.DripTenant.load(PORTFOLIO_DATA))) {
+      document.title = "Page not found — Drip Golf Recruiting";
+      const noindex = document.createElement("meta");
+      noindex.name = "robots";
+      noindex.content = "noindex";
+      document.head.appendChild(noindex);
       document.body.innerHTML =
         '<main style="max-width:32rem;margin:20vh auto;padding:0 1rem;font-family:system-ui,sans-serif;text-align:center">' +
-        '<h1>No golfer page here</h1><p>Check the address, or ask the golfer for their link.</p></main>';
+        '<h1>Page not found</h1><p>Check the address, or ask the golfer for their link.</p>' +
+        '<p><a href="/">Go to Drip Golf Recruiting</a></p></main>';
       return;
     }
     // Gate first so the body.is-owner class is set before edit UI renders.
