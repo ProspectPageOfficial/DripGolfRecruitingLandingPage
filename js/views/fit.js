@@ -123,10 +123,6 @@ function searchBar(prefs) {
              spellcheck="false" placeholder="Stanford, ACC, ..."
              value="${initial}"
              class="search-input" />
-      <p class="field-hint" style="margin-top:.5rem">
-        Matches school names and conferences. Filters the list &mdash; scores
-        do not move.
-      </p>
     </div>
   `;
 }

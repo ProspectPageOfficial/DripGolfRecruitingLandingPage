@@ -68,11 +68,6 @@ export const provenanceView = () => html`
       <h1 class="serif" style="font-size:clamp(1.9rem,4vw,2.8rem);margin:.5rem 0">
         What is real, and what is not.
       </h1>
-      <p class="muted" style="font-size:.92rem;max-width:62ch">
-        Nobody who built this demo is a golf recruiting expert, so the software
-        states its own sources rather than relying on someone to spot a wrong
-        number. ${raw(provenanceSummaryLine())}.
-      </p>
     </div>
 
     <div class="alert alert-error">
@@ -99,11 +94,6 @@ export const provenanceView = () => html`
 
     <div class="card stack-sm">
       <span class="eyebrow">How to replace the invented data</span>
-      <p style="font-size:.9rem">
-        Two of the three sources below are free and citable, and none of them
-        require you to know anything about golf &mdash; they are lookups, not
-        judgement calls.
-      </p>
       <table class="data">
         <thead><tr><th>Data</th><th>Source</th><th>Cost</th></tr></thead>
         <tbody>
@@ -124,10 +114,6 @@ export const provenanceView = () => html`
           </tr>
         </tbody>
       </table>
-      <p class="field-hint">
-        The scoring engine does not change when the data becomes real. That is
-        the entire reason lib/fit.js is a pure function with no data baked into it.
-      </p>
     </div>
   </div>
 `;

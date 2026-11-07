@@ -968,8 +968,7 @@ table.data tbody tr:hover { background: var(--cream-2); }
 /* ---------------- FAQ ----------------
    Native <details>, so it opens with the keyboard and works with JS off. */
 .faq { max-width: 760px; padding-left: var(--s-3); padding-right: var(--s-3); }
-.faq-title { font-size: clamp(1.9rem, 4vw, 2.8rem); margin: var(--s-2) 0; }
-.faq-lede { font-size: 0.95rem; max-width: 62ch; margin-bottom: var(--s-5); }
+.faq-title { font-size: clamp(1.9rem, 4vw, 2.8rem); margin: var(--s-2) 0 var(--s-4); }
 .faq-group {
   background: var(--card);
   border: 1px solid var(--line);

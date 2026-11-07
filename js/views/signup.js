@@ -31,7 +31,6 @@ const STEPS = [
   {
     key: "account",
     title: "Create your account",
-    blurb: "Accounts are for parents and guardians. You will use this to sign in, edit your golfer's page and see fit scores.",
     fields: [
       { name: "email", label: "Email", type: "email", required: true, wide: true,
         placeholder: "you@example.com", autocomplete: "email" },
@@ -62,7 +61,6 @@ const STEPS = [
   {
     key: "contact",
     title: "Contact details",
-    blurb: "Where a coach can reach you.",
     fields: [
       { name: "phone", label: "Phone", type: "tel", wide: true, placeholder: "(555) 555-0123", autocomplete: "tel" },
     ],
@@ -70,7 +68,6 @@ const STEPS = [
   {
     key: "school",
     title: "School & academics",
-    blurb: "GPA and test scores are optional. Add them and Academic Fit switches on.",
     fields: [
       { name: "classYear", label: "Class year", type: "select", required: true,
         options: ["2027", "2028", "2029", "2030", "2031", "2032", "2033"].map((y) => `Class of ${y}`) },
@@ -82,7 +79,6 @@ const STEPS = [
   {
     key: "golf",
     title: "Your golf",
-    blurb: "Your JGS national rank is what College Best Fit scores you on.",
     fields: [
       { name: "gender", label: "Team", type: "select", required: true,
         options: [["men", "Men's golf"], ["women", "Women's golf"]] },
@@ -94,7 +90,6 @@ const STEPS = [
   {
     key: "story",
     title: "Your story",
-    blurb: "Your elevator speech: character, accomplishments, goals, work ethic and interests beyond your scores.",
     fields: [
       { name: "bio", label: "Player bio", type: "textarea", wide: true,
         placeholder: "Tell coaches who you are..." },
@@ -103,7 +98,6 @@ const STEPS = [
   {
     key: "social",
     title: "Social links",
-    blurb: "All optional. Only the ones you fill in appear on your page.",
     fields: [
       { name: "instagram", label: "Instagram", placeholder: "@handle" },
       { name: "twitter", label: "X / Twitter", placeholder: "@handle" },
@@ -118,7 +112,6 @@ const STEPS = [
   {
     key: "domain",
     title: "Choose your web address",
-    blurb: "Your own .com that opens your recruiting page. It is included with your plan.",
     fields: [],
     custom: domainStep,
   },
@@ -201,7 +194,7 @@ export function signupView() {
           ${each(STEPS, (s, i) => html`
             <fieldset class="survey-step stack-sm" data-step="${i}" data-key="${s.key}" ${raw(i ? "hidden" : "")}>
               <legend class="serif survey-title">${s.title}</legend>
-              <p class="muted survey-blurb">${s.blurb}</p>
+              ${s.blurb ? raw(html`<p class="muted survey-blurb">${s.blurb}</p>`) : ""}
               ${s.note ? raw(html`<p class="field-hint survey-note">${s.note}</p>`) : ""}
               ${s.custom ? raw(s.custom()) : raw(html`<div class="survey-grid">${each(s.fields, field)}</div>`)}
               ${s.key === "about" ? raw(html`<p class="drip-filled" id="su-drip-note" aria-live="polite" hidden></p>`) : ""}

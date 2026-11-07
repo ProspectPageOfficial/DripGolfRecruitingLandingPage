@@ -32,10 +32,6 @@ export function authView() {
         <div>
           <span class="eyebrow">Welcome back</span>
           <h1 class="serif" style="margin-top:.5rem">Sign in.</h1>
-          <p class="muted" style="font-size:.88rem">
-            Parents: use the email and password you signed up with to open your
-            dashboard, fit scores and page editor.
-          </p>
         </div>
 
         <div id="auth-msg">${raw(notice ? html`<div class="alert alert-ok">${notice}</div>` : "")}</div>

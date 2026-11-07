@@ -128,7 +128,6 @@ export function landing() {
           ${raw(PERKS.map((p) => html`<li>${p}</li>`).join(""))}
         </ul>
         <p class="landing-faq">
-          Not a Drip Golf member, or wondering how the scores work?
           <a href="#/faq">Read the FAQ &rarr;</a>
         </p>
       </div>

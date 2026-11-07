@@ -204,10 +204,6 @@ export const faqView = () => html`
   <div class="container section-tight faq">
     <span class="eyebrow">FAQ</span>
     <h1 class="serif faq-title">Questions, answered.</h1>
-    <p class="muted faq-lede">
-      How the site works, how College Best Fit scores colleges, and what
-      changes if your golfer isn't a Drip Golf member.
-    </p>
 
     ${raw(FAQ.map((g) => html`
       <section class="faq-group">
