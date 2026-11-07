@@ -69,9 +69,6 @@ export function nav(user, golfer, active, mock = false) {
               )
               .join("")
           )}
-          <!-- On every screen, signed in or not: a parent deciding whether to
-               sign up is exactly who has questions. -->
-          <a class="btn btn-sm btn-ghost${active === "faq" ? " active" : ""}" href="#/faq">FAQ</a>
           ${raw(
             account
               ? html`<button class="btn btn-sm btn-ghost" data-action="account-signout">
@@ -85,9 +82,12 @@ export function nav(user, golfer, active, mock = false) {
               ? html`<button class="btn btn-sm btn-ghost" data-action="signout">
                     Sign out (${initials(golfer?.name ?? user.email)})
                   </button>`
-              : html`<a class="btn btn-sm" href="#/login">Sign in</a>
-                  <a class="btn btn-sm btn-ghost" href="#/signup">Create account</a>`
+              : html`<a class="btn btn-sm btn-ghost" href="#/signup">Create account</a>
+                  <a class="btn btn-sm" href="#/login">Sign in</a>`
           )}
+          <!-- On every screen, signed in or not: a parent deciding whether to
+               sign up is exactly who has questions. -->
+          <a class="btn btn-sm btn-ghost${active === "faq" ? " active" : ""}" href="#/faq">FAQ</a>
         </div>
       </nav>
     </div>
