@@ -83,8 +83,8 @@ export function landing() {
       <div class="container">
         <div class="hero-grid">
           <div>
-            <p class="hero-tagline">Your Game. Your Future.</p>
-            <h1 class="serif">Your College Recruiting is <em class="accent">One Link</em> Away</h1>
+            <h1 class="serif">Your Game.<br />Your Future.</h1>
+            <p class="hero-sub serif">Your College Recruiting is <em class="accent">One Link</em> Away</p>
           </div>
           <!-- The whole card is the link, to the example golfer's dashboard
                (#/example signs into the demo account). The preview is the
