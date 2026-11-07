@@ -17,7 +17,7 @@ const pct = (n) => `${Math.round(n * 100)}%`;
  */
 const FAQ = [
   {
-    group: "Getting started",
+    group: "Getting Started",
     items: [
       {
         q: "What is Drip Golf Recruiting?",
@@ -83,15 +83,7 @@ const FAQ = [
     ],
   },
   {
-    group: "College Best Fit scoring",
-    intro: html`<p>Drip Golf Recruiting is a tool to help families organize and
-      present a junior golfer&rsquo;s information. Like academic platforms such
-      as <b>Scoir</b>, it can provide useful information and help you understand
-      where your child may stand, but it cannot guarantee recruiting interest, a
-      roster spot, or college admission.</p>
-      <p>Use it as one resource in your family&rsquo;s recruiting journey,
-      alongside direct communication with college coaches and each school&rsquo;s
-      application process.</p>`,
+    group: "College Best Fit",
     items: [
       {
         q: "How does the college scoring system work?",
@@ -183,7 +175,7 @@ const FAQ = [
     ],
   },
   {
-    group: "The recruiting page",
+    group: "The Recruiting Page",
     items: [
       {
         q: "Do coaches need an account to see the page?",
@@ -220,7 +212,6 @@ export const faqView = () => html`
     ${raw(FAQ.map((g) => html`
       <section class="faq-group">
         <h2 class="serif">${g.group}</h2>
-        ${g.intro ? raw(html`<div class="faq-group-intro">${raw(g.intro)}</div>`) : ""}
         ${raw(g.items.map(item).join(""))}
       </section>
     `).join(""))}
