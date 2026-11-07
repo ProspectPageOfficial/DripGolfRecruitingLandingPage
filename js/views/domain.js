@@ -29,8 +29,8 @@ export const DOMAIN_PRICE = 11.08;
 
 /** Monthly / setup prices per plan. Mirrors the TIERS cards on the landing page. */
 export const PLANS = Object.freeze({
-  nonMember: { label: "Non-member", monthly: 50, setup: 299 },
-  member: { label: "Drip Golf Premium member", monthly: 25, setup: 0, setupWas: 299 },
+  nonMember: { label: "Non-member", monthly: 50, setup: 399 },
+  member: { label: "Drip Golf Premium member", monthly: 0, setup: 0, included: true },
 });
 
 /** "Ava", "Reed" -> "avareed". Letters and digits only; a domain cannot hold "'". */
@@ -203,7 +203,7 @@ export const checkoutStep = () => html`
         <label class="dom-plan">
           <input type="radio" name="plan" value="${key}" ${raw(key === "member" ? "checked" : "")} />
           <span><b>${p.label}</b>
-            <small>${money(p.monthly)}/month &middot; ${p.setup ? `${money(p.setup)} setup` : "setup fee waived"}</small>
+            <small>${p.included ? "Services are included" : raw(html`${money(p.monthly)}/month &middot; ${money(p.setup)} setup`)}</small>
           </span>
         </label>`).join(""))}
     </div>
@@ -219,8 +219,9 @@ export const checkoutStep = () => html`
 export function orderFor(planKey, domain, ownDomain) {
   const plan = PLANS[planKey] || PLANS.nonMember;
   const lines = [
-    [`${plan.label} plan, first month`, money(plan.monthly)],
-    [plan.setup ? "One-time setup" : "One-time setup (waived for members)", plan.setup ? money(plan.setup) : raw(html`<s>${money(plan.setupWas)}</s> $0`)],
+    ...(plan.included
+      ? [[`${plan.label} plan`, "Included"]]
+      : [[`${plan.label} plan, first month`, money(plan.monthly)], ["One-time setup", money(plan.setup)]]),
     [ownDomain ? `Connect ${domain}` : `${domain}, first year`, "Included"],
   ];
   return { plan, lines, total: plan.monthly + plan.setup };
@@ -236,7 +237,13 @@ export function bindCheckoutStep(form) {
       <div class="dom-total"><span>Due today</span><b>${money(total)}</b></div>`;
   };
   form.querySelectorAll("input[name='plan']").forEach((r) => r.addEventListener("change", paint));
-  return { onShow: paint, payLabel: () => `Pay ${money(orderFor(form.elements.plan.value).total)} & create account` };
+  return {
+    onShow: paint,
+    payLabel: () => {
+      const { total } = orderFor(form.elements.plan.value);
+      return total ? `Pay ${money(total)} & create account` : "Create account";
+    },
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -254,7 +261,7 @@ export function setupTracker(a) {
   const { total } = orderFor(a.plan, domain, own);
 
   const steps = [
-    ["Payment received", `${money(total)} through Stripe`],
+    total ? ["Payment received", `${money(total)} through Stripe`] : ["Plan confirmed", "Services are included"],
     ["Free address live", free],
     own
       ? ["Waiting for your domain settings", `Where you bought ${domain}, point it at Drip Golf. We'll email the exact setting.`, "waiting"]

@@ -40,9 +40,8 @@ const FAQ = [
       },
       {
         q: "How much does it cost?",
-        a: html`<p><b>Non-members:</b> $50 a month plus a one-time $299 setup
-          fee.<br /><b>Drip Golf Premium members:</b> $25 a month, with the
-          $299 setup fee waived.</p>
+        a: html`<p><b>Non-members:</b> $50 a month plus a one-time $399 setup
+          fee.<br /><b>Drip Golf Premium members:</b> services are included.</p>
           <p>Both plans include the personal recruiting page, College Best Fit
           scores, tournament and stat history, and a live preview of what
           coaches see.</p>`,

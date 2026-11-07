@@ -53,8 +53,7 @@ export function nav(user, golfer, active, mock = false) {
     <div class="container">
       <nav class="nav">
         <a class="nav-brand" href="#/">
-          <img src="assets/logo.png" alt="Drip Golf" />
-          <span>Drip Golf</span>
+          <img src="assets/logo-recruiting.png" alt="Drip Golf Recruiting" width="1000" height="434" />
         </a>
         <div class="nav-links">
           ${raw(

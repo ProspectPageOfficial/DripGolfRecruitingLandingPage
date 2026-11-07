@@ -45,19 +45,16 @@ const TIERS = [
     name: "Non-Members",
     price: "$50",
     cadence: "/ month",
-    upfront: "+ $299 one-time setup",
+    upfront: "+ $399 one-time setup",
     featured: false,
     cta: "Get started",
   },
   {
     name: "Drip Golf Premium Members",
-    price: "$25",
-    cadence: "/ month",
-    was: "$50",
-    badge: "50% off monthly",
-    upfront: ["$299 setup fee waived with Drip Premium membership", "Save $25 every month"],
+    price: "Included",
+    upfront: "Services are included",
     featured: true,
-    cta: "Claim member pricing",
+    cta: "Get started",
   },
 ];
 
@@ -73,7 +70,7 @@ const ticketHalf = (t) => html`
     ${raw(t.badge ? html`<span class="plan-badge">${t.badge}</span>` : "")}
     <div class="plan-name">${t.name}</div>
     <div class="plan-price serif">
-      ${raw(t.was ? html`<s>${t.was}</s>` : "")}${t.price}<small>${` ${t.cadence}`}</small>
+      ${raw(t.was ? html`<s>${t.was}</s>` : "")}${t.price}${raw(t.cadence ? html`<small>${` ${t.cadence}`}</small>` : "")}
     </div>
     <div class="plan-upfront">${raw([].concat(t.upfront).map((line) => html`<span>${line}</span>`).join(""))}</div>
     <a class="btn btn-lg btn-block ${t.featured ? "btn-cream" : ""}" href="#/signup">${t.cta} &rarr;</a>
@@ -86,6 +83,7 @@ export function landing() {
       <div class="container">
         <div class="hero-grid">
           <div>
+            <p class="hero-tagline">Your Game. Your Future.</p>
             <h1 class="serif">Your College Recruiting is <em class="accent">One Link</em> Away</h1>
           </div>
           <!-- The whole card is the link, to the example golfer's dashboard
@@ -119,7 +117,7 @@ export function landing() {
          router, match no route and render "That page does not exist." -->
     <section class="section section-green">
       <div class="container">
-        <h2 class="section-title serif">Members pay <em>half.</em></h2>
+        <h2 class="section-title serif">Included for <em>members.</em></h2>
         <div class="ticket">
           ${raw(TIERS.map(ticketHalf).join(""))}
         </div>
