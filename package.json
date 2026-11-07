@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Drip Golf Recruiting: the recruiting app, College Best Fit, and every golfer's recruiting page.",
   "scripts": {
-    "test": "node tests/fit.test.mjs && node --test tests/pages/",
+    "test": "node tests/fit.test.mjs && node --test \"tests/pages/*.test.mjs\"",
     "serve": "python serve.py 8080",
     "sync": "python _ref/gen_luke.py",
     "pages": "node tools/pages-dev.mjs",
