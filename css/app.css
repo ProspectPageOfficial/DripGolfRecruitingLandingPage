@@ -66,7 +66,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
   border-bottom: 1px solid var(--line);
 }
 .nav-brand { display: flex; align-items: center; gap: var(--s-2); }
-.nav-brand img { height: 68px; width: auto; }
+.nav-brand img { height: 84px; width: auto; }
 .nav-links { display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; }
 .nav-links a {
   font-size: 0.85rem;
@@ -101,7 +101,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
    row, and the buttons wrap onto a second line. The logo image already reads
    "Drip Golf", so the text beside it is the thing to drop. */
 @media (max-width: 480px) {
-  .nav-brand img { height: 34px; }
+  .nav { gap: var(--s-1); }
+  .nav-brand img { height: 38px; }
   .nav-links { gap: var(--s-1); }
   /* Three buttons once FAQ joined Sign in + Create account; slimmer pills keep
      them on one row at 375px. */
