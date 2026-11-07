@@ -8,10 +8,8 @@
  */
 import { html, raw } from "../lib/dom.js";
 import { WEIGHTS, TIERS, ACADEMIC_GATE } from "../lib/fit.js";
-import { colleges } from "../data/colleges.js";
 
 const pct = (n) => `${Math.round(n * 100)}%`;
-const programs = colleges.length.toLocaleString();
 
 /**
  * Grouped so a parent scanning for "price" does not wade through scoring
@@ -23,25 +21,22 @@ const FAQ = [
     items: [
       {
         q: "What is Drip Golf Recruiting?",
-        a: html`<p>It gives a junior golfer two things: a personal recruiting page
-          (bio, tournament results and stats behind one link you can send any
-          coach) and <b>College Best Fit</b>, a 0&ndash;100 score showing how
-          well the golfer lines up with ${programs} college golf programs.</p>`,
+        a: html`<p>Drip Golf Recruiting is a tool that helps junior golfers
+          build and share a golf resume as they move through their journey.
+          Every player&rsquo;s goals are different: some are preparing for
+          college recruiting, some want to introduce themselves to potential
+          sponsors, and others are building a profile for invitational
+          tournament applications. The platform gives players and families one
+          place to tell their story and present their experience for the
+          opportunities that fit their goals.</p>`,
       },
       {
         q: "My child is not a Drip Golf member. Can they still sign up?",
-        a: html`<p>Yes. Anyone can create an account &mdash; membership is not
-          required. The only differences are:</p>
-          <ul>
-            <li><b>Price.</b> Non-members pay the standard rate. Drip Golf
-              Premium members get 50% off every month and the setup fee
-              waived.</li>
-            <li><b>Autofill.</b> When a Drip Golf Tour player types their name
-              at sign-up, we can fill in what the tour already knows (hometown,
-              class year, scoring average, age and JGS rank). Everyone else
-              simply types those details in. It takes a minute or two longer
-              and the finished page is exactly the same.</li>
-          </ul>`,
+        a: html`<p>Yes, the service is open to all, but we encourage you to look
+          at the Drip Golf Tournament Schedule of events throughout the year,
+          and other benefits at
+          <a href="https://www.drip-golf.com" target="_blank" rel="noopener noreferrer">www.drip-golf.com</a>.</p>
+          <p>Please see pricing model.</p>`,
       },
       {
         q: "How much does it cost?",
@@ -51,6 +46,23 @@ const FAQ = [
           <p>Both plans include the personal recruiting page, College Best Fit
           scores, tournament and stat history, and a live preview of what
           coaches see.</p>`,
+      },
+      {
+        q: "As a parent I am not very technical. Do you have support?",
+        a: html`<p>Absolutely. Drip Golf Recruiting is designed to be useful for
+          families at every comfort level with technology. If you need help
+          setting up an account or using the platform, contact us at
+          <a href="mailto:info@dripgolfrecruiting.com">info@dripgolfrecruiting.com</a>
+          and we&rsquo;ll be glad to assist.</p>
+          <p>Also, we will have in person help stations set up at some of our
+          Drip Golf Tournaments.</p>`,
+      },
+      {
+        q: "Where can I find my child's JGS and TUGR national rankings?",
+        a: html`<p>Drip Golf Recruiting automatically pulls your child&rsquo;s
+          available JGS and TUGR ranking information into their profile. The
+          rankings are shown alongside those of current players in the program,
+          making it easier to see how your child compares within the team.</p>`,
       },
       {
         q: "We play on the Drip Golf Tour but the sign-up didn't find us.",
@@ -72,6 +84,14 @@ const FAQ = [
   },
   {
     group: "College Best Fit scoring",
+    intro: html`<p>Drip Golf Recruiting is a tool to help families organize and
+      present a junior golfer&rsquo;s information. Like academic platforms such
+      as <b>Scoir</b>, it can provide useful information and help you understand
+      where your child may stand, but it cannot guarantee recruiting interest, a
+      roster spot, or college admission.</p>
+      <p>Use it as one resource in your family&rsquo;s recruiting journey,
+      alongside direct communication with college coaches and each school&rsquo;s
+      application process.</p>`,
     items: [
       {
         q: "How does the college scoring system work?",
@@ -124,10 +144,10 @@ const FAQ = [
           automatically. ACT scores are converted to their SAT equivalent.</p>`,
       },
       {
-        q: "Where do we find our JGS national rank? What if we don't have one?",
-        a: html`<p>It is on your golfer's profile at Junior Golf Scoreboard
-          (juniorgolfscoreboard.com). Drip Golf Tour players can usually have
-          it filled in for them at sign-up.</p>
+        q: "What if our JGS rank isn't filled in, or we don't have one?",
+        a: html`<p>If your golfer's rank isn't filled in for you, you can find
+          it on their profile at Junior Golf Scoreboard
+          (juniorgolfscoreboard.com) and enter it at sign-up.</p>
           <p>Athletic Fit is built on it, so sign-up asks for it. A golfer
           who hasn't played a JGS-ranked event yet will need to before College
           Best Fit can score them.</p>`,
@@ -144,9 +164,10 @@ const FAQ = [
           rates and tuition come from the NCAA member directory and the U.S.
           Department of Education's College Scorecard.</p>
           <p>Head coaches and roster sizes are read from each school's own
-          athletics website. The roster ranks behind Athletic Fit are
-          <b>estimates</b>, based on the school's conference, and are marked
-          "est." on screen. There is no public source for colleges' average
+          athletics website. The team rankings your golfer is compared with,
+          including those behind Athletic Fit, are <b>estimates</b>, based on
+          the school's conference, and are marked "est." on screen. There is no
+          public source for colleges' average
           GPA, so academic fit uses SAT/ACT. Treat fit scores as a starting
           point for building a list, not as a measurement. The <a href="#/data">data sources page</a>
           shows exactly what is real and what is estimated.</p>`,
@@ -199,6 +220,7 @@ export const faqView = () => html`
     ${raw(FAQ.map((g) => html`
       <section class="faq-group">
         <h2 class="serif">${g.group}</h2>
+        ${g.intro ? raw(html`<div class="faq-group-intro">${raw(g.intro)}</div>`) : ""}
         ${raw(g.items.map(item).join(""))}
       </section>
     `).join(""))}

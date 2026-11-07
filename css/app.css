@@ -972,6 +972,8 @@ table.data tbody tr:hover { background: var(--cream-2); }
 .faq-lede { font-size: 0.95rem; max-width: 62ch; margin-bottom: var(--s-5); }
 .faq-group { margin-bottom: var(--s-5); }
 .faq-group h2 { font-size: 1.35rem; margin-bottom: var(--s-2); }
+.faq-group-intro { color: var(--ink-soft); font-size: 0.92rem; margin-bottom: var(--s-3); }
+.faq-group-intro p + p { margin-top: var(--s-2); }
 .faq-item { border-top: 1px solid var(--line); }
 .faq-item:last-child { border-bottom: 1px solid var(--line); }
 .faq-item summary {
