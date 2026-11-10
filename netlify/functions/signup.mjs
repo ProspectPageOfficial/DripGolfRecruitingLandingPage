@@ -19,6 +19,7 @@ import { json, preflight, readJson } from "./_lib/http.mjs";
 import { SLUG_RE } from "./_lib/tenant.mjs";
 import { normalize as normalizePersonal } from "./personal.mjs";
 import { EMPTY_PORTFOLIO } from "./golfer.mjs";
+import { cleanTourId, BLOB_KEY as SCORING_KEY } from "./golf-scoring.mjs";
 
 /** Survey field -> Personal Bio field, where the names differ. */
 const RENAME = {
@@ -98,6 +99,11 @@ export default async function handler(req) {
     personal: { name, class_year: personal.class_year || "", hometown: personal.hometown || "" },
     golf: { ...EMPTY_PORTFOLIO.golf, stats },
   });
+
+  // Picked themselves in the Drip Golf Tour lookup: link that profile so the
+  // page's scoring stats come straight from the tour.
+  const tour = cleanTourId(body.tourPlayerId);
+  if (tour.value) await db.setDoc(golfer.id, SCORING_KEY, { tourPlayerId: tour.value });
 
   return json(201, {
     slug: golfer.slug,

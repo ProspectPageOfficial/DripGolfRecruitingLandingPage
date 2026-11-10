@@ -1711,6 +1711,32 @@ body.is-owner .visitor-only { display: none !important; }
 }
 .theme-field input.rank-input:focus { outline: 2px solid var(--green); outline-offset: 1px; }
 
+/* Golf Bio: sub-headings with an owner-only Edit button beside them. */
+.golf-subhead { margin: 1.6rem 0 0.6rem; }
+#scoring-types-heading { margin-top: 1.4rem; }
+.scoring-source { font-size: 0.85rem; margin: -0.2rem 0 0.6rem; }
+/* Nothing to show yet: visitors see no section; the owner sees the prompt. */
+#scoring-section.is-empty { display: none; }
+body.is-owner #scoring-section.is-empty { display: block; }
+
+/* Scoring stats pop-up: two groups in the rankings card style. */
+.scoring-modal-card { max-width: 420px; }
+.scoring-group { border: none; padding: 0; margin: 0 0 1.2rem; }
+.scoring-group legend { font-weight: 700; color: var(--green-deep); margin-bottom: 0.3rem; padding: 0; }
+.scoring-subtitle { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0.9rem 0 0.2rem; }
+.scoring-field-wide { display: block; margin: 0.6rem 0; }
+.scoring-field-wide > span { display: block; font-weight: 700; font-size: 0.9rem; color: var(--charcoal); margin-bottom: 0.3rem; }
+.scoring-field-wide input.rank-input {
+  width: 100%; box-sizing: border-box; text-align: left;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid rgba(31, 77, 43, 0.3);
+  border-radius: 8px;
+  font: inherit;
+}
+.scoring-field-wide input.rank-input:focus { outline: 2px solid var(--green); outline-offset: 1px; }
+.scoring-suggest { display: flex; flex-direction: column; gap: 0.4rem; }
+.scoring-suggest-btn { justify-content: flex-start; text-align: left; }
+
 </style>
 
   <!-- Hero "broadcast leaderboard" skin. MUST stay after the inline
@@ -2012,7 +2038,7 @@ body.is-owner .visitor-only { display: none !important; }
     </section>
 
     <section class="tab-panel" id="golf" role="tabpanel">
-      <h2>Golf Bio <small class="muted">(These numbers reflect just the Drip Golf Official Tournaments)</small></h2>
+      <h2>Golf Bio</h2>
 
       <!-- Current Coach card. Display + inline edit form. Saves go
            through the same /api/personal endpoint as the personal bio
@@ -2051,14 +2077,26 @@ body.is-owner .visitor-only { display: none !important; }
         </form>
       </section>
 
-      <h3>Current Season Rankings</h3>
+      <div class="panel-header golf-subhead">
+        <h3>Current Season Rankings</h3>
+        <button type="button" id="rank-edit-btn-golf" class="swing-ghost-btn owner-only">✏️ Edit</button>
+      </div>
       <ul class="profile-list" id="rankings-list"></ul>
 
-      <h3>Scoring Profile (Per-Hole Averages)</h3>
-      <ul class="profile-list" id="par-list"></ul>
-
-      <h3>Scoring Types</h3>
-      <ul class="profile-list" id="scoring-list"></ul>
+      <!-- Scoring stats: from a linked Drip Golf Tour profile (members), or
+           typed in by the owner (everyone else). Hidden from visitors until
+           there is something to show. -->
+      <div id="scoring-section">
+        <div class="panel-header golf-subhead">
+          <h3>Scoring Profile (Per-Hole Averages)</h3>
+          <button type="button" id="scoring-edit-btn" class="swing-ghost-btn owner-only">✏️ Edit</button>
+        </div>
+        <p class="muted scoring-source" id="scoring-source" hidden>From official Drip Golf Tour tournaments. Updates after each event.</p>
+        <p class="muted owner-only" id="scoring-empty" hidden>No scoring stats yet. Drip Golf Tour members can link their tour profile; anyone can add their own. Click Edit to start.</p>
+        <ul class="profile-list" id="par-list"></ul>
+        <h3 id="scoring-types-heading">Scoring Types</h3>
+        <ul class="profile-list" id="scoring-list"></ul>
+      </div>
     </section>
 
     <section class="tab-panel" id="history" role="tabpanel">
@@ -2323,6 +2361,61 @@ body.is-owner .visitor-only { display: none !important; }
         <div class="theme-modal-actions">
           <button type="submit" id="rank-save-btn" class="swing-upload-btn">💾 Save</button>
           <button type="button" class="swing-ghost-btn" data-rank-close>Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Scoring stats editor. Same modal pattern as the rankings editor. -->
+  <div id="scoring-modal" class="theme-modal" hidden role="dialog"
+       aria-labelledby="scoring-modal-title" aria-modal="true">
+    <div class="theme-modal-backdrop" data-scoring-close></div>
+    <div class="theme-modal-card scoring-modal-card" role="document">
+      <h3 id="scoring-modal-title">✏️ Scoring Stats</h3>
+      <form id="scoring-form" novalidate>
+        <fieldset class="scoring-group">
+          <legend>Drip Golf Tour member?</legend>
+          <p class="theme-modal-help">
+            Link your tour profile and these stats fill in from your official
+            Drip Golf tournaments, updating after every event.
+          </p>
+          <div id="scoring-tour-suggest" class="scoring-suggest"></div>
+          <label class="scoring-field-wide"><span>Tour profile link or player ID</span>
+            <input name="tourPlayerId" class="rank-input" autocomplete="off"
+                   placeholder="Paste your dripgolftour.com profile link"></label>
+          <p id="scoring-tour-status" class="swing-upload-status" role="status" aria-live="polite"></p>
+        </fieldset>
+        <fieldset class="scoring-group">
+          <legend>Not on the tour, or adding your own?</legend>
+          <p class="theme-modal-help">
+            Type your stats here. Leave a box blank to hide it. If a tour profile
+            is linked, its stats are shown instead.
+          </p>
+          <p class="scoring-subtitle">Per-hole averages</p>
+          <label class="theme-field"><span>Par 3</span>
+            <input class="rank-input" name="Par 3's" inputmode="decimal" autocomplete="off" placeholder="e.g. 3.25"></label>
+          <label class="theme-field"><span>Par 4</span>
+            <input class="rank-input" name="Par 4's" inputmode="decimal" autocomplete="off" placeholder="e.g. 4.30"></label>
+          <label class="theme-field"><span>Par 5</span>
+            <input class="rank-input" name="Par 5's" inputmode="decimal" autocomplete="off" placeholder="e.g. 5.10"></label>
+          <p class="scoring-subtitle">Scoring types (number of holes)</p>
+          <label class="theme-field"><span>Eagles</span>
+            <input class="rank-input" name="Eagles" inputmode="numeric" autocomplete="off" placeholder="e.g. 0"></label>
+          <label class="theme-field"><span>Birdies</span>
+            <input class="rank-input" name="Birdies" inputmode="numeric" autocomplete="off" placeholder="e.g. 12"></label>
+          <label class="theme-field"><span>Pars</span>
+            <input class="rank-input" name="Pars" inputmode="numeric" autocomplete="off" placeholder="e.g. 60"></label>
+          <label class="theme-field"><span>Bogeys</span>
+            <input class="rank-input" name="Bogeys" inputmode="numeric" autocomplete="off" placeholder="e.g. 30"></label>
+          <label class="theme-field"><span>Doubles</span>
+            <input class="rank-input" name="Doubles" inputmode="numeric" autocomplete="off" placeholder="e.g. 6"></label>
+          <label class="theme-field"><span>Others</span>
+            <input class="rank-input" name="Others" inputmode="numeric" autocomplete="off" placeholder="e.g. 1"></label>
+        </fieldset>
+        <p id="scoring-status" class="swing-upload-status" role="status" aria-live="polite"></p>
+        <div class="theme-modal-actions">
+          <button type="submit" id="scoring-save-btn" class="swing-upload-btn">💾 Save</button>
+          <button type="button" class="swing-ghost-btn" data-scoring-close>Cancel</button>
         </div>
       </form>
     </div>
@@ -3343,21 +3436,31 @@ const PORTFOLIO_DATA = {
       ["CGA Rank",       data.golf.stats["CGA Rank"]],
     ]);
 
-    const s = data.golf.scoring;
+    // A linked Drip Golf Tour profile wins whenever the tour has stats;
+    // otherwise the owner's own (or imported) numbers.
+    const tour = data.golf.tourScoring && Object.keys(data.golf.tourScoring).length
+      ? data.golf.tourScoring : null;
+    const s = tour || data.golf.scoring || {};
     fillList("#par-list", [
       ["Par 3 Avg", s["Par 3's"]],
       ["Par 4 Avg", s["Par 4's"]],
       ["Par 5 Avg", s["Par 5's"]],
     ]);
 
-    fillList("#scoring-list", [
-      ["Eagles",  s.Eagles],
-      ["Birdies", s.Birdies],
-      ["Pars",    s.Pars],
-      ["Bogeys",  s.Bogeys],
-      ["Doubles", s.Doubles],
-      ["Others",  s.Others],
-    ]);
+    // Typed-in counts get the same "(13.89%)" share the tour shows, once all
+    // six are filled in. Tour values already carry it.
+    const TYPES = ["Eagles", "Birdies", "Pars", "Bogeys", "Doubles", "Others"];
+    const counts = TYPES.map((k) => (/^\d+$/.test(String(s[k] ?? "")) ? Number(s[k]) : null));
+    const total = counts.every((c) => c !== null) ? counts.reduce((a, b) => a + b, 0) : 0;
+    fillList("#scoring-list", TYPES.map((k, i) => [k,
+      total > 0 ? `${s[k]} (${((counts[i] / total) * 100).toFixed(2)}%)` : s[k]]));
+
+    const hasPar = $("#par-list").children.length > 0;
+    const hasTypes = $("#scoring-list").children.length > 0;
+    $("#scoring-section").classList.toggle("is-empty", !hasPar && !hasTypes);
+    $("#scoring-empty").hidden = hasPar || hasTypes;
+    $("#scoring-types-heading").hidden = !hasTypes;
+    $("#scoring-source").hidden = !tour;
   }
 
   // ---------- Date helpers ----------
@@ -4951,6 +5054,151 @@ const PORTFOLIO_DATA = {
   })();
   window.RankEditor = RankEditor;
 
+  // ---------- ScoringEditor: Golf Bio scoring stats ----------
+  // Drip Golf Tour members link their tour profile and the stats are read
+  // from the tour (/api/drip-golf, cached by Netlify for an hour). Everyone
+  // else types them in. Both save to /api/golf-scoring (owner only).
+  const ScoringEditor = (() => {
+    const API = "/api/golf-scoring";
+    const FIELDS = ["Par 3's", "Par 4's", "Par 5's", "Eagles", "Birdies", "Pars", "Bogeys", "Doubles", "Others"];
+    const byId = (id) => document.getElementById(id);
+    const tourId = (s) => {
+      s = String(s || "").trim();
+      return (/PlayerID=(\d{1,9})\b/i.exec(s) || [])[1] || (/^\d{1,9}$/.test(s) ? s : "");
+    };
+    const fold = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
+    let previewTimer;
+
+    async function tourScoring(id) {
+      try {
+        const res = await fetch("/api/drip-golf?player=" + encodeURIComponent(id));
+        const body = res.ok ? await res.json() : null;
+        return body && body.scoring ? body.scoring : null;
+      } catch { return null; }
+    }
+
+    /** Fill PORTFOLIO_DATA.golf.tourScoring from the linked profile, if any. */
+    async function loadTour() {
+      const id = PORTFOLIO_DATA.golf.tourPlayerId;
+      PORTFOLIO_DATA.golf.tourScoring = id ? await tourScoring(id) : null;
+    }
+
+    async function preview() {
+      const status = byId("scoring-tour-status");
+      const raw = byId("scoring-form").elements.tourPlayerId.value;
+      if (!raw.trim()) { status.textContent = ""; return; }
+      const id = tourId(raw);
+      if (!id) { status.textContent = "That doesn't look like a Drip Golf Tour profile link."; return; }
+      status.textContent = "Checking your tour profile…";
+      const s = await tourScoring(id);
+      if (tourId(byId("scoring-form").elements.tourPlayerId.value) !== id) return; // typed on meanwhile
+      if (!s) status.textContent = "Couldn't reach that tour profile. Check the link and try again.";
+      else if (!Object.keys(s).length) status.textContent = "Linked profile found. Its stats will appear after your first Drip Golf event.";
+      else status.textContent = "Found it: " + Object.keys(s).length + " stats from your Drip Golf tournaments. Save to show them.";
+    }
+
+    async function suggest() {
+      const box = byId("scoring-tour-suggest");
+      box.innerHTML = "";
+      const name = fold(PORTFOLIO_DATA.personal && PORTFOLIO_DATA.personal.name);
+      if (!name) return;
+      try {
+        const res = await fetch("/api/drip-golf");
+        const players = res.ok ? ((await res.json()).players || []) : [];
+        const matches = players.filter((p) => fold(p.name) === name).slice(0, 3);
+        if (!matches.length) return;
+        const lead = document.createElement("p");
+        lead.className = "scoring-subtitle";
+        lead.textContent = "Is this you?";
+        box.appendChild(lead);
+        for (const p of matches) {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = "swing-ghost-btn scoring-suggest-btn";
+          b.textContent = [p.name, p.division, p.hometown].filter(Boolean).join(" · ");
+          b.addEventListener("click", () => {
+            byId("scoring-form").elements.tourPlayerId.value = p.id;
+            preview();
+          });
+          box.appendChild(b);
+        }
+      } catch { /* the lookup is a convenience; pasting a link still works */ }
+    }
+
+    async function open() {
+      const form = byId("scoring-form");
+      form.reset();
+      byId("scoring-status").textContent = "";
+      byId("scoring-tour-status").textContent = "";
+      byId("scoring-modal").hidden = false;
+      try {
+        const res = await fetch(API, { cache: "no-store" });
+        const saved = res.ok ? await res.json() : {};
+        form.elements.tourPlayerId.value = saved.tourPlayerId || "";
+        for (const f of FIELDS) form.elements[f].value = (saved.manual && saved.manual[f]) || "";
+        if (saved.tourPlayerId) preview();
+        else suggest();
+      } catch {
+        byId("scoring-status").textContent = "Couldn't load your saved stats. Check your connection.";
+      }
+    }
+    const close = () => { byId("scoring-modal").hidden = true; };
+
+    async function save(e) {
+      e.preventDefault();
+      const form = e.currentTarget;
+      const status = byId("scoring-status");
+      const btn = byId("scoring-save-btn");
+      const manual = {};
+      for (const f of FIELDS) manual[f] = form.elements[f].value.trim();
+      btn.disabled = true;
+      status.textContent = "Saving…";
+      try {
+        const res = await fetch(API, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tourPlayerId: form.elements.tourPlayerId.value.trim(), manual }),
+        });
+        if (res.status === 401) {
+          status.textContent = "Please sign in again to save.";
+          if (window.OwnerGate) window.OwnerGate.promptForOwner();
+          return;
+        }
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) { status.textContent = data.error || "Couldn't save. Please try again."; return; }
+        const fresh = await fetch("/api/golfer", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+        if (fresh && fresh.portfolio && fresh.portfolio.golf) {
+          PORTFOLIO_DATA.golf.scoring = fresh.portfolio.golf.scoring || {};
+          PORTFOLIO_DATA.golf.tourPlayerId = fresh.portfolio.golf.tourPlayerId || null;
+        }
+        await loadTour();
+        if (window.rerenderGolf) window.rerenderGolf();
+        status.textContent = "";
+        close();
+      } catch {
+        status.textContent = "Couldn't reach the server. Check your connection.";
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function init() {
+      byId("scoring-edit-btn")?.addEventListener("click", open);
+      byId("rank-edit-btn-golf")?.addEventListener("click", () => RankEditor.open());
+      byId("scoring-form")?.addEventListener("submit", save);
+      byId("scoring-form")?.elements.tourPlayerId.addEventListener("input", () => {
+        clearTimeout(previewTimer);
+        previewTimer = setTimeout(preview, 500);
+      });
+      document.querySelectorAll("[data-scoring-close]").forEach((el) => el.addEventListener("click", close));
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && !byId("scoring-modal").hidden) close();
+      });
+    }
+    return { init, open, loadTour };
+  })();
+  window.ScoringEditor = ScoringEditor;
+
   // ---------- Owner Gate (real server-side auth) ----------
   // Password verification happens via POST /api/auth, which compares the
   // submitted password against the OWNER_PASSWORD_HASH env var set on
@@ -5857,6 +6105,7 @@ const PORTFOLIO_DATA = {
     // Gate first so the body.is-owner class is set before edit UI renders.
     OwnerGate.init();
     RankEditor.init();
+    ScoringEditor.init();
     document.querySelectorAll("[data-upload-limit]").forEach((el) => {
       el.textContent = String(window.SupabaseStorage ? window.SupabaseStorage.maxUploadMB() : 50);
     });
@@ -5872,6 +6121,8 @@ const PORTFOLIO_DATA = {
     renderPersonal(PORTFOLIO_DATA);
     renderGolf(PORTFOLIO_DATA);
     renderCoach(PORTFOLIO_DATA);
+    // A linked Drip Golf Tour profile's stats arrive after first paint.
+    ScoringEditor.loadTour().then(() => window.rerenderGolf && window.rerenderGolf());
     wireTabs();
     wireYearSelector();
 

@@ -110,6 +110,30 @@ export function parseProfile(page) {
   };
 }
 
+/** The page's own labels for the Golf Bio scoring stats, in display order. */
+export const SCORING_PAR_FIELDS = Object.freeze(["Par 3's", "Par 4's", "Par 5's"]);
+export const SCORING_TYPE_FIELDS = Object.freeze(["Eagles", "Birdies", "Pars", "Bogeys", "Doubles", "Others"]);
+
+/**
+ * A player profile page -> its "Scoring Profile" and "Scoring Types" boxes,
+ * e.g. { "Par 3's": "3.28", Birdies: "20 (13.89%)" }. These come from Drip
+ * Golf official tournaments only. Anything missing is left out, so a redesign
+ * of the profile page gives {} rather than wrong numbers.
+ */
+export function parseScoring(page) {
+  const text = decode(String(page).replace(/<[^>]*>/g, " "));
+  const out = {};
+  for (const field of SCORING_PAR_FIELDS) {
+    const m = text.match(new RegExp(`${field}:\\s*(\\d+(?:\\.\\d+)?)`));
+    if (m) out[field] = m[1];
+  }
+  for (const field of SCORING_TYPE_FIELDS) {
+    const m = text.match(new RegExp(`\\b${field}:\\s*(\\d+)\\s*(?:\\(([\\d.]+%)\\))?`));
+    if (m) out[field] = m[2] ? `${m[1]} (${m[2]})` : m[1];
+  }
+  return out;
+}
+
 const fold = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 
 /**

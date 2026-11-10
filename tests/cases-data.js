@@ -10,7 +10,7 @@
  * If those ever diverge, every fit score is built on the disagreement.
  */
 import {
-  parseStandings, parseProfile, matchPlayers, splitName, mergeRosters, isGirlsDivision, PLAYER_ID,
+  parseStandings, parseProfile, parseScoring, matchPlayers, splitName, mergeRosters, isGirlsDivision, PLAYER_ID,
 } from "../js/data/dripgolf.js";
 import { DRIP_HISTORY } from "../js/data/dripgolf-history.js";
 import { hasAcademics, graduationYear, scoreSchool } from "../js/lib/fit.js";
@@ -435,6 +435,26 @@ export const dataCases = [
       assert.deepEqual(parseProfile(page), { age: 15, jgsRank: 1929, tugrRank: 658 });
       assert.deepEqual(parseProfile("<p>redesigned</p>"),
         { age: undefined, jgsRank: undefined, tugrRank: undefined });
+    },
+  },
+  {
+    name: "Drip Golf profile yields the Golf Bio scoring stats",
+    run: (assert) => {
+      // Shaped like the tour's profile page: labels and values in separate tags.
+      const page = `<h4>Scoring Profile</h4>
+        <div><span>Par 3&#39;s:</span> <span>3.28</span></div>
+        <div><span>Par 4's:</span> <span>4.23</span></div>
+        <div><span>Par 5's:</span> <span>5.00</span></div>
+        <h4>Scoring Types</h4>
+        <div>Eagles: <b>0</b> (--)</div><div>Birdies: 20 (13.89%)</div>
+        <div>Pars: 84 (58.33%)</div><div>Bogeys: 34 (23.61%)</div>
+        <div>Doubles: 5 (3.47%)</div><div>Others: 1 (0.69%)</div>`;
+      assert.deepEqual(parseScoring(page), {
+        "Par 3's": "3.28", "Par 4's": "4.23", "Par 5's": "5.00",
+        Eagles: "0", Birdies: "20 (13.89%)", Pars: "84 (58.33%)",
+        Bogeys: "34 (23.61%)", Doubles: "5 (3.47%)", Others: "1 (0.69%)",
+      });
+      assert.deepEqual(parseScoring("<p>redesigned</p>"), {}, "a redesign gives nothing, not wrong numbers");
     },
   },
 ];

@@ -34,11 +34,17 @@ export default async function handler(req) {
   if (t.error) return t.error;
   const { golfer, store } = t;
 
-  const [saved, ranks] = await Promise.all([store.get("portfolio"), store.get("golf-stats")]);
+  const [saved, ranks, scoring] = await Promise.all([
+    store.get("portfolio"), store.get("golf-stats"), store.get("golf-scoring"),
+  ]);
   const portfolio = { ...EMPTY_PORTFOLIO, ...(saved || {}) };
   // The owner's own rankings (/api/golf-stats) over the imported ones, so
   // the page, resume, dashboard and College Best Fit all follow an edit.
   portfolio.golf = { ...portfolio.golf, stats: { ...(portfolio.golf?.stats || {}), ...(ranks || {}) } };
+  // Scoring stats the owner typed in (/api/golf-scoring) over imported ones.
+  // A linked Drip Golf Tour profile is read live by the page itself.
+  portfolio.golf.scoring = { ...(portfolio.golf.scoring || {}), ...(scoring?.manual || {}) };
+  portfolio.golf.tourPlayerId = scoring?.tourPlayerId || null;
   return json(200, {
     id: golfer.id,
     slug: golfer.slug,

@@ -18,6 +18,7 @@ import login from "../../netlify/functions/login.mjs";
 import golfer from "../../netlify/functions/golfer.mjs";
 import myPage from "../../netlify/functions/my-page.mjs";
 import golfStats, { cleanRank } from "../../netlify/functions/golf-stats.mjs";
+import golfScoring, { cleanTourId, cleanScoring } from "../../netlify/functions/golf-scoring.mjs";
 import personal from "../../netlify/functions/personal.mjs";
 import tournaments from "../../netlify/functions/tournaments.mjs";
 import deleteAccount from "../../netlify/functions/delete-account.mjs";
@@ -294,4 +295,60 @@ test("a street address is never accepted or shown, even one saved before", async
     body: { hometown: "Charlotte, NC", home_address: "123 Fairway Dr" } });
   assert.equal(saved.status, 200);
   assert.equal((await db.getDoc(id, "personal-overrides")).home_address, undefined, "a new save drops it");
+});
+
+test("a non-member owner types in scoring stats and every reader sees them", async () => {
+  await ready;
+  const put = await call(golfScoring, "golf-scoring", { method: "PUT", golfer: "ava-reed", token: ava.session.access_token,
+    body: { manual: { "Par 3's": "3.25", "Par 4's": "4.3", Birdies: "12", Pars: "", Eagles: "0" } } });
+  assert.equal(put.status, 200);
+  assert.deepEqual(put.body.manual, { "Par 3's": "3.25", "Par 4's": "4.3", Eagles: "0", Birdies: "12" }, "blank boxes are dropped");
+  const page = await call(golfer, "golfer", { golfer: "ava-reed" });
+  assert.equal(page.body.portfolio.golf.scoring.Birdies, "12");
+  assert.equal(page.body.portfolio.golf.tourPlayerId, null, "not linked to the tour");
+  // Clearing every box removes the stats again.
+  await call(golfScoring, "golf-scoring", { method: "PUT", golfer: "ava-reed", token: ava.session.access_token, body: { manual: {} } });
+  assert.deepEqual((await call(golfer, "golfer", { golfer: "ava-reed" })).body.portfolio.golf.scoring, {});
+});
+
+test("a member links their Drip Golf Tour profile by link or ID, and can unlink", async () => {
+  await ready;
+  const link = "https://www.dripgolftour.com/Public/PlayerProfile?PlayerID=256648&TourSeasonID=1178";
+  const put = await call(golfScoring, "golf-scoring", { method: "PUT", golfer: "ava-reed", token: ava.session.access_token,
+    body: { tourPlayerId: link } });
+  assert.equal(put.status, 200);
+  assert.equal((await call(golfer, "golfer", { golfer: "ava-reed" })).body.portfolio.golf.tourPlayerId, "256648");
+  await call(golfScoring, "golf-scoring", { method: "PUT", golfer: "ava-reed", token: ava.session.access_token, body: { tourPlayerId: "" } });
+  assert.equal((await call(golfer, "golfer", { golfer: "ava-reed" })).body.portfolio.golf.tourPlayerId, null);
+});
+
+test("scoring stats are owner-only and must be real numbers", async () => {
+  await ready;
+  const anon = await call(golfScoring, "golf-scoring", { method: "PUT", golfer: "ava-reed", body: { tourPlayerId: "1" } });
+  assert.equal(anon.status, 401);
+  const other = await call(golfScoring, "golf-scoring", { method: "PUT", golfer: "ava-reed", token: luke.session.access_token,
+    body: { manual: { Birdies: "99" } } });
+  assert.equal(other.status, 401, "another golfer's owner cannot change them");
+  const bad = await call(golfScoring, "golf-scoring", { method: "PUT", golfer: "ava-reed", token: ava.session.access_token,
+    body: { manual: { "Par 4's": "four" } } });
+  assert.equal(bad.status, 400);
+  assert.deepEqual(cleanTourId("dripgolftour.com/Public/PlayerProfile?PlayerID=42"), { value: "42" });
+  assert.deepEqual(cleanTourId(""), { value: null });
+  assert.ok(cleanTourId("https://example.com/me").error, "a link with no player ID is refused");
+  assert.ok(cleanScoring({ Birdies: "1.5" }).error, "counts are whole numbers");
+  assert.ok(cleanScoring({ "Par 3's": "0.5" }).error, "an average below 1 is not a per-hole average");
+  assert.deepEqual(cleanScoring({ Pars: "1,204" }), { value: { Pars: "1204" } });
+});
+
+test("picking yourself in the Drip Golf lookup at sign-up links your tour profile", async () => {
+  await ready;
+  const tour = (await call(signup, "signup", { method: "POST", body: {
+    guardian: true, email: "tour@example.com", password: "tour-password-1", firstName: "Tour", lastName: "Player",
+    tourPlayerId: "256648" } })).body;
+  assert.equal((await call(golfer, "golfer", { golfer: tour.slug })).body.portfolio.golf.tourPlayerId, "256648");
+  const plain = (await call(signup, "signup", { method: "POST", body: {
+    guardian: true, email: "plain@example.com", password: "plain-password-1", firstName: "Plain", lastName: "Player",
+    tourPlayerId: "not-an-id" } })).body;
+  assert.equal(plain.slug, "plain-player", "a bad tour ID never blocks sign-up");
+  assert.equal((await call(golfer, "golfer", { golfer: plain.slug })).body.portfolio.golf.tourPlayerId, null);
 });

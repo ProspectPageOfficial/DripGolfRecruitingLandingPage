@@ -192,6 +192,7 @@ export function signupView() {
         <div id="su-msg"></div>
 
         <form id="signup-form" class="stack" novalidate>
+          <input type="hidden" name="tourPlayerId" value="" />
           ${each(STEPS, (s, i) => html`
             <fieldset class="survey-step stack-sm" data-step="${i}" data-key="${s.key}" ${raw(i ? "hidden" : "")}>
               <legend class="serif survey-title">${s.title}</legend>
@@ -587,6 +588,10 @@ function bindLookup(form) {
     // Otherwise, after picking Fenton Scott, backspacing "Fenton" only ever
     // finds Scotts -- the golfer is starting over, so search what they type.
     const typed = (el, key) => (picked && el.value === picked[key] ? "" : el.value);
+    // Changed the name after picking: this is no longer that tour player.
+    if (picked && (first.value !== picked.firstName || last.value !== picked.lastName)) {
+      form.elements.tourPlayerId.value = "";
+    }
     matches = matchPlayers(roster, typed(first, "firstName"), typed(last, "lastName"));
     active = -1;
     paint();
@@ -597,6 +602,7 @@ function bindLookup(form) {
     close();
     put(form, "firstName", p.firstName);
     put(form, "lastName", p.lastName);
+    form.elements.tourPlayerId.value = p.id;
     const filled = ["name"];
     if (put(form, "hometown", p.hometown)) filled.push("hometown");
     if (put(form, "classYear", p.classYear && `Class of ${p.classYear}`)) filled.push("class year");

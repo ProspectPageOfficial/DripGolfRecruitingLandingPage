@@ -2,7 +2,9 @@
  * /api/drip-golf — the Drip Golf Tour standings as JSON, for the sign-up lookup.
  *
  *   GET /api/drip-golf             -> { players: [...] } across DRIP_DIVISIONS
- *   GET /api/drip-golf?player=123  -> { age, jgsRank, tugrRank } from one profile
+ *   GET /api/drip-golf?player=123  -> { age, jgsRank, tugrRank, scoring } from one
+ *                                     profile; `scoring` feeds the golfer page's
+ *                                     Golf Bio when the owner links their profile
  *
  * dripgolftour.com sends no CORS headers, so the browser cannot read it
  * directly; this reads it server-side. It also turns away requests without a
@@ -15,7 +17,7 @@
  * holds the answer for an hour and serves the stale copy while refreshing.
  */
 import {
-  DRIP_DIVISIONS, PLAYER_ID, standingsUrl, profileUrl, parseStandings, parseProfile,
+  DRIP_DIVISIONS, PLAYER_ID, standingsUrl, profileUrl, parseStandings, parseProfile, parseScoring,
 } from "../../js/data/dripgolf.js";
 
 const FETCH_HEADERS = {
@@ -48,7 +50,8 @@ export default async (req) => {
   try {
     if (player != null) {
       if (!PLAYER_ID.test(player)) return json({ error: "bad player id" }, 400);
-      return json(parseProfile(await page(profileUrl(player))));
+      const html = await page(profileUrl(player));
+      return json({ ...parseProfile(html), scoring: parseScoring(html) });
     }
     const pages = await Promise.allSettled(DRIP_DIVISIONS.map((d) => page(standingsUrl(d.id))));
     // A player who moved up a division mid-season is listed in both; keep the first.
