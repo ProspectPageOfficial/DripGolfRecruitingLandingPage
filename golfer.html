@@ -120,6 +120,52 @@ a { color: var(--green-deep); }
      3. The wrapper itself was inline by default, which broke the
         file-picker → status-text vertical stack on mobile.
    Scoped overrides only — we don't touch the rest of .field. */
+/* Owner-only "change photo" layer over the hero photo bubble. A small
+   camera badge says it's clickable; hovering or focusing darkens the
+   circle and shows "Change photo". */
+.avatar-edit {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border: none;
+  border-radius: 50%;
+  padding: 0;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+}
+.avatar-edit-badge {
+  position: absolute;
+  right: 4%;
+  bottom: 4%;
+  width: 2.1rem;
+  height: 2.1rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--card, #fff);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  font-size: 1rem;
+}
+.avatar-edit-text {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(10, 20, 15, 0.55);
+  font-size: 0.85rem;
+  font-weight: 700;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.avatar-edit:hover .avatar-edit-text,
+.avatar-edit:focus-visible .avatar-edit-text,
+.avatar-edit.is-busy .avatar-edit-text { opacity: 1; }
+.avatar-edit:focus-visible { outline: 3px solid var(--sand, #e7d9a6); outline-offset: 4px; }
+.avatar-edit.is-busy { cursor: progress; }
+
 .personal-photo-upload {
   display: flex;
   flex-direction: column;
@@ -1853,6 +1899,14 @@ body.is-owner #scoring-section.is-empty { display: block; }
              buckets, so the fetch succeeds and toDataURL() doesn't throw. -->
           <img id="player-photo" class="player-photo" alt=""
                crossorigin="anonymous" />
+          <!-- Owner-only: click the photo bubble to pick a new picture. It
+               uploads and saves in one step (PersonalBio.wireAvatarEdit). -->
+          <button type="button" id="avatar-edit-btn" class="avatar-edit owner-only"
+                  aria-label="Change profile picture" title="Change profile picture">
+            <span class="avatar-edit-badge" aria-hidden="true">📷</span>
+            <span class="avatar-edit-text">Change photo</span>
+          </button>
+          <input type="file" id="avatar-file" accept="image/*" hidden />
         </div>
         <div class="hero-identity-text">
           <p class="eyebrow">Junior Golfer Portfolio</p>
@@ -3953,7 +4007,56 @@ const PORTFOLIO_DATA = {
       if (form)      form.addEventListener("submit", handleSubmit);
 
       wirePhotoUpload();
+      wireAvatarEdit();
       wireCoachForm();
+    }
+
+    // Owner clicks the hero photo bubble -> pick a picture -> it uploads and
+    // saves straight away. Same upload (SupabaseStorage) and save path
+    // (saveOverrides) as the Personal Bio form, just without the form.
+    function wireAvatarEdit() {
+      const btn  = document.getElementById("avatar-edit-btn");
+      const file = document.getElementById("avatar-file");
+      if (!btn || !file) return;
+      const label = btn.querySelector(".avatar-edit-text");
+      const MAX_BYTES = 25 * 1024 * 1024;
+      const setBusy = (text) => {
+        btn.classList.toggle("is-busy", Boolean(text));
+        btn.disabled = Boolean(text);
+        if (label) label.textContent = text || "Change photo";
+      };
+
+      btn.addEventListener("click", () => file.click());
+      file.addEventListener("change", async () => {
+        const picked = file.files && file.files[0];
+        file.value = ""; // so picking the same file again still fires change
+        if (!picked) return;
+        if (!picked.type.startsWith("image/")) {
+          alert("Pick an image file (jpg, png, webp or heic).");
+          return;
+        }
+        if (picked.size > MAX_BYTES) {
+          alert(`That picture is too big (${(picked.size / 1024 / 1024).toFixed(1)} MB). The limit is 25 MB.`);
+          return;
+        }
+        if (!window.SupabaseStorage) {
+          alert("Photo upload isn't available right now. Try refreshing the page.");
+          return;
+        }
+        setBusy("Uploading…");
+        try {
+          const url = await window.SupabaseStorage.uploadFile(picked, "photos");
+          setBusy("Saving…");
+          const merged = { ...currentOverrides(), photo: url };
+          await saveOverrides(merged);
+          PORTFOLIO_DATA.personal = { ...originalPersonal, ...merged };
+          rerenderAll();
+        } catch (err) {
+          alert("Couldn't change the photo:\n" + err.message);
+        } finally {
+          setBusy("");
+        }
+      });
     }
 
     // ---- Coach card edit form (lives on Golf Bio tab) ----
