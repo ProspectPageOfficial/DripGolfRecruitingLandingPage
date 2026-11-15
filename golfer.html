@@ -5604,11 +5604,13 @@ const PORTFOLIO_DATA = {
     //      the original element was cached by the browser BEFORE we
     //      added crossorigin (which would taint the canvas forever).
     // Async because the fallback waits on an Image.onload event.
-    // The resume's photo slot is square. Crop to a square instead of
-    // squeezing the whole picture in, which squashed tall phone photos and
-    // stretched wide ones. Tall photos keep their upper part, where a face
-    // usually is; wide ones are cut evenly from both sides. Scaled down to
-    // RESUME_PHOTO_PX so the PDF stays small.
+    // The resume shows the photo as a circle. Crop to a square (never
+    // squeeze: that squashed tall phone photos), then cut the circle out on
+    // a background the same colour as the left panel. Baking the circle into
+    // the image looks the same in every PDF viewer, which PDF clipping does
+    // not. Tall photos keep their upper part, where a face usually is; wide
+    // ones are cut evenly from both sides. Scaled to RESUME_PHOTO_PX so the
+    // PDF stays small.
     const RESUME_PHOTO_PX = 600;
     function rasterize(img) {
       const w = img.naturalWidth;
@@ -5621,10 +5623,17 @@ const PORTFOLIO_DATA = {
       c.width = c.height = out;
       const ctx = c.getContext("2d");
       ctx.imageSmoothingQuality = "high";
-      // White first, so a transparent PNG doesn't turn black as a JPEG.
+      ctx.fillStyle = `rgb(${SAND[0]}, ${SAND[1]}, ${SAND[2]})`;
+      ctx.fillRect(0, 0, out, out);
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(out / 2, out / 2, out / 2, 0, Math.PI * 2);
+      ctx.clip();
+      // White under the photo, so a transparent PNG doesn't turn black.
       ctx.fillStyle = "#fff";
       ctx.fillRect(0, 0, out, out);
       ctx.drawImage(img, sx, sy, side, side, 0, 0, out, out);
+      ctx.restore();
       return c.toDataURL("image/jpeg", 0.9);
     }
 
@@ -5686,11 +5695,17 @@ const PORTFOLIO_DATA = {
       const p = data.personal;
       let y = LEFT_PANEL_Y + 14;
 
-      // Square photo at the top of the panel (centered, full inner width).
+      // Round photo at the top of the panel, centered, with a thin navy
+      // ring. The circle itself is cut out in rasterize().
       if (data.photoDataURL) {
-        const size = LEFT_INNER_W;
-        try { doc.addImage(data.photoDataURL, "JPEG", LEFT_INNER_X, y, size, size); }
-        catch (err) { console.warn("ResumeGenerator: addImage failed:", err); }
+        const size = Math.round(LEFT_INNER_W * 0.8);
+        const x = LEFT_INNER_X + (LEFT_INNER_W - size) / 2;
+        try {
+          doc.addImage(data.photoDataURL, "JPEG", x, y, size, size);
+          doc.setDrawColor(NAVY[0], NAVY[1], NAVY[2]);
+          doc.setLineWidth(2);
+          doc.circle(x + size / 2, y + size / 2, size / 2 - 1, "S");
+        } catch (err) { console.warn("ResumeGenerator: addImage failed:", err); }
         y += size + 14;
       } else {
         y += 8;
