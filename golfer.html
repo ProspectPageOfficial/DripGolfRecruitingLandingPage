@@ -5604,11 +5604,27 @@ const PORTFOLIO_DATA = {
     //      the original element was cached by the browser BEFORE we
     //      added crossorigin (which would taint the canvas forever).
     // Async because the fallback waits on an Image.onload event.
+    // The resume's photo slot is square. Crop to a square instead of
+    // squeezing the whole picture in, which squashed tall phone photos and
+    // stretched wide ones. Tall photos keep their upper part, where a face
+    // usually is; wide ones are cut evenly from both sides. Scaled down to
+    // RESUME_PHOTO_PX so the PDF stays small.
+    const RESUME_PHOTO_PX = 600;
     function rasterize(img) {
+      const w = img.naturalWidth;
+      const h = img.naturalHeight;
+      const side = Math.min(w, h);
+      const sx = (w - side) / 2;
+      const sy = h > w ? (h - side) * 0.25 : 0;
+      const out = Math.min(RESUME_PHOTO_PX, side);
       const c = document.createElement("canvas");
-      c.width  = img.naturalWidth;
-      c.height = img.naturalHeight;
-      c.getContext("2d").drawImage(img, 0, 0);
+      c.width = c.height = out;
+      const ctx = c.getContext("2d");
+      ctx.imageSmoothingQuality = "high";
+      // White first, so a transparent PNG doesn't turn black as a JPEG.
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, out, out);
+      ctx.drawImage(img, sx, sy, side, side, 0, 0, out, out);
       return c.toDataURL("image/jpeg", 0.9);
     }
 
