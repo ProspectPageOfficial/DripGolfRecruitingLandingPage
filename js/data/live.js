@@ -33,7 +33,9 @@
  */
 import { PUBLIC_SITE } from "../config.js";
 
-export const PERSONAL_ENDPOINT = `${PUBLIC_SITE.url}/api/personal`;
+// Every golfer page on this site shares one /api/personal; the X-Golfer
+// header picks whose answers come back.
+export const PERSONAL_ENDPOINT = `${PUBLIC_SITE.origin}/api/personal`;
 
 /**
  * Fields this app actually uses. Everything else the endpoint returns --
@@ -202,6 +204,7 @@ export async function fetchLiveProfile({ timeoutMs = 6000, fetchImpl = fetch } =
   try {
     const response = await fetchImpl(PERSONAL_ENDPOINT, {
       signal: controller.signal,
+      headers: { "X-Golfer": PUBLIC_SITE.slug },
       // The endpoint sets no-store itself; this stops a browser or proxy
       // deciding otherwise and serving us a cached identity.
       cache: "no-store",

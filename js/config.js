@@ -68,8 +68,11 @@ export const logoUrl = (domain, size = 128) =>
  * variant: a real link should behave like a real link.
  */
 export const PUBLIC_SITE = Object.freeze({
-  url: "https://lukethomasselzer.com",
-  previewUrl: "https://lukethomasselzer.com/?role=visitor",
-  host: "lukethomasselzer.com",
-  repo: "https://github.com/ProspectPageOfficial/LukeThomasSelzer.com",
+  // Luke moved from his own domain (lukethomasselzer.com now redirects here)
+  // to a page on this site, like every other golfer.
+  url: "https://dripgolfrecruiting.com/luke-thomas-selzer",
+  previewUrl: "https://dripgolfrecruiting.com/luke-thomas-selzer?role=visitor",
+  host: "dripgolfrecruiting.com/luke-thomas-selzer",
+  origin: "https://dripgolfrecruiting.com",
+  slug: "luke-thomas-selzer",
 });
