@@ -20,6 +20,7 @@ import myPage from "../../netlify/functions/my-page.mjs";
 import golfStats, { cleanRank } from "../../netlify/functions/golf-stats.mjs";
 import golfScoring, { cleanTourId, cleanScoring } from "../../netlify/functions/golf-scoring.mjs";
 import passwordReset from "../../netlify/functions/password-reset.mjs";
+import resume, { cleanResume } from "../../netlify/functions/resume.mjs";
 import passwordUpdate from "../../netlify/functions/password-update.mjs";
 import { readFileSync } from "node:fs";
 import personal from "../../netlify/functions/personal.mjs";
@@ -393,4 +394,36 @@ test("a reset link sets a new password; the old one stops working", async () => 
   const signIn = (password) => call(login, "login", { method: "POST", golfer: "luke-selzer", body: { email: "luke@example.com", password } });
   assert.equal((await signIn("brand-new-pass-1")).status, 200, "new password works");
   assert.equal((await signIn("luke-password-1")).status, 401, "old password no longer works");
+});
+
+test("an owner's resume edits are saved, public to read, and only theirs to change", async () => {
+  await ready;
+  const edits = {
+    achievements: ["  Won the club championship  ", "", "Top 10 at State"],
+    upcoming: [],
+    custom: { title: "Academics", lines: ["Honor roll", "National Honor Society"] },
+    bio: "Competitive and coachable.",
+    notASection: ["dropped"],
+  };
+  const put = await call(resume, "resume", { method: "PUT", golfer: "ava-reed", token: ava.session.access_token, body: edits });
+  assert.equal(put.status, 200);
+  assert.deepEqual(put.body, {
+    achievements: ["Won the club championship", "Top 10 at State"],
+    upcoming: [],
+    custom: { title: "Academics", lines: ["Honor roll", "National Honor Society"] },
+    bio: "Competitive and coachable.",
+  }, "trimmed, blank lines dropped, unknown keys ignored; an empty list hides a section");
+  assert.deepEqual((await call(resume, "resume", { golfer: "ava-reed" })).body, put.body, "visitors' downloads read it");
+
+  const anon = await call(resume, "resume", { method: "PUT", golfer: "ava-reed", body: { bio: "hacked" } });
+  assert.equal(anon.status, 401);
+  const other = await call(resume, "resume", { method: "PUT", golfer: "ava-reed", token: luke.session.access_token, body: { bio: "hacked" } });
+  assert.equal(other.status, 401, "another golfer's owner cannot change it");
+  assert.deepEqual((await call(resume, "resume", { golfer: "luke-selzer" })).body, {}, "one golfer's edits never show on another's");
+
+  await call(resume, "resume", { method: "PUT", golfer: "ava-reed", token: ava.session.access_token, body: {} });
+  assert.deepEqual((await call(resume, "resume", { golfer: "ava-reed" })).body, {}, "saving nothing goes back to automatic");
+
+  assert.equal(cleanResume({ recent: Array(50).fill("x") }).recent.length, 20, "at most 20 lines a section");
+  assert.equal(cleanResume({ custom: { title: "No lines", lines: [] } }).custom, undefined, "a custom section needs lines");
 });

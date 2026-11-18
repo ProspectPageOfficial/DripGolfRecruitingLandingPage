@@ -1769,6 +1769,30 @@ body.is-owner .visitor-only { display: none !important; }
 #scoring-section.is-empty { display: none; }
 body.is-owner #scoring-section.is-empty { display: block; }
 
+/* Resume editor: a wider card, one block per resume section. */
+.resume-modal-card { max-width: 760px; }
+.resume-field { border-top: 1px solid rgba(31, 77, 43, 0.12); padding: 0.8rem 0; }
+.resume-field-head { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+.resume-field-title { font-weight: 700; color: var(--green-deep); }
+.resume-field-state {
+  font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--muted); background: rgba(31, 77, 43, 0.08); border-radius: 999px; padding: 0.1rem 0.5rem;
+}
+.resume-field.is-edited .resume-field-state { color: #fff; background: var(--green); }
+.resume-auto-btn { margin-left: auto; padding: 0.25rem 0.6rem; font-size: 0.78rem; }
+.resume-auto-btn[hidden] { display: none; }
+.resume-field-hint { font-size: 0.8rem; color: var(--muted); margin: 0.3rem 0 0; }
+.resume-field textarea,
+.resume-field input[type="text"] {
+  width: 100%; box-sizing: border-box; margin-top: 0.45rem;
+  padding: 0.5rem 0.6rem; border: 1px solid rgba(31, 77, 43, 0.3); border-radius: 8px;
+  font: inherit; font-size: 0.88rem; line-height: 1.45; resize: vertical;
+}
+.resume-field textarea:focus,
+.resume-field input[type="text"]:focus { outline: 2px solid var(--green); outline-offset: 1px; }
+.resume-preview { width: 100%; height: 75vh; margin-top: 1rem; border: 1px solid rgba(31, 77, 43, 0.2); border-radius: 8px; }
+.resume-preview[hidden] { display: none; }
+
 /* Scoring stats pop-up: two groups in the rankings card style. */
 .scoring-modal-card { max-width: 420px; }
 .scoring-group { border: none; padding: 0; margin: 0 0 1.2rem; }
@@ -1869,9 +1893,15 @@ body.is-owner #scoring-section.is-empty { display: block; }
          like to grab a fresh PDF after edits to verify the output, and
          it doubles as a quick preview button while iterating. -->
     <button type="button" id="resume-download-btn"
-            class="resume-pill"
+            class="resume-pill visitor-only"
             title="Download a one-page PDF resume based on this portfolio">
       📄 Download Resume PDF
+    </button>
+    <!-- Owner mode: same spot, opens the resume editor (ResumeEditor). -->
+    <button type="button" id="resume-edit-btn"
+            class="resume-pill owner-only"
+            title="See and edit the resume visitors download">
+      📄 See/Edit Resume
     </button>
 
     <!-- Theme editor trigger. Owner-only so visitors never see it.
@@ -2479,6 +2509,35 @@ body.is-owner #scoring-section.is-empty { display: block; }
           <button type="button" class="swing-ghost-btn" data-scoring-close>Cancel</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Resume editor (owner only). Each section starts as the generated text;
+       whatever the owner changes is saved to /api/resume and used for every
+       visitor's download. Fields are built by ResumeEditor. -->
+  <div id="resume-modal" class="theme-modal" hidden role="dialog"
+       aria-labelledby="resume-modal-title" aria-modal="true">
+    <div class="theme-modal-backdrop" data-resume-close></div>
+    <div class="theme-modal-card resume-modal-card" role="document">
+      <h3 id="resume-modal-title">📄 See/Edit Resume</h3>
+      <p class="theme-modal-help">
+        Each section starts with the text we generate from your page. Change
+        anything you like, one line per bullet, or clear a box to leave that
+        section off. Sections you edit stop updating automatically, so use
+        <strong>Use automatic</strong> to switch one back. <strong>Preview</strong>
+        to check it fits on the page, then <strong>Save</strong> so everyone who
+        downloads your resume gets this version.
+      </p>
+      <div id="resume-fields"></div>
+      <p id="resume-status" class="swing-upload-status" role="status" aria-live="polite"></p>
+      <div class="theme-modal-actions">
+        <button type="button" id="resume-save-btn" class="swing-upload-btn">💾 Save</button>
+        <button type="button" id="resume-preview-btn" class="swing-ghost-btn">👁️ Preview</button>
+        <button type="button" id="resume-download-edit-btn" class="swing-ghost-btn">⬇️ Download PDF</button>
+        <button type="button" id="resume-reset-btn" class="swing-ghost-btn personal-reset">Use automatic for all</button>
+        <button type="button" class="swing-ghost-btn" data-resume-close>Close</button>
+      </div>
+      <iframe id="resume-preview" class="resume-preview" title="Resume preview" hidden></iframe>
     </div>
   </div>
 
@@ -5834,12 +5893,15 @@ const PORTFOLIO_DATA = {
       }
 
       // Bio paragraph anchored near the bottom of the panel, in italic,
-      // styled as a pull quote. Skipped silently if no bio is set.
-      if (nonEmpty(p.bio)) {
+      // styled as a pull quote. The owner can write a resume-only bio in
+      // "See/Edit Resume" (data.overrides.bio). Skipped if there is none.
+      const o = data.overrides || {};
+      const bio = typeof o.bio === "string" ? o.bio : p.bio;
+      if (nonEmpty(bio)) {
         doc.setFont("helvetica", "italic");
         doc.setFontSize(7.8);
         doc.setTextColor(INK[0], INK[1], INK[2]);
-        const lines = doc.splitTextToSize('"' + p.bio.trim() + '"', LEFT_INNER_W);
+        const lines = doc.splitTextToSize('"' + bio.trim() + '"', LEFT_INNER_W);
         const startY = Math.max(
           y + 14,
           LEFT_PANEL_Y + LEFT_PANEL_H - lines.length * 9.5 - 16
@@ -5872,13 +5934,41 @@ const PORTFOLIO_DATA = {
     // off the bottom edge. Caps are deliberately balanced so Recent
     // Events actually gets airtime instead of being starved by the
     // two sections above it.
+    // The generated text for every editable part of the resume. The owner's
+    // saved edits (data.overrides, from /api/resume) replace whichever parts
+    // they rewrote; the "See/Edit Resume" editor starts from this.
+    function autoContent(data) {
+      return {
+        summary:      computeSummaryRows(data).map(([tag, val]) => titleCase(tag) + ": " + val),
+        scoring:      computeScoring(data),
+        achievements: computeAchievements(data),
+        upcoming:     computeUpcoming(),
+        recent:       computeRecent(data),
+        bio:          (data.personal && data.personal.bio) || "",
+      };
+    }
+    const titleCase = (s) => s.charAt(0) + s.slice(1).toLowerCase();
+
+    // "Rankings: Overall 850" -> ["RANKINGS", "Overall 850"]; no colon -> a value-only row.
+    function summaryRow(line) {
+      const i = line.indexOf(":");
+      return i > 0 && i <= 24
+        ? [line.slice(0, i).trim().toUpperCase(), line.slice(i + 1).trim()]
+        : ["", line];
+    }
+
     function drawRightColumn(doc, data) {
+      const o = data.overrides || {};
+      const pick = (key, auto) => (Array.isArray(o[key]) ? o[key] : auto);
       let y = drawName(doc, data, TOP_BAR_H + 32);
-      y = drawStatsBlock(doc, data, y);
-      y = drawSection(doc, "SCORING STATS",    computeScoring(data),      y);
-      y = drawSection(doc, "ACHIEVEMENTS",     computeAchievements(data), y);
-      y = drawSection(doc, "UPCOMING EVENTS",  computeUpcoming(),         y);
-      y = drawSection(doc, "RECENT EVENTS",    computeRecent(data),       y);
+      y = drawStatsBlock(doc, Array.isArray(o.summary) ? o.summary.map(summaryRow) : computeSummaryRows(data), y);
+      y = drawSection(doc, "SCORING STATS",    pick("scoring",      computeScoring(data)),      y);
+      y = drawSection(doc, "ACHIEVEMENTS",     pick("achievements", computeAchievements(data)), y);
+      if (o.custom && o.custom.title) {
+        y = drawSection(doc, o.custom.title.toUpperCase(), o.custom.lines || [], y);
+      }
+      y = drawSection(doc, "UPCOMING EVENTS",  pick("upcoming",     computeUpcoming()),         y);
+      y = drawSection(doc, "RECENT EVENTS",    pick("recent",       computeRecent(data)),       y);
       return y;
     }
 
@@ -5938,7 +6028,7 @@ const PORTFOLIO_DATA = {
     // mirrors the bullet-row treatment used by drawSection() so the page
     // has one consistent visual rhythm instead of two competing ones.
     // Skips empty rows so the block self-tunes to available data.
-    function drawStatsBlock(doc, data, y) {
+    function computeSummaryRows(data) {
       const stats = data.stats || {};
       const rows  = [];
 
@@ -5986,12 +6076,18 @@ const PORTFOLIO_DATA = {
       if (rounds.length) playBits.push("Low Round " + Math.min(...rounds));
       if (data.rankings && nonEmpty(data.rankings.division)) playBits.push(data.rankings.division);
       if (playBits.length) rows.push(["PROFILE", playBits.join("  \u00B7  ")]);
+      return rows;
+    }
 
+    // The summary rows under the name: navy tag on the left, value on the right.
+    function drawStatsBlock(doc, rows, y) {
       const TAG_W = 64;
       const VAL_X = RIGHT_X + TAG_W;
       const VAL_W = RIGHT_W - TAG_W;
 
       rows.forEach(([tag, val]) => {
+        if (!nonEmpty(val)) return;
+        if (y + 15 > MAX_Y) return;
         const rowY = y + 10;
         doc.setFont("helvetica", "bold");
         doc.setFontSize(7.5);
@@ -6262,15 +6358,29 @@ const PORTFOLIO_DATA = {
       });
     }
 
-    async function generate() {
+    /** The owner's saved resume edits ({} = all automatic). */
+    async function loadOverrides() {
+      try {
+        const res = await fetch("/api/resume", { cache: "no-store" });
+        return res.ok ? await res.json() : {};
+      } catch { return {}; }
+    }
+
+    /**
+     * Build the PDF. By default it downloads, using the owner's saved edits.
+     * The editor passes { overrides } (its unsaved text) and { preview: true }
+     * to get a blob URL to show instead of a download.
+     */
+    async function generate(opts = {}) {
       const ready = await waitForJsPDF();
       if (!ready) {
         alert("PDF library couldn't load — check your connection (or an ad-blocker) and try again.");
-        return;
+        return null;
       }
       const { jsPDF } = window.jspdf;
       const doc  = new jsPDF({ unit: "pt", format: "letter" });
       const data = collectData();
+      data.overrides = opts.overrides || await loadOverrides();
 
       // Preload the player photo BEFORE drawing so the left-column
       // renderer can stay synchronous. photoDataURL() may need a network
@@ -6281,10 +6391,15 @@ const PORTFOLIO_DATA = {
       drawLeftColumn(doc, data);
       drawRightColumn(doc, data);
 
+      if (opts.preview) return doc.output("bloburl");
       const safeName = (data.personal.name || "player")
         .trim().replace(/\s+/g, "_").replace(/[^\w\-]/g, "");
       doc.save(safeName + "_golf_resume.pdf");
+      return null;
     }
+
+    /** The generated text for the editor to start from. */
+    function automatic() { return autoContent(collectData()); }
 
     function init() {
       const btn = document.getElementById("resume-download-btn");
@@ -6308,9 +6423,171 @@ const PORTFOLIO_DATA = {
       });
     }
 
-    return { init, generate };
+    return { init, generate, automatic, loadOverrides };
   })();
   window.ResumeGenerator = ResumeGenerator;
+
+  // ---------- ResumeEditor: owner's "See/Edit Resume" ----------
+  // Saves only what differs from the generated text, so an untouched section
+  // keeps following the page (new tournaments, new stats) on its own.
+  const ResumeEditor = (() => {
+    const SECTIONS = [
+      ["summary",      "Summary", "One row per line, like “Rankings: Overall 850”."],
+      ["scoring",      "Scoring Stats", ""],
+      ["achievements", "Achievements", ""],
+      ["upcoming",     "Upcoming Events", ""],
+      ["recent",       "Recent Events", ""],
+    ];
+    const byId = (id) => document.getElementById(id);
+    const lines = (text) => String(text || "").split("\n").map((l) => l.trim()).filter(Boolean);
+    let auto = null;
+
+    function build() {
+      const box = byId("resume-fields");
+      if (!box || box.childElementCount) return;
+      const field = (key, title, hint, control) => `
+        <div class="resume-field" data-key="${key}">
+          <div class="resume-field-head">
+            <span class="resume-field-title">${title}</span>
+            <span class="resume-field-state" data-state></span>
+            <button type="button" class="swing-ghost-btn resume-auto-btn" data-auto>Use automatic</button>
+          </div>
+          ${hint ? `<p class="resume-field-hint">${hint}</p>` : ""}
+          ${control}
+        </div>`;
+      box.innerHTML =
+        SECTIONS.map(([key, title, hint]) =>
+          field(key, title, hint, `<textarea rows="4" aria-label="${title}"></textarea>`)).join("") +
+        `<div class="resume-field" data-key="custom">
+          <div class="resume-field-head"><span class="resume-field-title">Your own section</span></div>
+          <p class="resume-field-hint">Optional, for anything else: academics, other sports, community service…</p>
+          <input type="text" class="resume-custom-title" maxlength="40" placeholder="Section title, e.g. Academics & Activities" aria-label="Your section's title">
+          <textarea rows="3" class="resume-custom-lines" aria-label="Your section's lines" placeholder="One line per bullet"></textarea>
+        </div>` +
+        field("bio", "Resume bio", "Shown at the bottom of the left column. Only changes the resume, not your page.",
+          `<textarea rows="3" aria-label="Resume bio"></textarea>`);
+      box.addEventListener("input", updateStates);
+      box.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-auto]");
+        if (!btn) return;
+        const key = btn.closest(".resume-field").dataset.key;
+        textarea(key).value = key === "bio" ? auto.bio : auto[key].join("\n");
+        updateStates();
+      });
+    }
+
+    const textarea = (key) => document.querySelector(`.resume-field[data-key="${key}"] textarea`);
+    const autoText = (key) => (key === "bio" ? (auto.bio || "").trim() : auto[key].join("\n"));
+    const valueText = (key) => (key === "bio" ? textarea(key).value.trim() : lines(textarea(key).value).join("\n"));
+    const isEdited = (key) => valueText(key) !== autoText(key);
+
+    function updateStates() {
+      for (const key of [...SECTIONS.map((s) => s[0]), "bio"]) {
+        const f = document.querySelector(`.resume-field[data-key="${key}"]`);
+        const edited = isEdited(key);
+        f.classList.toggle("is-edited", edited);
+        f.querySelector("[data-state]").textContent = edited ? "Edited" : "Automatic";
+        f.querySelector("[data-auto]").hidden = !edited;
+      }
+    }
+
+    /** What to save: only the parts that differ from the generated text. */
+    function current() {
+      const out = {};
+      for (const [key] of SECTIONS) if (isEdited(key)) out[key] = lines(textarea(key).value);
+      if (isEdited("bio")) out.bio = valueText("bio");
+      const title = document.querySelector(".resume-custom-title").value.trim();
+      const custom = lines(document.querySelector(".resume-custom-lines").value);
+      if (title && custom.length) out.custom = { title, lines: custom };
+      return out;
+    }
+
+    const status = (text) => { byId("resume-status").textContent = text || ""; };
+
+    async function open() {
+      build();
+      status("Loading…");
+      byId("resume-preview").hidden = true;
+      byId("resume-modal").hidden = false;
+      auto = window.ResumeGenerator.automatic();
+      const saved = await window.ResumeGenerator.loadOverrides();
+      for (const [key] of SECTIONS) {
+        textarea(key).value = (Array.isArray(saved[key]) ? saved[key] : auto[key]).join("\n");
+      }
+      textarea("bio").value = typeof saved.bio === "string" ? saved.bio : (auto.bio || "");
+      document.querySelector(".resume-custom-title").value = (saved.custom && saved.custom.title) || "";
+      document.querySelector(".resume-custom-lines").value = ((saved.custom && saved.custom.lines) || []).join("\n");
+      updateStates();
+      status("");
+    }
+    const close = () => { byId("resume-modal").hidden = true; };
+
+    async function preview() {
+      status("Building preview…");
+      const url = await window.ResumeGenerator.generate({ overrides: current(), preview: true });
+      if (!url) { status("Couldn't build the preview."); return; }
+      const frame = byId("resume-preview");
+      frame.src = url;
+      frame.hidden = false;
+      frame.scrollIntoView({ behavior: "smooth", block: "start" });
+      status("Preview below. If something is cut off at the bottom, shorten a section.");
+    }
+
+    async function download() {
+      status("");
+      await window.ResumeGenerator.generate({ overrides: current() });
+    }
+
+    async function save() {
+      const btn = byId("resume-save-btn");
+      btn.disabled = true;
+      status("Saving…");
+      try {
+        const res = await fetch("/api/resume", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(current()),
+        });
+        if (res.status === 401) {
+          status("Please sign in again to save.");
+          if (window.OwnerGate) window.OwnerGate.promptForOwner();
+          return;
+        }
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) { status(body.error || "Couldn't save. Please try again."); return; }
+        status(Object.keys(body).length
+          ? "Saved. Everyone who downloads your resume now gets this version."
+          : "Saved. Your resume is fully automatic again.");
+      } catch {
+        status("Couldn't reach the server. Check your connection.");
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function resetAll() {
+      for (const [key] of SECTIONS) textarea(key).value = auto[key].join("\n");
+      textarea("bio").value = auto.bio || "";
+      document.querySelector(".resume-custom-title").value = "";
+      document.querySelector(".resume-custom-lines").value = "";
+      updateStates();
+      status("Everything is back to the automatic text. Click Save to keep it that way.");
+    }
+
+    function init() {
+      byId("resume-edit-btn")?.addEventListener("click", open);
+      byId("resume-preview-btn")?.addEventListener("click", preview);
+      byId("resume-download-edit-btn")?.addEventListener("click", download);
+      byId("resume-save-btn")?.addEventListener("click", save);
+      byId("resume-reset-btn")?.addEventListener("click", resetAll);
+      document.querySelectorAll("[data-resume-close]").forEach((el) => el.addEventListener("click", close));
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && !byId("resume-modal").hidden) close();
+      });
+    }
+    return { init, open };
+  })();
+  window.ResumeEditor = ResumeEditor;
 
   // ---------- Boot ----------
   document.addEventListener("DOMContentLoaded", async () => {
@@ -6396,6 +6673,7 @@ const PORTFOLIO_DATA = {
     // already populated when the user clicks.
     if (window.ResumeGenerator) {
       window.ResumeGenerator.init();
+      if (window.ResumeEditor) window.ResumeEditor.init();
     }
 
     // Populate the Upcoming form's Month/Day/Year selects and wire the
