@@ -1011,26 +1011,6 @@ h3 {
   font-family: inherit;
 }
 
-/* Tiny "or" divider between the URL input and the file input.
-   Pure decoration — flexbox + pseudo-elements draw the hairlines so we
-   don't need extra DOM nodes. */
-.swing-or-divider {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  font-size: 0.8rem;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin: 0.2rem 0;
-}
-.swing-or-divider::before,
-.swing-or-divider::after {
-  content: "";
-  flex: 1;
-  height: 1px;
-  background: rgba(31, 77, 43, 0.18);
-}
 /* Shown in place of the upload form once the gallery hits MAX_VIDEOS.
    Same dashed-frame styling so the swap feels intentional, not broken. */
 .swing-limit-message {
@@ -2348,20 +2328,8 @@ body.is-owner #scoring-section.is-empty { display: block; }
                    placeholder="e.g. Driver — face-on view">
           </label>
 
-          <!-- Both inputs are always visible. The submit handler picks
-               whichever one the owner filled in (file wins if both are
-               provided, since picking a file is the more deliberate
-               action). Removes a layer of state (no radio mode) — YAGNI. -->
           <label class="swing-field">
-            <span>📎 Paste a video link (YouTube, Vimeo, or public .mp4/.webm)</span>
-            <input type="url" name="videoUrl" maxlength="500"
-                   placeholder="https://www.youtube.com/watch?v=…">
-          </label>
-
-          <div class="swing-or-divider" aria-hidden="true">— or —</div>
-
-          <label class="swing-field">
-            <span>📁 Choose a file from this device (.mp4, .webm, or .mov, up to <span data-upload-limit>50</span> MB)</span>
+            <span>📁 Choose a video from this device (.mp4, .webm, or .mov, up to <span data-upload-limit>50</span> MB)</span>
             <!-- accept is broad on purpose: iPhones record .mov (video/quicktime).
                  Files upload directly to Supabase Storage — no Netlify Functions
                  payload cap, no in-browser re-encode dance. -->
@@ -4593,16 +4561,14 @@ const PORTFOLIO_DATA = {
         e.preventDefault();
         const data     = new FormData(form);
         const title    = (data.get("title") || "").toString().trim();
-        const videoUrl = (data.get("videoUrl") || "").toString().trim();
         const picked   = data.get("file");
-        const fileMode = hasPickedFile(picked);
 
         if (!title) {
           setStatus("Title is required.", "error");
           return;
         }
-        if (!fileMode && !videoUrl) {
-          setStatus("Add a video link or choose a file.", "error");
+        if (!hasPickedFile(picked)) {
+          setStatus("Choose a video file to upload.", "error");
           return;
         }
         // Belt-and-suspenders: render()'s syncLimitUI() already hides the
@@ -4616,31 +4582,23 @@ const PORTFOLIO_DATA = {
         const originalLabel = submitBtn.textContent;
         submitBtn.disabled  = true;
         try {
-          // File path wins when both are provided — picking a file is the
-          // more deliberate action and avoids ambiguity in the UI.
-          if (fileMode) {
-            // Supabase Storage + url-classify both accept mp4 / webm / mov.
-            // Reject anything else up front so the user gets a clear message
-            // instead of a cryptic Supabase 400.
-            if (!SERVER_ALLOWED_TYPES.has(picked.type)) {
-              throw new Error(
-                `This file type ("${picked.type || "unknown"}") isn't supported. ` +
-                `Try a .mp4, .mov, or .webm — or paste a YouTube link instead.`);
-            }
-            if (picked.size > MAX_UPLOAD_BYTES) {
-              const mb = (picked.size / 1024 / 1024).toFixed(1);
-              throw new Error(
-                `That clip is ${mb} MB — limit is ${MAX_UPLOAD_BYTES / 1024 / 1024} MB. ` +
-                `Pick a shorter clip, or paste a YouTube link instead.`);
-            }
-            submitBtn.textContent = "Uploading…";
-            setStatus("Uploading…", null);
-            await submitFile({ title, file: picked });
-          } else {
-            submitBtn.textContent = "Adding…";
-            setStatus("Adding…", null);
-            await submitUrl({ title, videoUrl });
+          // Supabase Storage + url-classify both accept mp4 / webm / mov.
+          // Reject anything else up front so the user gets a clear message
+          // instead of a cryptic Supabase 400.
+          if (!SERVER_ALLOWED_TYPES.has(picked.type)) {
+            throw new Error(
+              `This file type ("${picked.type || "unknown"}") isn't supported. ` +
+              `Try a .mp4, .mov, or .webm video.`);
           }
+          if (picked.size > MAX_UPLOAD_BYTES) {
+            const mb = (picked.size / 1024 / 1024).toFixed(1);
+            throw new Error(
+              `That clip is ${mb} MB — limit is ${MAX_UPLOAD_BYTES / 1024 / 1024} MB. ` +
+              `Pick a shorter clip.`);
+          }
+          submitBtn.textContent = "Uploading…";
+          setStatus("Uploading…", null);
+          await submitFile({ title, file: picked });
           form.reset();
           form.hidden = true;
           setStatus("", null);
