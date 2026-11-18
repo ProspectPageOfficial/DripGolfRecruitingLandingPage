@@ -2,7 +2,7 @@
  * /api/drip-golf — the Drip Golf Tour standings as JSON, for the sign-up lookup.
  *
  *   GET /api/drip-golf             -> { players: [...] } from the current season's standings
- *   GET /api/drip-golf?player=123  -> { age, jgsRank, tugrRank, scoring, tournaments }
+ *   GET /api/drip-golf?player=123  -> { age, jgsRank, tugrRank, scoring, tournaments, upcoming }
  *                                     from one profile; `scoring` and `tournaments`
  *                                     feed a linked golfer page's Golf Bio and
  *                                     Season History
@@ -18,7 +18,7 @@
  * holds the answer for an hour and serves the stale copy while refreshing.
  */
 import {
-  PLAYER_ID, standingsUrl, profileUrl, parseStandings, parseProfile, parseScoring, parseTournaments,
+  PLAYER_ID, standingsUrl, profileUrl, parseStandings, parseProfile, parseScoring, parseTournaments, parseUpcoming,
 } from "../../js/data/dripgolf.js";
 
 const FETCH_HEADERS = {
@@ -56,6 +56,7 @@ export default async (req) => {
         ...parseProfile(html),
         scoring: parseScoring(html),
         tournaments: parseTournaments(html),
+        upcoming: parseUpcoming(html),
       });
     }
     // Every division of the current season is on one page. A player who moved

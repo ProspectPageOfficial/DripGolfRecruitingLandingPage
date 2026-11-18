@@ -10,7 +10,7 @@
  * If those ever diverge, every fit score is built on the disagreement.
  */
 import {
-  parseStandings, parseProfile, parseScoring, parseTournaments, matchPlayers, splitName, mergeRosters, isGirlsDivision, PLAYER_ID,
+  parseStandings, parseProfile, parseScoring, parseTournaments, parseUpcoming, matchPlayers, splitName, mergeRosters, isGirlsDivision, PLAYER_ID,
 } from "../js/data/dripgolf.js";
 import { DRIP_HISTORY } from "../js/data/dripgolf-history.js";
 import { hasAcademics, graduationYear, scoreSchool } from "../js/lib/fit.js";
@@ -538,6 +538,24 @@ export const dataCases = [
       assert.equal(ts[1].date, "3/7/2025");
       assert.equal(ts[1].rounds[1].score, "72 (E)", "even par stays E");
       assert.deepEqual(parseTournaments("<p>redesigned</p>"), []);
+    },
+  },
+  {
+    name: "Drip Golf profile yields the events a golfer is signed up for",
+    run: (assert) => {
+      const item = (name, meta) => `<a class="player-profile__upcoming-item" href="/tournament/1/x">
+        <svg class="player-profile__upcoming-icon" viewBox="0 0 24 24"><path d="M0 0" /></svg>
+        <span class="player-profile__upcoming-when">In 101 days</span>
+        <span class="player-profile__upcoming-name">${name}</span>
+        <span class="player-profile__upcoming-meta">${meta}</span></a>`;
+      const page = `<h2 class="player-profile__panel-title">Upcoming</h2><div class="player-profile__upcoming">
+        ${item("DGT &quot;Winter Open&quot; at Pine CC", "Feb 7, 2027 &#xB7; High School Boys")}
+        ${item("Spring Classic", "Mar 20, 2027 &#xB7; High School Boys")}</div>`;
+      assert.deepEqual(parseUpcoming(page), [
+        { date: "2027-02-07", name: 'DGT "Winter Open" at Pine CC', division: "High School Boys" },
+        { date: "2027-03-20", name: "Spring Classic", division: "High School Boys" },
+      ]);
+      assert.deepEqual(parseUpcoming("<p>redesigned</p>"), []);
     },
   },
 ];

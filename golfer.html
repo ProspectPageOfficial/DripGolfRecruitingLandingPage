@@ -4631,9 +4631,12 @@ const PORTFOLIO_DATA = {
     // the raw string so partial/odd inputs still render something useful.
     function formatDate(raw) {
       if (!raw) return "Date TBD";
-      const ts = Date.parse(raw);
-      if (Number.isNaN(ts)) return raw;
-      const d = new Date(ts);
+      // "2027-02-27" is a calendar day. Date.parse reads it as midnight UTC,
+      // which is the evening before anywhere in the US, so build it as a
+      // local date instead.
+      const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
+      const d = iso ? new Date(+iso[1], +iso[2] - 1, +iso[3]) : new Date(Date.parse(raw));
+      if (Number.isNaN(d.getTime())) return raw;
       return d.toLocaleDateString(undefined, {
         weekday: "short", year: "numeric", month: "short", day: "numeric",
       });
@@ -4650,7 +4653,7 @@ const PORTFOLIO_DATA = {
     }
 
     function cardHtml(t) {
-      const metaParts = [t.location, t.division].filter(Boolean).map(esc);
+      const metaParts = [t.fromTour ? "Drip Golf Tour" : "", t.location, t.division].filter(Boolean).map(esc);
       const metaHtml  = metaParts.length
         ? `<div class="upcoming-card-meta">${metaParts.map((m) => `<span>${m}</span>`).join("")}</div>`
         : "";
@@ -4668,19 +4671,32 @@ const PORTFOLIO_DATA = {
           ${metaHtml}
           ${notesHtml}
           ${linkHtml}
-          <button type="button" class="upcoming-card-delete owner-only"
-                  data-upcoming-delete="${esc(t._id)}">🗑️ Remove</button>
+          ${t.fromTour ? "" : `<button type="button" class="upcoming-card-delete owner-only"
+                  data-upcoming-delete="${esc(t._id)}">🗑️ Remove</button>`}
         </article>`;
+    }
+
+    // A linked Drip Golf Tour profile's sign-ups (PORTFOLIO_DATA.tourUpcoming,
+    // filled by ScoringEditor.loadTour) join the owner's list, except any on a
+    // date the owner already listed. They come from the tour, so no Remove.
+    function tourEvents() {
+      const own = new Set(cache.map((t) => t.date));
+      const today = new Date().toISOString().slice(0, 10);
+      return (PORTFOLIO_DATA.tourUpcoming || [])
+        .filter((t) => t.date >= today && !own.has(t.date))
+        .map((t) => ({ ...t, _id: "tour-" + t.date, fromTour: true }));
     }
 
     function render() {
       const grid = document.getElementById("upcoming-grid");
       if (!grid) return;
-      if (cache.length === 0) {
+      const all = [...cache, ...tourEvents()].sort((a, b) =>
+        String(a.date || "9999").localeCompare(String(b.date || "9999")));
+      if (all.length === 0) {
         grid.innerHTML = `<p class="upcoming-empty">No upcoming tournaments on the schedule yet.</p>`;
         return;
       }
-      grid.innerHTML = cache.map(cardHtml).join("");
+      grid.innerHTML = all.map(cardHtml).join("");
     }
 
     async function fetchAll() {
@@ -4828,7 +4844,7 @@ const PORTFOLIO_DATA = {
     // read-only consumer) to render the same list the UI shows.
     function getAll() { return cache.slice(); }
 
-    return { init, getAll };
+    return { init, getAll, render };
   })();
 
 
@@ -5190,7 +5206,7 @@ const PORTFOLIO_DATA = {
       try {
         const res = await fetch("/api/drip-golf?player=" + encodeURIComponent(id));
         const body = res.ok ? await res.json() : null;
-        return body ? { scoring: body.scoring || {}, tournaments: body.tournaments || [] } : null;
+        return body ? { scoring: body.scoring || {}, tournaments: body.tournaments || [], upcoming: body.upcoming || [] } : null;
       } catch { return null; }
     }
 
@@ -5207,6 +5223,7 @@ const PORTFOLIO_DATA = {
       const seasons = {};
       for (const t of (tour ? tour.tournaments : [])) (seasons[t.year] = seasons[t.year] || []).push(t);
       PORTFOLIO_DATA.tourSeasons = seasons;
+      PORTFOLIO_DATA.tourUpcoming = tour ? tour.upcoming : [];
     }
 
     /** Season History, hero and Golf Bio all read tour data: refresh them together. */
@@ -5214,6 +5231,7 @@ const PORTFOLIO_DATA = {
       if (window.rerenderGolf) window.rerenderGolf();
       ["2024", "2025", "2026"].forEach((y) => window.rerenderSeason && window.rerenderSeason(y));
       if (window.rerenderHero) window.rerenderHero();
+      if (window.UpcomingTournaments) window.UpcomingTournaments.render();
       const note = byId("season-tour-note");
       if (note) note.hidden = !Object.keys(PORTFOLIO_DATA.tourSeasons || {}).length;
     }
@@ -5857,6 +5875,7 @@ const PORTFOLIO_DATA = {
     function drawRightColumn(doc, data) {
       let y = drawName(doc, data, TOP_BAR_H + 32);
       y = drawStatsBlock(doc, data, y);
+      y = drawSection(doc, "SCORING STATS",    computeScoring(data),      y);
       y = drawSection(doc, "ACHIEVEMENTS",     computeAchievements(data), y);
       y = drawSection(doc, "UPCOMING EVENTS",  computeUpcoming(),         y);
       y = drawSection(doc, "RECENT EVENTS",    computeRecent(data),       y);
@@ -5955,8 +5974,16 @@ const PORTFOLIO_DATA = {
       const liveScoringAvg = (typeof window.getScoringAverage === "function")
         ? window.getScoringAverage()
         : stats["Scoring Average"];
-      if (nonEmpty(liveScoringAvg))                          playBits.push("Scoring Avg " + liveScoringAvg);
-      if (data.rankings && nonEmpty(data.rankings.Events))   playBits.push(data.rankings.Events + " events");
+      if (nonEmpty(liveScoringAvg) && liveScoringAvg !== "—") playBits.push("Scoring Avg " + liveScoringAvg);
+      // Counted from the same tournaments the resume lists, so they agree.
+      const played = [];
+      data.seasons.forEach(({ tournaments }) => played.push(...tournaments));
+      const rounds = played.flatMap((t) => (t.rounds || [])
+        .map((r) => parseInt(String(r.score || ""), 10)).filter((n) => !Number.isNaN(n)));
+      if (played.length) playBits.push(played.length + (played.length === 1 ? " event" : " events"));
+      else if (data.rankings && nonEmpty(data.rankings.Events)) playBits.push(data.rankings.Events + " events");
+      if (rounds.length) playBits.push(rounds.length + (rounds.length === 1 ? " round" : " rounds"));
+      if (rounds.length) playBits.push("Low Round " + Math.min(...rounds));
       if (data.rankings && nonEmpty(data.rankings.division)) playBits.push(data.rankings.division);
       if (playBits.length) rows.push(["PROFILE", playBits.join("  \u00B7  ")]);
 
@@ -6073,12 +6100,12 @@ const PORTFOLIO_DATA = {
     // Sorted by place ASC (best first) within each season, then concatenated
     // newest-season-first so the most recent highlights lead.
     // Turn a raw place string ("8", "T5", "21") into resume-friendly
-    // prose ("8th Place", "T5th Place", "21st Place").
+    // prose ("8th Place", "Tied 5th Place", "21st Place").
     //
     // Uses the standard English ordinal rules: 1→st, 2→nd, 3→rd, else th,
     // BUT the teens (11, 12, 13, …) all take "th" — handled by checking
     // the last two digits before the last one. The optional leading "T"
-    // (golf-speak for "tied") is preserved verbatim so "T5" → "T5th Place".
+    // (golf-speak for "tied") becomes "Tied", so "T5" → "Tied 5th Place".
     // Falls back to the raw string unchanged if it isn't parseable, so
     // exotic values like "WD" / "DQ" / "CUT" survive intact.
     function formatPlace(raw) {
@@ -6086,7 +6113,8 @@ const PORTFOLIO_DATA = {
       const s = String(raw).trim();
       const m = s.match(/^(T)?(\d+)$/i);
       if (!m) return s;
-      const prefix = m[1] ? m[1].toUpperCase() : "";
+      // "T32" is a tie: "Tied 32nd Place" (not "T32nd Place").
+      const prefix = m[1] ? "Tied " : "";
       const n = parseInt(m[2], 10);
       const lastTwo = n % 100;
       const lastOne = n % 10;
@@ -6122,12 +6150,35 @@ const PORTFOLIO_DATA = {
       return out.slice(0, MAX_ACHIEVEMENTS);
     }
 
-    // Future tournaments only, soonest first.
+    // Golf Bio's scoring stats as two or three resume lines. Empty when the
+    // golfer has none, so the section disappears instead of showing blanks.
+    function computeScoring(data) {
+      const s = data.scoring || {};
+      const out = [];
+      const par = [["Par 3", "Par 3's"], ["Par 4", "Par 4's"], ["Par 5", "Par 5's"]]
+        .filter(([, k]) => nonEmpty(s[k])).map(([label, k]) => label + " " + s[k]);
+      if (par.length) out.push("Per-hole averages:  " + par.join("  ·  "));
+      const types = ["Eagles", "Birdies", "Pars", "Bogeys", "Doubles", "Others"]
+        .filter((k) => nonEmpty(s[k]) && !/^0\b/.test(s[k])).map((k) => k + " " + s[k]);
+      if (types.length > 3) {
+        out.push(types.slice(0, 3).join("  ·  "));
+        out.push(types.slice(3).join("  ·  "));
+      } else if (types.length) {
+        out.push(types.join("  ·  "));
+      }
+      return out;
+    }
+
+    // Future tournaments only, soonest first: the owner's own Upcoming list
+    // plus any Drip Golf Tour events their linked profile is signed up for.
     function computeUpcoming() {
-      if (!window.UpcomingTournaments ||
-          typeof window.UpcomingTournaments.getAll !== "function") return [];
+      const own = (window.UpcomingTournaments &&
+          typeof window.UpcomingTournaments.getAll === "function")
+        ? window.UpcomingTournaments.getAll() : [];
+      const ownDates = new Set(own.map((t) => t.date));
+      const tour = (PORTFOLIO_DATA.tourUpcoming || []).filter((t) => !ownDates.has(t.date));
       const now = Date.now() - 24 * 60 * 60 * 1000;
-      return window.UpcomingTournaments.getAll()
+      return [...own, ...tour]
         .filter((t) => {
           const ts = Date.parse(t.date || "");
           return !Number.isNaN(ts) && ts >= now;
@@ -6161,25 +6212,37 @@ const PORTFOLIO_DATA = {
         const place = formatPlace(t.place);
         const total = nonEmpty(t.total) ? "  (" + t.total + ")" : "";
         const body  = place ? place + " at " + t.name : t.name;
-        return (d ? d + "  " : "") + body + total;
+        // "Rounds 84, 79" — each round's score, when the event has them.
+        const scores = (t.rounds || [])
+          .map((r) => parseInt(String(r.score || ""), 10)).filter((n) => !Number.isNaN(n));
+        const rounds = scores.length > 1 ? "  ·  Rounds " + scores.join(", ") : "";
+        return (d ? d + "  " : "") + body + total + rounds;
       });
     }
 
+    // Every season the page shows, not just the ones in the imported data:
+    // a newer golfer's results are all owner-added or from their linked tour
+    // profile, and an imported-only list left their resume empty.
     function collectData() {
       const p = (PORTFOLIO_DATA && PORTFOLIO_DATA.personal) || {};
       const g = (PORTFOLIO_DATA && PORTFOLIO_DATA.golf)     || {};
-      const years = Object.keys(PORTFOLIO_DATA.seasons || {})
-        .sort((a, b) => Number(b) - Number(a));
+      const years = [...new Set([
+        "2024", "2025", "2026",
+        ...Object.keys(PORTFOLIO_DATA.seasons || {}),
+        ...Object.keys(PORTFOLIO_DATA.tourSeasons || {}),
+      ])].sort((a, b) => Number(b) - Number(a));
       const seasons = years.map((year) => ({
         year,
         tournaments: typeof window.getMergedTournaments === "function"
           ? window.getMergedTournaments(year)
           : (PORTFOLIO_DATA.seasons[year] || []).slice(),
-      }));
+      })).filter((s) => s.tournaments.length);
+      const tourScoring = g.tourScoring && Object.keys(g.tourScoring).length ? g.tourScoring : null;
       return {
         personal:  p,
         stats:     g.stats    || {},
         rankings:  g.rankings || {},
+        scoring:   tourScoring || g.scoring || {},
         seasons,
       };
     }

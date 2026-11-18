@@ -143,6 +143,24 @@ export function parseTournaments(page) {
   return out;
 }
 
+/**
+ * A player profile page -> the tour events they are signed up for, soonest
+ * first: [{ date: "2027-02-27", name, division }].
+ */
+export function parseUpcoming(page) {
+  const out = [];
+  for (const item of String(page).split(/<a class="player-profile__upcoming-item"/).slice(1)) {
+    const name = byClass(item, "player-profile__upcoming-name");
+    // "Feb 27, 2027 · High School Boys"
+    const [when, division = ""] = byClass(item, "player-profile__upcoming-meta").split("·").map((s) => s.trim());
+    const d = (when || "").match(/^([A-Z][a-z]{2})[a-z]*\.?\s+(\d{1,2}),\s*(\d{4})$/);
+    if (!name || !d || !MONTHS[d[1]]) continue;
+    const pad = (n) => String(n).padStart(2, "0");
+    out.push({ date: `${d[3]}-${pad(MONTHS[d[1]])}-${pad(d[2])}`, name, division });
+  }
+  return out;
+}
+
 /** The page's own labels for the Golf Bio scoring stats, in display order. */
 export const SCORING_PAR_FIELDS = Object.freeze(["Par 3's", "Par 4's", "Par 5's"]);
 export const SCORING_TYPE_FIELDS = Object.freeze(["Eagles", "Birdies", "Pars", "Bogeys", "Doubles", "Others"]);
