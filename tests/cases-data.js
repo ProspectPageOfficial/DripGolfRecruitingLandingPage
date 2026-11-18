@@ -10,7 +10,7 @@
  * If those ever diverge, every fit score is built on the disagreement.
  */
 import {
-  parseStandings, parseProfile, parseScoring, matchPlayers, splitName, mergeRosters, isGirlsDivision, PLAYER_ID,
+  parseStandings, parseProfile, parseScoring, parseTournaments, matchPlayers, splitName, mergeRosters, isGirlsDivision, PLAYER_ID,
 } from "../js/data/dripgolf.js";
 import { DRIP_HISTORY } from "../js/data/dripgolf-history.js";
 import { hasAcademics, graduationYear, scoreSchool } from "../js/lib/fit.js";
@@ -355,21 +355,43 @@ export const dataCases = [
 
   // ---- Drip Golf Tour lookup (made-up players in the tour's real markup) ----
   {
-    name: "Drip Golf standings rows parse into players",
+    name: "Drip Golf standings rows parse into players, every division on the page",
     run: (assert) => {
+      // Shaped like the tour's redesigned (Nov 2026) standings page.
       const row = (rank, id, name, town, year, avg) => `
-        <tr class=" Calc3Class1"><td>${rank}</td>
-          <td class="standingsmvmt"><span class="rankmvmt">--</span></td>
-          <td class="standingsplayer"><a href="/Public/PlayerProfile?PlayerID=${id}&amp;TourSeasonID=1178">${name}</a></td>
-          <td class="standingshometown">${town}</td>
-          <td class="standingsgradyear">${year}</td>
-          <td class="CalculatedField1">90.00</td><td class="CalculatedField6">0.00</td>
-          <td class="CalculatedField7">${avg}</td><td class="EventsPlayed">2</td></tr>`;
-      const page = `<table><tr><th>Rank</th><th>Player</th></tr>
-        ${row("1", "101", "Sam Carter", "Austin, TX", "2029", "71.25")}
-        ${row("T2", "102", "Jos&#233; Ruiz Jr.", "Cary, NC", "2031", "74.50")}
-        ${row("T2", "103", "Mary Kate Lane", "Durham, NC", "2028", "")}</table>`;
-      const ps = parseStandings(page, "High School Boys");
+        <tr class="standings__row" data-name="${name.toLowerCase()}">
+          <td class="standings__td standings__td--rank standings__td--rank-top">
+            ${rank}
+          </td>
+          <td class="standings__td standings__td--mvmt"><span class="standings__mvmt standings__mvmt--none">&mdash;</span></td>
+          <td class="standings__td standings__td--player">
+            <a class="standings__name" href="/profile/${id}/x?season=2026-27">${name}</a>
+            <span class="standings__meta">${town} &#xB7; ${year}</span>
+          </td>
+          <td class="standings__td standings__td--hometown">${town}</td>
+          <td class="standings__td standings__td--grad">${year}</td>
+          <td class="standings__td standings__td--num standings__td--main"
+              data-label="Points">90.00</td>
+          <td class="standings__td standings__td--num"
+              data-label="Differential">0.00</td>
+          <td class="standings__td standings__td--num"
+              data-label="Scoring Average">${avg}</td>
+          <td class="standings__td standings__td--num"
+              data-label="Events">2</td>
+        </tr>`;
+      const panel = (slug, name, rows) => `
+        <div class="standings__division js-standings-divpanel" data-division="${slug}">
+          <div class="standings__division-header">
+            <span class="standings__division-name">${name}</span>
+            <span class="standings__division-season">2026-27</span>
+          </div>
+          <table><tbody>${rows}</tbody></table>
+        </div>`;
+      const page = panel("high-school-boys", "High School Boys",
+        row("1", "101", "Sam Carter", "Austin, TX", "2029", "71.25") +
+        row("T2", "102", "Jos&#233; Ruiz Jr.", "Cary, NC", "2031", "74.50")) +
+        panel("middle-school-boys", "Middle School Boys", row("T2", "103", "Mary Kate Lane", "Durham, NC", "2032", ""));
+      const ps = parseStandings(page);
       assert.equal(ps.length, 3);
       assert.deepEqual(
         { ...ps[0] },
@@ -377,8 +399,10 @@ export const dataCases = [
           rank: "1", hometown: "Austin, TX", classYear: "2029", points: 90, scoringAvg: 71.25, events: 2 });
       assert.equal(ps[1].name, "José Ruiz Jr.");
       assert.deepEqual(splitName(ps[1].name), ["José", "Ruiz Jr."]);
+      assert.equal(ps[2].division, "Middle School Boys", "each player keeps their own division");
       assert.deepEqual(splitName(ps[2].name), ["Mary Kate", "Lane"]);
       assert.equal(ps[2].scoringAvg, undefined, "a blank cell is missing, not zero");
+      assert.deepEqual(parseStandings("<p>redesigned again</p>"), []);
     },
   },
   {
@@ -427,11 +451,19 @@ export const dataCases = [
     },
   },
   {
-    name: "Drip Golf profile yields age and JGS rank",
+    name: "Drip Golf profile yields age, JGS rank and TUGR rank",
     run: (assert) => {
-      const page = `<div class="agetext playerprof">Age: 15</div>
-        <div class="profileJGSRank">Overall JGS Rank: 1929</div>
-        <div class="profileTUGRRank profiletugrrank">TUGR Rank: 658</div>`;
+      // Shaped like the tour's redesigned (Nov 2026) profile page.
+      const page = `<h1 class="player-profile__name">Sam Carter</h1>
+        <div class="player-profile__bio">Austin, TX &#xB7; Class of 2029 &#xB7; Age 15</div>
+        <div class="player-profile__rankorg">
+          <img class="player-profile__rankorg-logo" src="x.png" alt="Junior Golf Scoreboard" title="Junior Golf Scoreboard" />
+          <span class="player-profile__rankorg-rank">Overall Rank: <strong>1929</strong></span>
+        </div>
+        <div class="player-profile__rankorg">
+          <img class="player-profile__rankorg-logo" src="y.png" alt="The Universal Golf Rankings" title="The Universal Golf Rankings" />
+          <span class="player-profile__rankorg-rank">Overall Rank: <strong>658</strong></span>
+        </div>`;
       assert.deepEqual(parseProfile(page), { age: 15, jgsRank: 1929, tugrRank: 658 });
       assert.deepEqual(parseProfile("<p>redesigned</p>"),
         { age: undefined, jgsRank: undefined, tugrRank: undefined });
@@ -440,21 +472,72 @@ export const dataCases = [
   {
     name: "Drip Golf profile yields the Golf Bio scoring stats",
     run: (assert) => {
-      // Shaped like the tour's profile page: labels and values in separate tags.
-      const page = `<h4>Scoring Profile</h4>
-        <div><span>Par 3&#39;s:</span> <span>3.28</span></div>
-        <div><span>Par 4's:</span> <span>4.23</span></div>
-        <div><span>Par 5's:</span> <span>5.00</span></div>
-        <h4>Scoring Types</h4>
-        <div>Eagles: <b>0</b> (--)</div><div>Birdies: 20 (13.89%)</div>
-        <div>Pars: 84 (58.33%)</div><div>Bogeys: 34 (23.61%)</div>
-        <div>Doubles: 5 (3.47%)</div><div>Others: 1 (0.69%)</div>`;
+      const type = (label, count, pct) => `<li class="player-profile__type"><div class="player-profile__type-head">
+        <span class="player-profile__type-label">${label}</span>
+        <span class="player-profile__type-count">${count} <span class="player-profile__type-pct">(${pct})</span></span>
+        </div></li>`;
+      const tile = (value, label) => `<div class="player-profile__tile">
+        <span class="player-profile__tile-value">${value}</span>
+        <span class="player-profile__tile-label">${label}</span></div>`;
+      const page = `<h2 class="player-profile__panel-title">Scoring Types</h2><ul class="player-profile__types">
+        ${type("Eagles", 0, "0.0%")}${type("Birdies", 20, "13.9%")}${type("Pars", 84, "58.3%")}
+        ${type("Bogeys", 34, "23.6%")}${type("Doubles", 5, "3.5%")}${type("Others", 1, "0.7%")}</ul>
+        <h2 class="player-profile__panel-title">Scoring Profile</h2>
+        ${tile("3.28", "Par 3 Avg")}${tile("4.23", "Par 4 Avg")}${tile("5.00", "Par 5 Avg")}`;
       assert.deepEqual(parseScoring(page), {
         "Par 3's": "3.28", "Par 4's": "4.23", "Par 5's": "5.00",
-        Eagles: "0", Birdies: "20 (13.89%)", Pars: "84 (58.33%)",
-        Bogeys: "34 (23.61%)", Doubles: "5 (3.47%)", Others: "1 (0.69%)",
+        Eagles: "0 (0.0%)", Birdies: "20 (13.9%)", Pars: "84 (58.3%)",
+        Bogeys: "34 (23.6%)", Doubles: "5 (3.5%)", Others: "1 (0.7%)",
       });
       assert.deepEqual(parseScoring("<p>redesigned</p>"), {}, "a redesign gives nothing, not wrong numbers");
+    },
+  },
+  {
+    name: "Drip Golf profile yields the golfer's tournament history",
+    run: (assert) => {
+      const round = (eventId, n, score, toPar) => `
+        <label for="sc-${eventId}-${n}" class="player-profile__tnmt-round sc-r${n}">
+          <span class="player-profile__tnmt-round-no">R${n}</span>
+          <span class="player-profile__tnmt-round-score">${score}</span>
+          <span class="player-profile__tnmt-round-topar">${toPar}</span>
+        </label>`;
+      const card = (eventId, name, date, place, total, points, rounds, course) => `
+        <div class="player-profile__tnmt-card">
+          <div class="player-profile__tnmt-head">
+            <a class="player-profile__tnmt-name" href="/leaderboard/${eventId}/x">${name}</a>
+            <span class="player-profile__tnmt-date">${date}</span>
+          </div>
+          <div class="player-profile__tnmt-meta"><span class="player-profile__tnmt-div">High School Boys</span></div>
+          <div class="player-profile__tnmt-body">
+            <div class="player-profile__tnmt-place" title="Place"><span class="player-profile__tnmt-place-text">${place}</span></div>
+            <div class="player-profile__tnmt-stats">
+              <div class="player-profile__tnmt-stat"><span class="player-profile__tnmt-rlabel">Total</span>
+                <span class="player-profile__tnmt-rval">${total}</span></div>
+              <div class="player-profile__tnmt-stat"><span class="player-profile__tnmt-rlabel">Points</span>
+                <span class="player-profile__tnmt-rval">${points}</span></div>
+            </div>
+          </div>
+          <div class="player-profile__tnmt-rounds">${rounds}</div>
+          <div class="player-profile__sc-panels">
+            ${rounds.match(/tnmt-round-no/g).map((_, i) => `<div class="player-profile__sc-panel sc-p${i + 1}">
+              <div class="player-profile__sc-course">${course}</div></div>`).join("")}
+          </div>
+        </div>`;
+      const page = `<h2 class="player-profile__panel-title">Tournament Results</h2><div class="player-profile__tnmts">
+        ${card(32398, "DGT &quot;Fall Classic&quot; at Pine CC", "Oct 17, 2026", "T32", "163 (&#x2B;21)", "18.5",
+          round(32398, 1, 84, "&#x2B;13") + round(32398, 2, 79, "&#x2B;8"), "Pine CC")}
+        ${card(31000, "Spring Open", "Mar 7, 2025", "1", "142 (-2)", "500", round(31000, 1, 70, "-1") + round(31000, 2, 72, "E"), "Oak Hills")}
+        </div>`;
+      const ts = parseTournaments(page);
+      assert.equal(ts.length, 2);
+      assert.deepEqual(ts[0], {
+        year: "2026", date: "10/17/2026", name: 'DGT "Fall Classic" at Pine CC', division: "High School Boys",
+        place: "T32", total: "163 (+21)", points: "18.5",
+        rounds: [{ round: "1", score: "84 (+13)", course: "Pine CC" }, { round: "2", score: "79 (+8)", course: "Pine CC" }],
+      });
+      assert.equal(ts[1].date, "3/7/2025");
+      assert.equal(ts[1].rounds[1].score, "72 (E)", "even par stays E");
+      assert.deepEqual(parseTournaments("<p>redesigned</p>"), []);
     },
   },
 ];

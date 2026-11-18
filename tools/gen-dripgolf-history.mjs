@@ -14,8 +14,8 @@
  * rest. It also means the past seasons work under `python serve.py`, which has
  * no /api.
  *
- * When a season ends: add it to PAST_SEASONS below, move SEASON_ID in
- * js/data/dripgolf.js to the new season, and re-run this.
+ * When a season ends: add it to PAST_SEASONS below and re-run this. The live
+ * function always reads the tour's current season.
  */
 import fs from "node:fs";
 import { parseStandings, standingsUrl } from "../js/data/dripgolf.js";
@@ -23,19 +23,18 @@ import { parseStandings, standingsUrl } from "../js/data/dripgolf.js";
 const OUT = new URL("../js/data/dripgolf-history.js", import.meta.url);
 
 /**
- * Every past season and the divisions on it that have standings. Read off the
- * season and division menus on the tour's standings page. Left out on purpose,
- * because their standings pages are empty: all of 2024 (TourSeasonID 924), the
- * 2021-22 age groups (3641-3643), 2023 "High School Boys" (4074), and the 2025
- * age groups and Female Elite. Newest first: a golfer listed in several seasons
- * keeps the newest row, which has their current hometown and class.
+ * Every past season with standings, named as the tour's season menu names
+ * them. Each season's page lists all of its divisions. Left out on purpose,
+ * because its standings are empty: 2024. Newest first: a golfer listed in
+ * several seasons keeps the newest row, which has their current hometown and
+ * class.
  */
 const PAST_SEASONS = [
-  { id: 1079, name: "2025-26", divisions: [[4074, "High School Boys"], [59, "Middle School Boys"], [354, "Future Stars Boys"], [4136, "Female Elite"]] },
-  { id: 1073, name: "2025", divisions: [[57, "HS Junior/Senior (Boys)"], [64, "HS Fresh/Soph (Boys)"], [59, "Middle School Boys"], [354, "Future Stars Boys"]] },
-  { id: 856, name: "2023", divisions: [[57, "HS Junior/Senior (Boys)"], [64, "HS Fresh/Soph (Boys)"], [59, "Middle School Boys"], [354, "Future Stars Boys"]] },
-  { id: 826, name: "2021-2022", divisions: [[57, "HS Junior/Senior (Boys)"], [64, "HS Fresh/Soph (Boys)"], [59, "Middle School Boys"], [354, "Future Stars Boys"]] },
-  { id: 738, name: "2020-2021", divisions: [[57, "HS Junior/Senior (Boys)"], [64, "HS Fresh/Soph (Boys)"], [59, "Middle School Boys"], [354, "Future Stars Boys"]] },
+  { name: "2025-26" },
+  { name: "2025" },
+  { name: "2023" },
+  { name: "2021-2022" },
+  { name: "2020-2021" },
 ];
 
 const HEADERS = {
@@ -50,12 +49,12 @@ const players = [];
 const seen = new Set();
 const counts = [];
 for (const season of PAST_SEASONS) {
-  for (const [divisionId, division] of season.divisions) {
-    const res = await fetch(standingsUrl(divisionId, season.id), { headers: HEADERS });
-    if (!res.ok) throw new Error(`${res.status} for ${season.name} ${division}`);
-    const rows = parseStandings(await res.text(), division);
-    if (!rows.length) throw new Error(`no players for ${season.name} ${division} -- page truncated or redesigned?`);
-    counts.push(`${season.name} ${division}: ${rows.length}`);
+  {
+    const res = await fetch(standingsUrl(season.name), { headers: HEADERS });
+    if (!res.ok) throw new Error(`${res.status} for ${season.name}`);
+    const rows = parseStandings(await res.text());
+    if (!rows.length) throw new Error(`no players for ${season.name} -- page truncated or redesigned?`);
+    counts.push(`${season.name}: ${rows.length}`);
     for (const p of rows) {
       if (seen.has(p.id)) continue;
       seen.add(p.id);

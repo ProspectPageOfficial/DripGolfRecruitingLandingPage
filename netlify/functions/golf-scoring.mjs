@@ -27,7 +27,7 @@ export const BLOB_KEY = "golf-scoring";
 export function cleanTourId(input) {
   const s = String(input ?? "").trim();
   if (!s) return { value: null };
-  const id = /PlayerID=(\d{1,9})\b/i.exec(s)?.[1] ?? (/^\d{1,9}$/.test(s) ? s : null);
+  const id = /(?:PlayerID=|\/profile\/)(\d{1,9})\b/i.exec(s)?.[1] ?? (/^\d{1,9}$/.test(s) ? s : null);
   if (!id) return { error: "Paste the link to your Drip Golf Tour player profile, or its player ID number." };
   return { value: id };
 }

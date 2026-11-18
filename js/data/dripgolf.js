@@ -26,26 +26,19 @@
  */
 
 const TOUR_ORIGIN = "https://www.dripgolftour.com";
-const SEASON_ID = 1178; // 2026-27
 
 /**
- * The current season's standings pages, fetched live. High School Boys is the
- * page the lookup was specced against; the two younger boys' divisions sit
- * beside it on the same season, so a middle-schooler signing up is found too.
+ * The tour's site (redesigned Nov 2026) lists every division of a season on
+ * one standings page; with no `season` it is the current season. A season is
+ * named the way the site names it: "2025-26", "2023", "2021-2022".
  */
-export const DRIP_DIVISIONS = Object.freeze([
-  { id: 4074, name: "High School Boys" },
-  { id: 59, name: "Middle School Boys" },
-  { id: 354, name: "Future Stars Boys" },
-]);
+export const standingsUrl = (season = "") =>
+  `${TOUR_ORIGIN}/standings${season ? `?season=${encodeURIComponent(season)}` : ""}`;
 
-export const standingsUrl = (divisionId, seasonId = SEASON_ID) =>
-  `${TOUR_ORIGIN}/Public/Standings?TourID=17&TourSeasonID=${seasonId}&DivisionID=${divisionId}&TourRankingSystemID=0`;
-
-// Age and JGS rank on a profile are the player's, whatever season the URL
-// names, so a golfer found only in a past season looks up the same way.
+// One player's whole career: age and rankings, career scoring stats and every
+// tournament they have played on the tour.
 export const profileUrl = (playerId) =>
-  `${TOUR_ORIGIN}/Public/PlayerProfile?PlayerID=${playerId}&TourSeasonID=${SEASON_ID}`;
+  `${TOUR_ORIGIN}/profile/${playerId}?season=all&division=all`;
 
 export const PLAYER_ID = /^\d{1,9}$/;
 
@@ -60,10 +53,9 @@ function decode(s) {
     .trim();
 }
 
-const cell = (row, cls) => {
-  const m = row.match(new RegExp(`class="${cls}"[^>]*>([^<]*)<`));
-  return m ? decode(m[1]) : "";
-};
+/** The text inside the first element whose class list includes `cls`. */
+const byClass = (html, cls) =>
+  decode(String(html).match(new RegExp(`class="[^"]*\\b${cls}\\b[^"]*"[^>]*>([^<]*)<`))?.[1] ?? "");
 
 const num = (s) => (s === "" || !Number.isFinite(Number(s)) ? undefined : Number(s));
 
@@ -76,38 +68,79 @@ export function splitName(full) {
   return [parts.slice(0, cut).join(" "), parts.slice(cut).join(" ")];
 }
 
-/** One standings page -> the players on it. */
-export function parseStandings(page, division = "") {
+/** A standings page -> the players on it, every division on the page. */
+export function parseStandings(page) {
   const players = [];
-  for (const row of String(page).split(/<tr\b/i).slice(1)) {
-    const link = row.match(/PlayerID=(\d+)[^"]*"[^>]*>([^<]+)<\/a>/);
-    if (!link) continue;
-    const [firstName, lastName] = splitName(link[2]);
-    players.push({
-      id: link[1],
-      name: decode(link[2]),
-      firstName,
-      lastName,
-      division,
-      rank: decode(row.match(/<td[^>]*>([^<]*)<\/td>/)?.[1] ?? ""),
-      hometown: cell(row, "standingshometown"),
-      classYear: cell(row, "standingsgradyear"),
-      points: num(cell(row, "CalculatedField1")),
-      scoringAvg: num(cell(row, "CalculatedField7")),
-      events: num(cell(row, "EventsPlayed")),
-    });
+  for (const panel of String(page).split(/<div class="standings__division[\s"]/).slice(1)) {
+    const division = byClass(panel, "standings__division-name");
+    for (const row of panel.split(/<tr class="standings__row\b/).slice(1)) {
+      const link = row.match(/href="\/profile\/(\d+)[^"]*"[^>]*>([^<]+)<\/a>/);
+      if (!link) continue;
+      const [firstName, lastName] = splitName(link[2]);
+      const labeled = (label) => decode(row.match(new RegExp(`data-label="${label}"[^>]*>([^<]*)<`))?.[1] ?? "");
+      players.push({
+        id: link[1],
+        name: decode(link[2]),
+        firstName,
+        lastName,
+        division,
+        rank: byClass(row, "standings__td--rank"),
+        hometown: byClass(row, "standings__td--hometown"),
+        classYear: byClass(row, "standings__td--grad"),
+        points: num(labeled("Points")),
+        scoringAvg: num(labeled("Scoring Average")),
+        events: num(labeled("Events")),
+      });
+    }
   }
   return players;
 }
 
 /** A player profile page -> the extra facts the standings table leaves out. */
 export function parseProfile(page) {
-  const grab = (re) => decode(String(page).match(re)?.[1] ?? "");
+  const p = String(page);
+  // "Gloucester, VA · Class of 2027 · Age 17"
+  const bio = byClass(p, "player-profile__bio");
+  // Each ranking sits beside its organisation's logo: "Overall Rank: <strong>9024</strong>"
+  const rank = (org) => num(p.match(new RegExp(`alt="${org}"[\\s\\S]{0,400}?Overall Rank:\\s*<strong>(\\d+)<`))?.[1] ?? "");
   return {
-    age: num(grab(/Age:\s*(\d+)/)),
-    jgsRank: num(grab(/Overall JGS Rank:\s*(\d+)/)),
-    tugrRank: num(grab(/TUGR Rank:\s*(\d+)/)),
+    age: num(bio.match(/\bAge\s+(\d+)/)?.[1] ?? ""),
+    jgsRank: rank("Junior Golf Scoreboard"),
+    tugrRank: rank("The Universal Golf Rankings"),
   };
+}
+
+const MONTHS = { Jan: 1, Feb: 2, Mar: 3, Apr: 4, May: 5, Jun: 6, Jul: 7, Aug: 8, Sep: 9, Oct: 10, Nov: 11, Dec: 12 };
+
+/**
+ * A player profile page -> every tournament on it, in the golfer page's own
+ * tournament shape: { year, date: "10/17/2026", name, division, place,
+ * total: "163 (+21)", points, rounds: [{ round, score: "84 (+13)", course }] }.
+ */
+export function parseTournaments(page) {
+  const out = [];
+  for (const card of String(page).split(/<div class="player-profile__tnmt-card"/).slice(1)) {
+    const name = byClass(card, "player-profile__tnmt-name");
+    const when = byClass(card, "player-profile__tnmt-date").match(/^([A-Z][a-z]{2})[a-z]*\.?\s+(\d{1,2}),\s*(\d{4})$/);
+    if (!name || !when || !MONTHS[when[1]]) continue;
+    const stat = (label) => decode(card.match(new RegExp(
+      `tnmt-rlabel">${label}</span>\\s*<span class="player-profile__tnmt-rval">([^<]*)<`))?.[1] ?? "");
+    const courses = [...card.matchAll(/class="player-profile__sc-course">([^<]*)</g)].map((m) => decode(m[1]));
+    const rounds = [...card.matchAll(
+      /tnmt-round-no">R?(\d+)<\/span>\s*<span class="player-profile__tnmt-round-score">(\d+)<\/span>\s*<span class="player-profile__tnmt-round-topar">([^<]*)</g,
+    )].map((m, i) => ({ round: m[1], score: `${m[2]} (${decode(m[3])})`, course: courses[i] || "" }));
+    out.push({
+      year: when[3],
+      date: `${MONTHS[when[1]]}/${Number(when[2])}/${when[3]}`,
+      name,
+      division: byClass(card, "player-profile__tnmt-div"),
+      place: byClass(card, "player-profile__tnmt-place-text"),
+      total: stat("Total"),
+      points: stat("Points"),
+      rounds,
+    });
+  }
+  return out;
 }
 
 /** The page's own labels for the Golf Bio scoring stats, in display order. */
@@ -121,14 +154,19 @@ export const SCORING_TYPE_FIELDS = Object.freeze(["Eagles", "Birdies", "Pars", "
  * of the profile page gives {} rather than wrong numbers.
  */
 export function parseScoring(page) {
-  const text = decode(String(page).replace(/<[^>]*>/g, " "));
+  const p = String(page);
   const out = {};
   for (const field of SCORING_PAR_FIELDS) {
-    const m = text.match(new RegExp(`${field}:\\s*(\\d+(?:\\.\\d+)?)`));
+    // <span ...tile-value">3.50</span> <span ...tile-label">Par 3 Avg</span>
+    const label = `${field.replace("'s", "")} Avg`;
+    const m = p.match(new RegExp(
+      `tile-value">(\\d+(?:\\.\\d+)?)</span>\\s*<span class="player-profile__tile-label">${label}<`));
     if (m) out[field] = m[1];
   }
   for (const field of SCORING_TYPE_FIELDS) {
-    const m = text.match(new RegExp(`\\b${field}:\\s*(\\d+)\\s*(?:\\(([\\d.]+%)\\))?`));
+    // <span ...type-label">Pars</span> <span ...type-count">30 <span ...type-pct">(41.7%)</span>
+    const m = p.match(new RegExp(
+      `type-label">${field}</span>\\s*<span class="player-profile__type-count">(\\d+)\\s*(?:<span class="player-profile__type-pct">\\(([\\d.]+%)\\))?`));
     if (m) out[field] = m[2] ? `${m[1]} (${m[2]})` : m[1];
   }
   return out;

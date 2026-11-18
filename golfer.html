@@ -1516,6 +1516,10 @@ body.is-owner .owner-only[hidden] { display: none !important; }
   background: transparent; color: var(--muted); border: 1px solid rgba(0,0,0,0.1) !important;
 }
 .gate-back-btn:hover { background: rgba(0,0,0,0.04); }
+.gate-forgot {
+  align-self: flex-end; font-size: 0.82rem; color: var(--green-deep);
+  text-decoration: underline; margin-top: -0.2rem;
+}
 .gate-error {
   color: #b03030; font-size: 0.85rem; font-weight: 600;
   min-height: 1.2em; margin: 0;
@@ -1838,6 +1842,7 @@ body.is-owner #scoring-section.is-empty { display: block; }
           <input type="email" id="gate-email" autocomplete="username" required />
           <label for="gate-pw">Password</label>
           <input type="password" id="gate-pw" autocomplete="current-password" required />
+          <a class="gate-forgot" href="/#/forgot">Forgot password?</a>
           <p class="gate-error" id="gate-error" aria-live="polite"></p>
           <div class="gate-actions">
             <button type="button" class="gate-back-btn" data-gate-back>← Back</button>
@@ -2155,6 +2160,7 @@ body.is-owner #scoring-section.is-empty { display: block; }
 
     <section class="tab-panel" id="history" role="tabpanel">
       <h2>Season History</h2>
+      <p class="muted scoring-source" id="season-tour-note" hidden>Drip Golf Tour results fill in automatically after each event.</p>
 
       <div class="year-selector" role="tablist" aria-label="Season">
         <button class="year-btn active" type="button" role="tab" data-year="2024" aria-selected="true">2024</button>
@@ -2430,8 +2436,9 @@ body.is-owner #scoring-section.is-empty { display: block; }
         <fieldset class="scoring-group">
           <legend>Drip Golf Tour member?</legend>
           <p class="theme-modal-help">
-            Link your tour profile and these stats fill in from your official
-            Drip Golf tournaments, updating after every event.
+            Link your tour profile and your scoring stats and tournament
+            history fill in from your official Drip Golf tournaments, updating
+            after every event.
           </p>
           <div id="scoring-tour-suggest" class="scoring-suggest"></div>
           <label class="scoring-field-wide"><span>Tour profile link or player ID</span>
@@ -3555,10 +3562,16 @@ const PORTFOLIO_DATA = {
   }
 
   // Merge scraped + user tournaments, newest first.
+  // A linked Drip Golf Tour profile's tournaments (PORTFOLIO_DATA.tourSeasons)
+  // join in too, except any on a date the page already has one for, so an
+  // event the owner typed in before linking is not shown twice.
   function getMergedTournaments(year) {
     const scraped = (PORTFOLIO_DATA.seasons[year] || []).slice();
     const user = (window.UserScores ? window.UserScores.loadSeason(year) : []).slice();
-    return [...user, ...scraped].sort(
+    const day = (t) => parseTournamentDate(t.date).toDateString();
+    const taken = new Set([...scraped, ...user].map(day));
+    const tour = ((PORTFOLIO_DATA.tourSeasons || {})[year] || []).filter((t) => !taken.has(day(t)));
+    return [...user, ...scraped, ...tour].sort(
       (a, b) => parseTournamentDate(b.date) - parseTournamentDate(a.date)
     );
   }
@@ -5167,23 +5180,42 @@ const PORTFOLIO_DATA = {
     const byId = (id) => document.getElementById(id);
     const tourId = (s) => {
       s = String(s || "").trim();
-      return (/PlayerID=(\d{1,9})\b/i.exec(s) || [])[1] || (/^\d{1,9}$/.test(s) ? s : "");
+      return (/(?:PlayerID=|\/profile\/)(\d{1,9})\b/i.exec(s) || [])[1] || (/^\d{1,9}$/.test(s) ? s : "");
     };
     const fold = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
     let previewTimer;
 
-    async function tourScoring(id) {
+    /** { scoring, tournaments } from a tour profile, or null if unreachable. */
+    async function tourProfile(id) {
       try {
         const res = await fetch("/api/drip-golf?player=" + encodeURIComponent(id));
         const body = res.ok ? await res.json() : null;
-        return body && body.scoring ? body.scoring : null;
+        return body ? { scoring: body.scoring || {}, tournaments: body.tournaments || [] } : null;
       } catch { return null; }
     }
 
-    /** Fill PORTFOLIO_DATA.golf.tourScoring from the linked profile, if any. */
+    /**
+     * From the linked profile, if any: scoring stats for Golf Bio
+     * (PORTFOLIO_DATA.golf.tourScoring) and tournaments for Season History,
+     * by year (PORTFOLIO_DATA.tourSeasons). getMergedTournaments folds those
+     * in, skipping any the owner has already entered for the same date.
+     */
     async function loadTour() {
       const id = PORTFOLIO_DATA.golf.tourPlayerId;
-      PORTFOLIO_DATA.golf.tourScoring = id ? await tourScoring(id) : null;
+      const tour = id ? await tourProfile(id) : null;
+      PORTFOLIO_DATA.golf.tourScoring = tour ? tour.scoring : null;
+      const seasons = {};
+      for (const t of (tour ? tour.tournaments : [])) (seasons[t.year] = seasons[t.year] || []).push(t);
+      PORTFOLIO_DATA.tourSeasons = seasons;
+    }
+
+    /** Season History, hero and Golf Bio all read tour data: refresh them together. */
+    function rerenderTour() {
+      if (window.rerenderGolf) window.rerenderGolf();
+      ["2024", "2025", "2026"].forEach((y) => window.rerenderSeason && window.rerenderSeason(y));
+      if (window.rerenderHero) window.rerenderHero();
+      const note = byId("season-tour-note");
+      if (note) note.hidden = !Object.keys(PORTFOLIO_DATA.tourSeasons || {}).length;
     }
 
     async function preview() {
@@ -5193,11 +5225,12 @@ const PORTFOLIO_DATA = {
       const id = tourId(raw);
       if (!id) { status.textContent = "That doesn't look like a Drip Golf Tour profile link."; return; }
       status.textContent = "Checking your tour profile…";
-      const s = await tourScoring(id);
+      const tour = await tourProfile(id);
       if (tourId(byId("scoring-form").elements.tourPlayerId.value) !== id) return; // typed on meanwhile
-      if (!s) status.textContent = "Couldn't reach that tour profile. Check the link and try again.";
-      else if (!Object.keys(s).length) status.textContent = "Linked profile found. Its stats will appear after your first Drip Golf event.";
-      else status.textContent = "Found it: " + Object.keys(s).length + " stats from your Drip Golf tournaments. Save to show them.";
+      const events = tour ? tour.tournaments.length : 0;
+      if (!tour) status.textContent = "Couldn't reach that tour profile. Check the link and try again.";
+      else if (!events && !Object.keys(tour.scoring).length) status.textContent = "Linked profile found. Its stats and tournaments will appear after your first Drip Golf event.";
+      else status.textContent = "Found it: " + events + (events === 1 ? " tournament" : " tournaments") + " and your scoring stats from Drip Golf. Save to show them.";
     }
 
     async function suggest() {
@@ -5275,7 +5308,7 @@ const PORTFOLIO_DATA = {
           PORTFOLIO_DATA.golf.tourPlayerId = fresh.portfolio.golf.tourPlayerId || null;
         }
         await loadTour();
-        if (window.rerenderGolf) window.rerenderGolf();
+        rerenderTour();
         status.textContent = "";
         close();
       } catch {
@@ -5298,7 +5331,7 @@ const PORTFOLIO_DATA = {
         if (e.key === "Escape" && !byId("scoring-modal").hidden) close();
       });
     }
-    return { init, open, loadTour };
+    return { init, open, loadTour, rerenderTour };
   })();
   window.ScoringEditor = ScoringEditor;
 
@@ -6256,7 +6289,9 @@ const PORTFOLIO_DATA = {
     renderGolf(PORTFOLIO_DATA);
     renderCoach(PORTFOLIO_DATA);
     // A linked Drip Golf Tour profile's stats arrive after first paint.
-    ScoringEditor.loadTour().then(() => window.rerenderGolf && window.rerenderGolf());
+    // A linked Drip Golf Tour profile's stats and tournaments arrive after
+    // first paint, and fill in Golf Bio, Season History and the hero.
+    ScoringEditor.loadTour().then(() => ScoringEditor.rerenderTour());
     wireTabs();
     wireYearSelector();
 

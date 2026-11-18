@@ -1,10 +1,11 @@
 /**
  * /api/drip-golf — the Drip Golf Tour standings as JSON, for the sign-up lookup.
  *
- *   GET /api/drip-golf             -> { players: [...] } across DRIP_DIVISIONS
- *   GET /api/drip-golf?player=123  -> { age, jgsRank, tugrRank, scoring } from one
- *                                     profile; `scoring` feeds the golfer page's
- *                                     Golf Bio when the owner links their profile
+ *   GET /api/drip-golf             -> { players: [...] } from the current season's standings
+ *   GET /api/drip-golf?player=123  -> { age, jgsRank, tugrRank, scoring, tournaments }
+ *                                     from one profile; `scoring` and `tournaments`
+ *                                     feed a linked golfer page's Golf Bio and
+ *                                     Season History
  *
  * dripgolftour.com sends no CORS headers, so the browser cannot read it
  * directly; this reads it server-side. It also turns away requests without a
@@ -17,7 +18,7 @@
  * holds the answer for an hour and serves the stale copy while refreshing.
  */
 import {
-  DRIP_DIVISIONS, PLAYER_ID, standingsUrl, profileUrl, parseStandings, parseProfile, parseScoring,
+  PLAYER_ID, standingsUrl, profileUrl, parseStandings, parseProfile, parseScoring, parseTournaments,
 } from "../../js/data/dripgolf.js";
 
 const FETCH_HEADERS = {
@@ -51,13 +52,16 @@ export default async (req) => {
     if (player != null) {
       if (!PLAYER_ID.test(player)) return json({ error: "bad player id" }, 400);
       const html = await page(profileUrl(player));
-      return json({ ...parseProfile(html), scoring: parseScoring(html) });
+      return json({
+        ...parseProfile(html),
+        scoring: parseScoring(html),
+        tournaments: parseTournaments(html),
+      });
     }
-    const pages = await Promise.allSettled(DRIP_DIVISIONS.map((d) => page(standingsUrl(d.id))));
-    // A player who moved up a division mid-season is listed in both; keep the first.
+    // Every division of the current season is on one page. A player who moved
+    // up a division mid-season is listed in both; keep the first.
     const seen = new Set();
-    const players = pages
-      .flatMap((p, i) => (p.status === "fulfilled" ? parseStandings(p.value, DRIP_DIVISIONS[i].name) : []))
+    const players = parseStandings(await page(standingsUrl()))
       .filter((p) => !seen.has(p.id) && seen.add(p.id));
     if (!players.length) return json({ error: "standings unavailable", players: [] }, 502);
     return json({ players });
