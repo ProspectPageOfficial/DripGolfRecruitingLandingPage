@@ -13,7 +13,8 @@
 import { dashboardView } from "../js/views/dashboard.js";
 import { fitView } from "../js/views/fit.js";
 import { landing } from "../js/views/landing.js";
-import { authView } from "../js/views/auth.js";
+import { authView, forgotView, resetView } from "../js/views/auth.js";
+import { RESET_KEY } from "../js/lib/mypage.js";
 import { signupView, mockGolfer, mockPagePanel, mockBanner } from "../js/views/signup.js";
 import { nav } from "../js/lib/shell.js";
 import { provenanceView } from "../js/views/provenance.js";
@@ -78,6 +79,31 @@ export const viewCases = [
   {
     name: "sign-in page links to the sign-up survey",
     run: (assert) => assert.ok(authView().includes('href="#/signup"'), "Create account link missing"),
+  },
+  {
+    name: "sign-in page offers Forgot password, which asks for an email",
+    run: (assert) => {
+      assert.ok(authView().includes('href="#/forgot"'), "Forgot password link missing");
+      rendersFine(assert, "forgotView", () => forgotView());
+      assert.ok(forgotView().includes('id="forgot-form"') && forgotView().includes('type="email"'));
+    },
+  },
+  {
+    name: "the new-password page needs the token from a reset link",
+    run: (assert) => {
+      sessionStorage.removeItem(RESET_KEY);
+      const without = resetView();
+      rendersFine(assert, "resetView", () => without);
+      assert.ok(!without.includes('id="reset-form"'), "no reset link: no password form");
+      assert.ok(without.includes('href="#/forgot"'), "no reset link: offer a new one");
+      sessionStorage.setItem(RESET_KEY, JSON.stringify({ access_token: "abc" }));
+      try {
+        const withToken = resetView();
+        assert.ok(withToken.includes('id="reset-form"') && withToken.includes('autocomplete="new-password"'));
+      } finally {
+        sessionStorage.removeItem(RESET_KEY);
+      }
+    },
   },
   {
     name: "sign-up survey renders every Personal Bio question",

@@ -19,6 +19,9 @@
  *   refresh(refreshToken)          -> session | null
  *   userFromToken(accessToken)     -> { id, email } | null
  *   isConfirmed(userId)            -> has the account confirmed its email?
+ *   sendPasswordReset(email, redirectTo) -> {} | { error: "rate-limited" }
+ *                                     (emails a link; silent for unknown emails)
+ *   setPassword(userId, password)  -> {} | { error }
  *   deleteAccount(userId, golferIds) -> removes the user, their golfers,
  *                                       docs and uploaded files
  *

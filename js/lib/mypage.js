@@ -42,3 +42,6 @@ export function openMyPage(slug, session) {
 
 /** One-time message for the sign-in screen (e.g. an expired email link). */
 export const AUTH_NOTICE_KEY = "dg.auth.notice";
+
+/** The recovery token from a password-reset email, held for #/reset-password. */
+export const RESET_KEY = "dg.auth.reset";

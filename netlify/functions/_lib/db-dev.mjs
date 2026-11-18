@@ -76,6 +76,30 @@ export function devDb(file = process.env.DRIP_DEV_DB || ".dev-data/db.json") {
       return session;
     },
 
+    // No real email here: the link Supabase would send goes in d.outbox, so
+    // tests (and someone clicking through locally) can follow it.
+    async sendPasswordReset(email, redirectTo) {
+      const d = load();
+      const user = d.users.find((u) => u.email === String(email).toLowerCase());
+      if (user) {
+        const s = issue(d, user);
+        d.outbox = d.outbox || [];
+        d.outbox.push({ to: user.email, link:
+          `${redirectTo}#access_token=${s.access_token}&refresh_token=${s.refresh_token}&expires_at=${s.expires_at}&type=recovery` });
+        save(d);
+      }
+      return {};
+    },
+
+    async setPassword(userId, password) {
+      const d = load();
+      const user = d.users.find((u) => u.id === userId);
+      if (!user) return { error: "User not found" };
+      user.password = hash(password);
+      save(d);
+      return {};
+    },
+
     async refresh(refreshToken) {
       const d = load();
       const t = d.tokens[`r:${refreshToken}`];

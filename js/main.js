@@ -17,7 +17,7 @@ import { html, raw } from "./lib/dom.js";
 import { empty } from "./lib/components.js";
 
 import { landing } from "./views/landing.js";
-import { authView, bindAuth } from "./views/auth.js";
+import { authView, bindAuth, forgotView, bindForgot, resetView, bindReset } from "./views/auth.js";
 import {
   signupView, bindSignup, bindWelcome, loadAnswers, mockGolfer, mockPagePanel, mockBanner, MOCK_KEY,
   livePagePanel,
@@ -28,7 +28,7 @@ import { fitView, bindFit } from "./views/fit.js";
 import { provenanceView } from "./views/provenance.js";
 import { faqView } from "./views/faq.js";
 import { termsView, privacyView } from "./views/legal.js";
-import { findMyPage, openMyPage, AUTH_NOTICE_KEY } from "./lib/mypage.js";
+import { findMyPage, openMyPage, AUTH_NOTICE_KEY, RESET_KEY } from "./lib/mypage.js";
 
 const root = document.getElementById("app");
 
@@ -69,6 +69,8 @@ const ui = { live: {}, liveOk: false };
 const ROUTES = [
   { path: /^\/?$/,         key: "home",      render: () => landing() },
   { path: /^\/login$/,     key: "login",     render: () => authView() },
+  { path: /^\/forgot$/,    key: "forgot",    render: () => forgotView() },
+  { path: /^\/reset-password$/, key: "reset", render: () => resetView() },
   { path: /^\/signup$/,    key: "signup",    render: () => signupView() },
 
   // The sign-up demo's mock dashboard. Signed out on purpose -- no account was
@@ -218,6 +220,9 @@ function bindFor(key, ctx = {}) {
     });
   }
 
+  if (key === "forgot") bindForgot(root);
+  if (key === "reset") bindReset(root);
+
   if (key === "signup") {
     bindSignup(root, {
       onDone: () => {
@@ -266,13 +271,23 @@ const notFound = () => html`
 async function finishEmailLink() {
   const params = new URLSearchParams(location.hash.slice(1));
   if (!params.has("access_token") && !params.has("error") && !params.has("error_description")) return false;
+
+  // A password-reset link: keep its recovery token for #/reset-password,
+  // which asks for the new password. Nothing signs in until that is saved.
+  if (params.get("type") === "recovery" && params.has("access_token")) {
+    try {
+      sessionStorage.setItem(RESET_KEY, JSON.stringify({ access_token: params.get("access_token") }));
+    } catch { /* storage blocked: #/reset-password asks them to request a new link */ }
+    history.replaceState(null, "", location.pathname + "#/reset-password");
+    return false;
+  }
   history.replaceState(null, "", location.pathname + "#/login");
 
   const notice = (text) => {
     try { sessionStorage.setItem(AUTH_NOTICE_KEY, text); } catch { /* shown nowhere; harmless */ }
   };
   if (params.has("error") || params.has("error_description")) {
-    notice("That confirmation link has expired or was already used. If you've confirmed before, sign in below.");
+    notice("That email link has expired or was already used. Sign in below, or use Forgot password to get a new link.");
     return false;
   }
   root.innerHTML = '<p class="center muted" style="margin-top:20vh">Confirming your email...</p>';

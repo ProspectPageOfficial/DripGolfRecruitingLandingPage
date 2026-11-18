@@ -19,12 +19,18 @@ import golfer from "../../netlify/functions/golfer.mjs";
 import myPage from "../../netlify/functions/my-page.mjs";
 import golfStats, { cleanRank } from "../../netlify/functions/golf-stats.mjs";
 import golfScoring, { cleanTourId, cleanScoring } from "../../netlify/functions/golf-scoring.mjs";
+import passwordReset from "../../netlify/functions/password-reset.mjs";
+import passwordUpdate from "../../netlify/functions/password-update.mjs";
+import { readFileSync } from "node:fs";
 import personal from "../../netlify/functions/personal.mjs";
 import tournaments from "../../netlify/functions/tournaments.mjs";
 import deleteAccount from "../../netlify/functions/delete-account.mjs";
 import { portfolioFromHtml } from "../../tools/import-golfer.mjs";
 
-const db = devDb(join(mkdtempSync(join(tmpdir(), "dgp-")), "db.json"));
+const DB_FILE = join(mkdtempSync(join(tmpdir(), "dgp-")), "db.json");
+const db = devDb(DB_FILE);
+/** Reset emails the dev backend "sent" (see db-dev.mjs sendPasswordReset). */
+const outbox = () => JSON.parse(readFileSync(DB_FILE, "utf8")).outbox || [];
 setDbForTests(db);
 process.env.SIGNUPS_ENABLED = "true";
 
@@ -333,6 +339,8 @@ test("scoring stats are owner-only and must be real numbers", async () => {
     body: { manual: { "Par 4's": "four" } } });
   assert.equal(bad.status, 400);
   assert.deepEqual(cleanTourId("dripgolftour.com/Public/PlayerProfile?PlayerID=42"), { value: "42" });
+  assert.deepEqual(cleanTourId("https://www.dripgolftour.com/profile/288601/fenton-scott?season=2026-27"), { value: "288601" },
+    "the tour's new-style profile links work too");
   assert.deepEqual(cleanTourId(""), { value: null });
   assert.ok(cleanTourId("https://example.com/me").error, "a link with no player ID is refused");
   assert.ok(cleanScoring({ Birdies: "1.5" }).error, "counts are whole numbers");
@@ -351,4 +359,38 @@ test("picking yourself in the Drip Golf lookup at sign-up links your tour profil
     tourPlayerId: "not-an-id" } })).body;
   assert.equal(plain.slug, "plain-player", "a bad tour ID never blocks sign-up");
   assert.equal((await call(golfer, "golfer", { golfer: plain.slug })).body.portfolio.golf.tourPlayerId, null);
+});
+
+test("Forgot password answers the same for known and unknown emails, and only emails the real one", async () => {
+  await ready;
+  const before = outbox().length;
+  const known = await call(passwordReset, "password-reset", { method: "POST", body: { email: "AVA@example.com" } });
+  const unknown = await call(passwordReset, "password-reset", { method: "POST", body: { email: "nobody@example.com" } });
+  assert.equal(known.status, 200);
+  assert.deepEqual(known.body, unknown.body, "can't tell from the reply whether an account exists");
+  const sent = outbox().slice(before);
+  assert.equal(sent.length, 1, "one email, to the account that exists");
+  assert.equal(sent[0].to, "ava@example.com");
+  assert.match(sent[0].link, /^http:\/\/pages\.test\/#access_token=.+&type=recovery$/, "the link comes back to the site's homepage");
+  assert.equal((await call(passwordReset, "password-reset", { method: "POST", body: { email: "not-an-email" } })).status, 400);
+});
+
+test("a reset link sets a new password; the old one stops working", async () => {
+  await ready;
+  await call(passwordReset, "password-reset", { method: "POST", body: { email: "luke@example.com" } });
+  const link = outbox().filter((m) => m.to === "luke@example.com").pop().link;
+  const token = new URLSearchParams(link.split("#")[1]).get("access_token");
+
+  const short = await call(passwordUpdate, "password-update", { method: "POST", token, body: { password: "short" } });
+  assert.equal(short.status, 400);
+  const forged = await call(passwordUpdate, "password-update", { method: "POST", token: "forged", body: { password: "brand-new-pass-1" } });
+  assert.equal(forged.status, 401, "a made-up token can't change anyone's password");
+  const none = await call(passwordUpdate, "password-update", { method: "POST", body: { password: "brand-new-pass-1" } });
+  assert.equal(none.status, 401);
+
+  const ok = await call(passwordUpdate, "password-update", { method: "POST", token, body: { password: "brand-new-pass-1" } });
+  assert.equal(ok.status, 200);
+  const signIn = (password) => call(login, "login", { method: "POST", golfer: "luke-selzer", body: { email: "luke@example.com", password } });
+  assert.equal((await signIn("brand-new-pass-1")).status, 200, "new password works");
+  assert.equal((await signIn("luke-password-1")).status, 401, "old password no longer works");
 });

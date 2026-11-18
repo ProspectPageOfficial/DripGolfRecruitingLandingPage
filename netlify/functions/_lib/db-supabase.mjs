@@ -95,6 +95,22 @@ export function supabaseDb() {
       return error ? null : toSession(data.session);
     },
 
+    async sendPasswordReset(email, redirectTo) {
+      // Supabase emails the link; it comes back to `redirectTo` with a
+      // recovery session in the URL fragment (#access_token=...&type=recovery).
+      // An unknown address is not an error, so this can't be used to probe
+      // which emails have accounts.
+      const { error } = await fresh().auth.resetPasswordForEmail(email, { redirectTo });
+      if (error && error.status === 429) return { error: "rate-limited" };
+      if (error) console.error("sendPasswordReset:", error.message);
+      return {};
+    },
+
+    async setPassword(userId, password) {
+      const { error } = await admin.auth.admin.updateUserById(userId, { password });
+      return error ? { error: error.message } : {};
+    },
+
     async refresh(refreshToken) {
       const { data, error } = await fresh().auth.refreshSession({ refresh_token: refreshToken });
       return error ? null : toSession(data.session);

@@ -213,6 +213,8 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .auth-card { width: min(430px, 100%); }
 .auth-card h1 { font-size: 1.9rem; margin-bottom: var(--s-1); }
 .auth-switch { font-size: 0.84rem; color: var(--muted); }
+.auth-switch a, .auth-forgot { text-decoration: underline; }
+.auth-forgot { align-self: flex-end; font-size: 0.8rem; }
 .auth-switch button {
   background: none; border: none; padding: 0;
   color: var(--sage); font-weight: 600; cursor: pointer;
