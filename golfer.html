@@ -250,7 +250,7 @@ h1 {
 .stat-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.15em; opacity: 0.85; }
 
 /* ---------- Season analytics ----------
-   Frosted-glass panel in the Golf Bio tab, skinned by hero-pop.css.
+   Frosted-glass panel in the Personal and Golf Bio tabs, skinned by hero-pop.css.
    Hidden by default via [hidden]; renderHeroAnalytics() flips it on
    the moment there's actually data worth showing. */
 .hero-analytics {
@@ -1229,7 +1229,7 @@ input[type="date"]:focus::-webkit-datetime-edit  { color: var(--charcoal); }
 
 /* ---------- Month + Day select pair (Season History add form) ----------
    The History form drops year input entirely (the active .year-btn tab
-   IS the year context). Two side-by-side native <select>s are the
+   IS the season, and each month falls in one year of it). Two side-by-side native <select>s are the
    simplest possible UI that fully addresses "no year selection" — no
    custom calendar widget, no JS picker lib, just dependent dropdowns. */
 .date-md {
@@ -1721,7 +1721,7 @@ body.is-owner .visitor-only { display: none !important; }
 .golf-subhead { margin: 1.6rem 0 0.6rem; }
 .scoring-source { font-size: 0.85rem; margin: -0.2rem 0 0.6rem; }
 /* Nothing to show yet: visitors see no section; the owner sees the prompt. */
-#analytics-section.is-empty { display: none; }
+.analytics-section.is-empty { display: none; }
 body.is-owner #analytics-section.is-empty { display: block; }
 
 /* Resume editor: a wider card, one block per resume section. */
@@ -1919,7 +1919,7 @@ body.is-owner #analytics-section.is-empty { display: block; }
   <main class="container">
     <nav class="tabs" role="tablist">
       <button class="tab active" role="tab" data-tab="personal" aria-selected="true">Personal Bio</button>
-      <button class="tab" role="tab" data-tab="golf" aria-selected="false">Drip Golf Bio</button>
+      <button class="tab" role="tab" data-tab="golf" aria-selected="false">Golf Bio</button>
       <button class="tab" role="tab" data-tab="history" aria-selected="false">Season History</button>
       <button class="tab" role="tab" data-tab="upcoming" aria-selected="false">Upcoming Tournaments</button>
       <button class="tab" role="tab" data-tab="swing" aria-selected="false">Swing Video</button>
@@ -1945,6 +1945,13 @@ body.is-owner #analytics-section.is-empty { display: block; }
         <!-- Populated by PersonalBio module from SOCIAL_PLATFORMS.
              Hidden via CSS :empty when there are no socials to show. -->
         <ul class="social-links" id="personal-socials" aria-label="Social media links"></ul>
+
+        <!-- The last 5 scored events, whichever season they fall in. Hidden
+             until there is one. Filled by renderHeroAnalytics(). -->
+        <div class="analytics-section is-empty" id="last5-section">
+          <div class="panel-header golf-subhead"><h3>Last 5 Events</h3></div>
+          <section class="hero-analytics" id="last5-analytics" aria-label="Last 5 events" hidden></section>
+        </div>
       </div>
 
       <form id="personal-edit-form" class="personal-edit-form" hidden>
@@ -2043,7 +2050,7 @@ body.is-owner #analytics-section.is-empty { display: block; }
     </section>
 
     <section class="tab-panel" id="golf" role="tabpanel">
-      <h2>Drip Golf Bio</h2>
+      <h2>Golf Bio</h2>
 
       <!-- Current Coach card. Display + inline edit form. Saves go
            through the same /api/personal endpoint as the personal bio
@@ -2089,45 +2096,19 @@ body.is-owner #analytics-section.is-empty { display: block; }
       <ul class="profile-list" id="rankings-list"></ul>
 
       <!-- ===== Season analytics: every event of the current season =====
-           Live-computed rollups, so the graph reacts when the owner adds a
-           tournament. Fed by renderHeroAnalytics() (called by renderHero(),
-           as it used to sit in the hero, hence the hero-* names), which
-           reuses getMergedTournaments(): the same list Season History shows.
-           With no rounds to plot, visitors see no section and the owner sees
-           the prompt. The button opens ScoringEditor, where a Drip Golf Tour
+           Filled by renderHeroAnalytics() (called by renderHero(), as it used
+           to sit in the hero, hence the hero-* names), which reuses
+           getMergedTournaments(): the same list Season History shows. With no
+           rounds to plot, visitors see no section and the owner sees the
+           prompt. The button opens ScoringEditor, where a Drip Golf Tour
            profile is linked. -->
-      <div id="analytics-section" class="is-empty">
+      <div class="analytics-section is-empty" id="analytics-section">
         <div class="panel-header golf-subhead">
           <h3 id="analytics-title">Season</h3>
           <button type="button" id="scoring-edit-btn" class="swing-ghost-btn owner-only">✏️ Tour Profile &amp; Stats</button>
         </div>
         <p class="muted owner-only" id="analytics-empty" hidden>No results to graph yet. Add tournaments in Season History, or link your Drip Golf Tour profile to fill them in.</p>
-        <section class="hero-analytics" id="hero-analytics" aria-label="Recent performance analytics" hidden>
-          <div class="hero-analytics-body">
-            <div class="hero-chart-wrap">
-              <!-- Redrawn on every render and resize; drawHeroChart() sets
-                   the viewBox to its real pixel size. -->
-              <svg id="hero-chart" class="hero-chart" viewBox="0 0 600 200" role="img"
-                   aria-label="Line chart of scoring average at each event this season"></svg>
-            </div>
-            <ul class="hero-analytics-tiles" id="hero-analytics-tiles"></ul>
-          </div>
-
-          <!-- ===== Recent Form =====
-               A real leaderboard board: same events as the chart, but
-               read as rows (finish / event / rounds / total / to par). The
-               chart shows the shape of the trend; this shows the receipts.
-               Populated by renderRecentForm() from the SAME events array
-               the chart uses — one query, two views. -->
-          <div class="hero-form" id="hero-form" hidden>
-            <div class="fs-head" aria-hidden="true">
-              <span>Pos</span><span>Event</span><span>Rounds</span>
-              <span style="text-align:right">Total</span>
-              <span style="text-align:center">To Par</span>
-            </div>
-            <ol class="fs-rows" id="hero-form-rows"></ol>
-          </div>
-        </section>
+        <section class="hero-analytics" id="season-analytics" aria-label="This season's events" hidden></section>
       </div>
     </section>
 
@@ -2174,7 +2155,7 @@ body.is-owner #analytics-section.is-empty { display: block; }
             <!-- Three-select date picker matching the Season History add
                  form. Unlike that one, Upcoming has no year-tab context,
                  so we surface a Year select here populated from
-                 UserScores.SEASONS + next year. populateUpcomingDateSelects() wires
+                 the seasons on file + next year. populateUpcomingDateSelects() wires
                  the month/year → day dependency at boot (leap-year math
                  delegated to UserScores.daysInMonth — single source). -->
             <div class="date-md">
@@ -2374,8 +2355,8 @@ body.is-owner #analytics-section.is-empty { display: block; }
         <fieldset class="scoring-group">
           <legend>Drip Golf Tour member?</legend>
           <p class="theme-modal-help">
-            Link your tour profile and your tournament history, your season
-            graph and your resume's scoring stats fill in from your official
+            Link your tour profile and your tournament history, your event
+            graphs and your resume's scoring stats fill in from your official
             Drip Golf tournaments, updating after every event.
           </p>
           <div id="scoring-tour-suggest" class="scoring-suggest"></div>
@@ -2472,19 +2453,28 @@ const PORTFOLIO_DATA = {
   // ⚠️ The PW_KEY must match the one used in OwnerGate (kept duplicated to
   // avoid a cross-module dependency between two IIFEs that load in order).
   const PW_KEY  = "ltselzer_owner_pw";
-  // Every season the page has, oldest first: 2024 (the first one on file)
-  // through this calendar year, so a new season appears every January 1.
+  // A Drip Golf season runs September to August. Its id is the year it
+  // starts in ("2026" = Sept 2026 - Aug 2027); seasonLabel() is what people
+  // see. Tournaments keep their real dates and are sorted into seasons here.
+  const FIRST_MONTH = 9;
+  const seasonStart = (d) => (d.getMonth() + 1 >= FIRST_MONTH ? d.getFullYear() : d.getFullYear() - 1);
+  const seasonLabel = (id) => id + "-" + String((+id + 1) % 100).padStart(2, "0");
+  // The calendar year a month of that season falls in.
+  const seasonYear = (id, month) => (month >= FIRST_MONTH ? +id : +id + 1);
+
+  // Every season the page has, oldest first: 2023-24 (the first one on file)
+  // through the current one, so a new season appears every September 1.
   // Single source of truth; everything else reads window.UserScores.SEASONS.
-  const FIRST_SEASON = 2024;
+  const FIRST_SEASON = 2023;
   const SEASONS = [];
-  for (let y = FIRST_SEASON; y <= Math.max(FIRST_SEASON, new Date().getFullYear()); y++) SEASONS.push(String(y));
+  for (let y = FIRST_SEASON; y <= Math.max(FIRST_SEASON, seasonStart(new Date())); y++) SEASONS.push(String(y));
   const API     = "/api/tournaments";
 
   // ---------- In-memory cache ----------
   // Populated by init() via fetch, kept in sync by add/delete.
   // Render functions read this synchronously so app.js doesn't have to
   // become async-aware. Single source of truth on the client.
-  let cache = Object.fromEntries(SEASONS.map((y) => [y, []]));
+  let cache = [];
 
   function getOwnerPassword() {
     return sessionStorage.getItem(PW_KEY) || "";
@@ -2494,35 +2484,27 @@ const PORTFOLIO_DATA = {
     return { "X-Owner-Password": getOwnerPassword() };
   }
 
-  function inferYear(dateStr) {
-    const m = (dateStr || "").match(/(\d{4})/);
-    return m ? m[1] : SEASONS[SEASONS.length - 1];
-  }
-
-  // Bucket the flat server list into per-year arrays and refresh the cache.
   async function fetchAll() {
-    const fresh = Object.fromEntries(SEASONS.map((y) => [y, []]));
+    let fresh = [];
     try {
       const res = await fetch(API, { cache: "no-store" });
       if (!res.ok) throw new Error("HTTP " + res.status);
       const body = await res.json();
       const list = Array.isArray(body.tournaments) ? body.tournaments : [];
-      for (const t of list) {
-        const year = t.year || inferYear(t.date);
-        if (!fresh[year]) fresh[year] = [];
-        fresh[year].push({ ...t, _userAdded: true });
-      }
+      fresh = list.map((t) => ({ ...t, _userAdded: true }));
     } catch (err) {
       console.warn("UserScores: couldn't load tournaments from API:", err);
     }
     cache = fresh;
   }
 
-  function loadSeason(year) {
-    return (cache[year] || []).slice();
+  function loadAll() {
+    return cache.slice();
   }
 
-  async function addTournament(year, tournament) {
+  async function addTournament(tournament) {
+    // Stored by calendar year, like every other tournament on file.
+    const year = tournament.date.split("/")[2];
     const res = await fetch(API, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...ownerHeaders() },
@@ -2539,11 +2521,10 @@ const PORTFOLIO_DATA = {
     }
     const body  = await res.json();
     const saved = { ...body.tournament, _userAdded: true };
-    cache[year] = cache[year] || [];
-    cache[year].unshift(saved);
+    cache.unshift(saved);
   }
 
-  async function deleteTournament(year, id) {
+  async function deleteTournament(id) {
     const res = await fetch(`${API}?id=${encodeURIComponent(id)}`, {
       method: "DELETE",
       headers: ownerHeaders(),
@@ -2556,11 +2537,15 @@ const PORTFOLIO_DATA = {
       const errBody = await res.json().catch(() => ({}));
       throw new Error(errBody.error || ("Delete failed (HTTP " + res.status + ")"));
     }
-    cache[year] = (cache[year] || []).filter((t) => t._id !== id);
+    cache = cache.filter((t) => t._id !== id);
   }
 
   // ---------- Form template (built once, cloned per season) ----------
-  function controlsHTML() {
+  function controlsHTML(season) {
+    const months = ["January", "February", "March", "April", "May", "June", "July",
+      "August", "September", "October", "November", "December"];
+    const options = months.map((_, i) => ((FIRST_MONTH - 1 + i) % 12) + 1)
+      .map((m) => `<option value="${m}">${months[m - 1]} ${seasonYear(season, m)}</option>`).join("");
     return `
       <div class="user-toolbar">
         <button type="button" class="btn btn-primary" data-action="show-form">+ Add Tournament</button>
@@ -2574,28 +2559,15 @@ const PORTFOLIO_DATA = {
           </label>
           <label>
             <span>Date *</span>
-            <!-- Month + Day selects only. The YEAR is owned by the
-                 active .year-btn tab — surfacing a year input here would
-                 (a) duplicate state and (b) let the user pick a year
-                 that doesn't match the tab they're under. The day list
-                 is repopulated whenever month changes (and tracks leap
-                 years from the tab's year). collectFormData() assembles
-                 M/D/YYYY from these two values + the tab's year. -->
+            <!-- Month + Day selects only. The season tab owns the year:
+                 each month belongs to exactly one year of the season, and
+                 says which, so a date outside the tab can't be picked. The
+                 day list is repopulated whenever month changes (and tracks
+                 leap years). collectFormData() assembles M/D/YYYY. -->
             <div class="date-md">
               <select name="month" class="date-md-select" required aria-label="Month">
                 <option value="" disabled selected>Month</option>
-                <option value="1">January</option>
-                <option value="2">February</option>
-                <option value="3">March</option>
-                <option value="4">April</option>
-                <option value="5">May</option>
-                <option value="6">June</option>
-                <option value="7">July</option>
-                <option value="8">August</option>
-                <option value="9">September</option>
-                <option value="10">October</option>
-                <option value="11">November</option>
-                <option value="12">December</option>
+                ${options}
               </select>
               <select name="day" class="date-md-select" required aria-label="Day" disabled>
                 <option value="" disabled selected>Day</option>
@@ -2650,19 +2622,19 @@ const PORTFOLIO_DATA = {
     const root = document.querySelector(`.user-controls[data-year="${year}"]`);
     if (!root) return;
 
-    root.innerHTML = controlsHTML();
+    root.innerHTML = controlsHTML(year);
     const form = root.querySelector(".user-form");
     const roundRows = root.querySelector(".round-rows");
 
     // Month → Day dependent dropdown. Day count is computed from the
-    // selected month + the tab's year (so Feb 29 only appears in leap
-    // years). Repopulating on every month change is cheap and keeps the
+    // selected month + its year in the tab's season (so Feb 29 only
+    // appears in leap years). Repopulating on every month change is cheap and keeps the
     // day options always-valid by construction (single source of truth =
     // the current month/year, no stale invalid options ever).
     const monthSelect = form.querySelector('select[name="month"]');
     const daySelect   = form.querySelector('select[name="day"]');
     if (monthSelect && daySelect) {
-      monthSelect.addEventListener("change", () => populateDayOptions(daySelect, +monthSelect.value, +year));
+      monthSelect.addEventListener("change", () => populateDayOptions(daySelect, +monthSelect.value, seasonYear(year, +monthSelect.value)));
     }
 
     // Hide the "+ Add Tournament" toolbar while the form is open so it
@@ -2714,7 +2686,7 @@ const PORTFOLIO_DATA = {
       const originalText    = submitBtn.textContent;
       submitBtn.textContent = "Saving…";
       try {
-        await addTournament(year, tournament);
+        await addTournament(tournament);
         hideForm();
         onChange(year);
       } catch (err) {
@@ -2760,14 +2732,14 @@ const PORTFOLIO_DATA = {
   }
 
   // Assemble M/D/YYYY from the form's month + day selects + the active
-  // year tab. Returns "" if either is missing — the form's `required`
+  // season tab. Returns "" if either is missing — the form's `required`
   // attribute on the selects gates submit, so we should never get an
   // empty here in practice, but be defensive.
   function collectDate(form, year) {
     const month = (form.querySelector('select[name="month"]') || {}).value;
     const day   = (form.querySelector('select[name="day"]')   || {}).value;
     if (!month || !day) return "";
-    return `${+month}/${+day}/${year}`;
+    return `${+month}/${+day}/${seasonYear(year, +month)}`;
   }
 
   function collectFormData(form, year) {
@@ -2798,12 +2770,14 @@ const PORTFOLIO_DATA = {
   // so callers can fire-and-forget if they don't want to handle promises.
   window.UserScores = {
     SEASONS,
-    loadSeason,
+    seasonStart,
+    seasonLabel,
+    loadAll,
     // Exposed so the Upcoming form's three-select date picker can reuse
     // the same leap-year-aware day count — one rule, two consumers.
     daysInMonth,
-    async deleteTournament(year, id) {
-      try { await deleteTournament(year, id); }
+    async deleteTournament(id) {
+      try { await deleteTournament(id); }
       catch (err) { alert("Couldn't delete:\n" + err.message); throw err; }
     },
     async init(onChange) {
@@ -2854,6 +2828,7 @@ const PORTFOLIO_DATA = {
   // Season IDs we know about. Set as soon as the UserScores script above
   // runs, so it is safe to read before UserScores.init() has fetched anything.
   const HERO_SEASONS = window.UserScores.SEASONS;
+  const { seasonStart, seasonLabel } = window.UserScores;
 
   // Pull round scores out of a tournament's rounds[]. Score strings look
   // like "77 (+5)" — we only need the leading integer for averaging.
@@ -2868,21 +2843,12 @@ const PORTFOLIO_DATA = {
 
   // Every event across every season, newest → oldest, merged with any
   // owner-added tournaments. Reuses getMergedTournaments so the hero and
-  // Season History tab always agree on what "counts" (single source of
-  // truth). If getMergedTournaments isn't defined yet (first paint before
-  // it's declared later in the IIFE), we fall back to the scraped seasons.
+  // Season History tab always agree on what "counts" (single source of truth).
   function getAllEventsNewestFirst() {
-    const all = [];
-    HERO_SEASONS.forEach((year) => {
-      const bucket = (typeof getMergedTournaments === "function")
-        ? getMergedTournaments(year)
-        : (PORTFOLIO_DATA.seasons[year] || []).slice();
-      bucket.forEach((t) => all.push(t));
-    });
-    // getMergedTournaments sorts per-season; a merged multi-season list
-    // needs its own pass. parseTournamentDate is defined later in the
-    // IIFE (hoisted at call time), so this is safe.
-    return all.sort((a, b) => parseTournamentDate(b.date) - parseTournamentDate(a.date));
+    // getMergedTournaments sorts per season; a merged multi-season list
+    // needs its own pass.
+    return HERO_SEASONS.flatMap(getMergedTournaments)
+      .sort((a, b) => parseTournamentDate(b.date) - parseTournamentDate(a.date));
   }
 
   // "Everything from Drip Golf but the tournaments that are added should
@@ -2970,43 +2936,68 @@ const PORTFOLIO_DATA = {
   // internals. Same pattern as window.rerenderSeason.
   window.rerenderHero = () => renderHero(PORTFOLIO_DATA);
 
-  // ---------- Season analytics (chart + tiles + results) ----------
-  // An SVG line chart of the per-event round average for every event of the
-  // current season, plus headline tiles and the results board. Hidden when
-  // there is no round data at all: cleaner than showing an empty box.
+  // ---------- Analytics panels (chart + tiles + results) ----------
+  // Two of them: Personal Bio's last 5 events and Golf Bio's current season.
+  // Each is an SVG line chart of the per-event round average, plus headline
+  // tiles and a results board, and is hidden when there is nothing to plot.
 
-  // The current season is this calendar year, the same way Season History
-  // files tournaments. Until its first scored event, the latest season that
-  // has one is shown instead, so the graph does not go blank every January.
+  // One template, two panels. Built here rather than at boot so it exists
+  // before hero-pop.js (deferred) looks for the charts.
+  // The board is a real leaderboard: the same events as the chart, read as
+  // rows. The chart shows the shape of the trend; this shows the receipts.
+  document.querySelectorAll(".hero-analytics").forEach((panel) => {
+    panel.innerHTML = `
+      <div class="hero-analytics-body">
+        <div class="hero-chart-wrap">
+          <svg class="hero-chart" viewBox="0 0 600 200" role="img"></svg>
+        </div>
+        <ul class="hero-analytics-tiles"></ul>
+      </div>
+      <div class="hero-form" hidden>
+        <div class="fs-head" aria-hidden="true">
+          <span>Pos</span><span>Event</span><span>Rounds</span>
+          <span style="text-align:right">Total</span>
+          <span style="text-align:center">To Par</span>
+        </div>
+        <ol class="fs-rows"></ol>
+      </div>`;
+  });
+
+  const scoredEvents = (tournaments) => tournaments
+    .map((t) => ({ tournament: t, roundScores: extractRoundScores(t) }))
+    .filter((e) => e.roundScores.length > 0);
+
+  // The current Drip Golf season (September to August). Until its first
+  // scored event, the latest season that has one is shown instead, so the
+  // graph does not go blank every September.
   function currentSeason() {
-    const now = new Date().getFullYear();
+    const now = seasonStart(new Date());
     for (let y = now; y >= +HERO_SEASONS[0]; y--) {
-      const events = getMergedTournaments(String(y))
-        .map((t) => ({ tournament: t, roundScores: extractRoundScores(t) }))
-        .filter((e) => e.roundScores.length > 0);
-      if (events.length) return { year: String(y), newestFirst: events };
+      const events = scoredEvents(getMergedTournaments(y));
+      if (events.length) return { label: seasonLabel(y), newestFirst: events };
     }
-    return { year: String(now), newestFirst: [] };
+    return { label: seasonLabel(now), newestFirst: [] };
   }
 
-  let chartPoints = [];   // what the chart shows now, kept for redraws
-  let chartWidth = 0;     // the width it was last drawn at
-  let chartResize = null;
-
   function renderHeroAnalytics() {
-    const panel = document.getElementById("hero-analytics");
-    const svg   = document.getElementById("hero-chart");
-    const tiles = document.getElementById("hero-analytics-tiles");
-    if (!panel || !svg || !tiles) return;
+    const last5 = scoredEvents(getAllEventsNewestFirst()).slice(0, 5);
+    $("#last5-section").classList.toggle("is-empty", !last5.length);
+    renderAnalyticsPanel($("#last5-analytics"), last5,
+      "Last 5 Avg", "Line chart of scoring average across the last 5 events");
 
-    const { year, newestFirst } = currentSeason();
-    const isEmpty = !newestFirst.length;
-    panel.hidden = isEmpty;
-    $("#analytics-title").textContent = `${year} Season`;
-    $("#analytics-section").classList.toggle("is-empty", isEmpty);
-    $("#analytics-empty").hidden = !isEmpty;
-    if (isEmpty) return;
-    svg.setAttribute("aria-label", `Line chart of scoring average at each ${year} event`);
+    const { label, newestFirst } = currentSeason();
+    $("#analytics-title").textContent = `${label} Season`;
+    $("#analytics-section").classList.toggle("is-empty", !newestFirst.length);
+    $("#analytics-empty").hidden = newestFirst.length > 0;
+    renderAnalyticsPanel($("#season-analytics"), newestFirst,
+      "Season Avg", `Line chart of scoring average at each ${label} event`);
+  }
+
+  function renderAnalyticsPanel(panel, newestFirst, avgLabel, description) {
+    panel.hidden = !newestFirst.length;
+    if (panel.hidden) return;
+    const svg = panel.querySelector(".hero-chart");
+    svg.setAttribute("aria-label", description);
 
     // Reversed so the chart reads left-to-right = oldest-to-newest — the
     // way any human expects a time series to flow.
@@ -3017,32 +3008,26 @@ const PORTFOLIO_DATA = {
       value: +(e.roundScores.reduce((a, b) => a + b, 0) / e.roundScores.length).toFixed(2),
     }));
 
-    chartPoints = points;
     drawHeroChart(svg, points);
-    renderHeroTiles(tiles, points, events);
-    renderRecentForm(events);
+    renderHeroTiles(panel.querySelector(".hero-analytics-tiles"), points, events, avgLabel);
+    renderRecentForm(panel.querySelector(".hero-form"), events);
 
-    // The Golf Bio tab is display:none at first render, so the real width is
-    // only known once it opens. Redraw then, and whenever the width changes.
-    if (!chartResize && window.ResizeObserver) {
-      chartResize = new ResizeObserver(() => {
+    // A chart in a closed tab has no width until the tab opens. Redraw then,
+    // and whenever the width changes.
+    if (!svg._resize && window.ResizeObserver) {
+      svg._resize = new ResizeObserver(() => {
         const w = Math.round(svg.getBoundingClientRect().width);
-        if (w && w !== chartWidth) drawHeroChart(svg, chartPoints);
+        if (w && w !== svg._width) drawHeroChart(svg, svg._points);
       });
-      chartResize.observe(svg);
+      svg._resize.observe(svg);
     }
   }
 
   // ---------- Recent Form leaderboard ----------
-  // Same events as the chart, rendered as leaderboard rows. Takes the
-  // events array straight from renderHeroAnalytics so there is exactly
-  // one definition of "this season's events" on this panel.
+  // Same events as the panel's chart, rendered as leaderboard rows.
   // Newest-first here (a leaderboard reads top-down, not left-to-right).
-  function renderRecentForm(events) {
-    const panel = document.getElementById("hero-form");
-    const rows  = document.getElementById("hero-form-rows");
-    if (!panel || !rows) return;
-
+  function renderRecentForm(panel, events) {
+    const rows = panel.querySelector(".fs-rows");
     rows.innerHTML = "";
     panel.hidden = !events.length;
     if (!events.length) return;
@@ -3088,8 +3073,11 @@ const PORTFOLIO_DATA = {
   // thinned out by how much room each point actually has.
   function drawHeroChart(svg, points) {
     const box = svg.getBoundingClientRect();
-    chartWidth = Math.round(box.width);
-    const W = chartWidth || 600, H = Math.round(box.height) || 200;
+    svg._points = points;                     // kept for redraws
+    svg._width = Math.round(box.width);       // the width it was drawn at
+    const W = svg._width || 600, H = Math.round(box.height) || 200;
+    // Ids are page-wide, so each chart needs its own gradients and glow.
+    const uid = svg.closest(".hero-analytics").id;
     svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
 
     const pad = { top: 26, right: 12, bottom: 30, left: 30 };
@@ -3108,16 +3096,16 @@ const PORTFOLIO_DATA = {
     // line has a zero-height box, and box-relative paint would vanish.
     svg.innerHTML = `
       <defs>
-        <linearGradient id="hc-stroke" gradientUnits="userSpaceOnUse" x1="${x0}" y1="0" x2="${x1}" y2="0">
+        <linearGradient id="${uid}-stroke" gradientUnits="userSpaceOnUse" x1="${x0}" y1="0" x2="${x1}" y2="0">
           <stop offset="0%"   style="stop-color:var(--green-soft)" />
           <stop offset="55%"  style="stop-color:var(--sand)" />
           <stop offset="100%" style="stop-color:#ffffff" />
         </linearGradient>
-        <linearGradient id="hc-fill" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id="${uid}-fill" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%"   style="stop-color:var(--sand);stop-opacity:0.45" />
           <stop offset="100%" style="stop-color:var(--sand);stop-opacity:0" />
         </linearGradient>
-        <filter id="hc-glow" filterUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}">
+        <filter id="${uid}-glow" filterUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}">
           <feGaussianBlur stdDeviation="3.2" result="blur" />
           <feMerge>
             <feMergeNode in="blur" />
@@ -3168,13 +3156,17 @@ const PORTFOLIO_DATA = {
     // drawn to the trend, not the individual pixels.
     if (n > 1) {
       const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"} ${xFor(i)} ${yFor(p.value)}`).join(" ");
-      svg.appendChild(make("path", { class: "hc-area",
-        d: `${linePath} L ${x1} ${H - pad.bottom} L ${x0} ${H - pad.bottom} Z` }));
+      const area = make("path", { class: "hc-area",
+        d: `${linePath} L ${x1} ${H - pad.bottom} L ${x0} ${H - pad.bottom} Z` });
+      area.style.fill = `url(#${uid}-fill)`;
+      svg.appendChild(area);
 
       // Path length normalised to 1 so the draw-in dash animation works for
       // any number of points, without measuring the path.
       const line = make("path", { class: "hc-line", d: linePath, pathLength: "1" });
       line.style.setProperty("--hc-len", 1);
+      line.style.stroke = `url(#${uid}-stroke)`;
+      line.style.filter = `url(#${uid}-glow)`;
       svg.appendChild(line);
     }
 
@@ -3198,7 +3190,7 @@ const PORTFOLIO_DATA = {
 
     // X-axis: event names when they fit, else dates, else every few dates
     // (counted back from the latest event, which is always labelled).
-    const useNames = step >= 92;
+    const useNames = step >= 76;
     const every = useNames ? 1 : Math.max(1, Math.ceil(34 / step));
     const clip = (s) => (s.length > 14 ? s.slice(0, 12).trim() + "…" : s);
     const r = step < 20 ? 3 : 4.5;
@@ -3235,22 +3227,22 @@ const PORTFOLIO_DATA = {
     });
   }
 
-  // Right-hand tiles — headline numbers derived from the same season.
+  // Right-hand tiles — headline numbers derived from the same events.
   // Kept in sync with the chart by receiving the same `points`
   // array (single source of truth for the render).
-  function renderHeroTiles(host, points, events) {
+  function renderHeroTiles(host, points, events, avgLabel) {
     host.innerHTML = "";
 
-    // Season average over every round, the same number Season History
-    // shows as "Round avg", so the two tabs never disagree.
+    // Average over every round, the same way Season History works out its
+    // "Round avg", so a season's two numbers never disagree.
     const allRoundScores = events.flatMap((e) => e.roundScores);
-    const seasonAvg = allRoundScores.reduce((s, v) => s + v, 0) / allRoundScores.length;
+    const roundAvg = allRoundScores.reduce((s, v) => s + v, 0) / allRoundScores.length;
 
-    // Best single round of the season — more informative than the
+    // Best single round of these events — more informative than the
     // per-event average when a player has one hot round.
     const bestRound = Math.min(...allRoundScores);
 
-    // Trend = latest event vs first event of the season. Lower = better
+    // Trend = latest event vs first event shown. Lower = better
     // (golf!), so we flip the sign for the arrow's meaning.
     const first = points[0].value;
     const last  = points[points.length - 1].value;
@@ -3261,7 +3253,7 @@ const PORTFOLIO_DATA = {
     else if (delta > 0.05) { trendClass = "trend-up"; trendGlyph = "▲"; }
 
     const tileSpecs = [
-      { label: "Season Avg",   value: seasonAvg.toFixed(2), cls: "" },
+      { label: avgLabel,       value: roundAvg.toFixed(2), cls: "" },
       { label: "Best Round",   value: String(bestRound), cls: "" },
       { label: "Trend",        value: `${trendGlyph} ${Math.abs(delta).toFixed(2)}`, cls: trendClass },
     ];
@@ -3562,20 +3554,40 @@ const PORTFOLIO_DATA = {
     return Number.isNaN(ts) ? new Date(0) : new Date(ts);
   }
 
-  // Merge scraped + user tournaments, newest first.
+  // The season a tournament belongs to, from its date. One with no usable
+  // date goes by the calendar year it is filed under: most of a calendar
+  // year (January to August) is in the season that started the year before.
+  function seasonOf(t, filedYear) {
+    const d = parseTournamentDate(t.date);
+    if (d.getTime()) return String(seasonStart(d));
+    return filedYear ? String(+filedYear - 1) : HERO_SEASONS[HERO_SEASONS.length - 1];
+  }
+
+  // Every tournament from every source, each with its season.
   // A linked Drip Golf Tour profile's tournaments (PORTFOLIO_DATA.tourSeasons)
   // join in too, except any on a date the page already has one for, so an
   // event the owner typed in before linking is not shown twice.
-  function getMergedTournaments(year) {
-    const scraped = (PORTFOLIO_DATA.seasons[year] || []).slice();
-    const user = (window.UserScores ? window.UserScores.loadSeason(year) : []).slice();
-    const day = (t) => parseTournamentDate(t.date).toDateString();
+  function allTournaments() {
+    const filed = (byYear) => Object.entries(byYear || {})
+      .flatMap(([year, list]) => (list || []).map((t) => ({ t, season: seasonOf(t, year) })));
+    const user = (window.UserScores ? window.UserScores.loadAll() : [])
+      .map((t) => ({ t, season: seasonOf(t, t.year) }));
+    const scraped = filed(PORTFOLIO_DATA.seasons);
+    const day = ({ t }) => parseTournamentDate(t.date).toDateString();
     const taken = new Set([...scraped, ...user].map(day));
-    const tour = ((PORTFOLIO_DATA.tourSeasons || {})[year] || []).filter((t) => !taken.has(day(t)));
-    return [...user, ...scraped, ...tour].sort(
-      (a, b) => parseTournamentDate(b.date) - parseTournamentDate(a.date)
-    );
+    const tour = filed(PORTFOLIO_DATA.tourSeasons).filter((e) => !taken.has(day(e)));
+    return [...user, ...scraped, ...tour];
   }
+
+  // One season's tournaments, newest first.
+  function getMergedTournaments(season) {
+    return allTournaments().filter((e) => e.season === String(season)).map((e) => e.t)
+      .sort((a, b) => parseTournamentDate(b.date) - parseTournamentDate(a.date));
+  }
+
+  // Every season with a tab or a tournament, newest first (for the resume).
+  window.getSeasons = () => [...new Set([...HERO_SEASONS, ...allTournaments().map((e) => e.season)])]
+    .sort((a, b) => Number(b) - Number(a));
 
   // Exposed so user-scores.js can re-render after edits.
   window.rerenderSeason = function (year) {
@@ -3690,7 +3702,7 @@ const PORTFOLIO_DATA = {
         const originalLabel = del.textContent;
         del.textContent = "Deleting…";
         try {
-          await window.UserScores.deleteTournament(year, t._id);
+          await window.UserScores.deleteTournament(t._id);
           window.rerenderSeason(year);
         } catch (err) {
           alert("Couldn't delete:\n" + err.message);
@@ -3738,10 +3750,10 @@ const PORTFOLIO_DATA = {
   // Season History's tabs and panels, one per season. The oldest is open first.
   function buildYearPanels() {
     $("#year-selector").innerHTML = HERO_SEASONS.map((y, i) => `
-      <button class="year-btn${i ? "" : " active"}" type="button" role="tab" data-year="${y}" aria-selected="${!i}">${y}</button>`).join("");
+      <button class="year-btn${i ? "" : " active"}" type="button" role="tab" data-year="${y}" aria-selected="${!i}">${seasonLabel(y)}</button>`).join("");
     $("#year-panels").innerHTML = HERO_SEASONS.map((y, i) => `
       <div class="year-panel${i ? "" : " active"}" data-year-panel="${y}" role="tabpanel">
-        <h3>${y} Season</h3>
+        <h3>${seasonLabel(y)} Season</h3>
         <div class="user-controls owner-only" data-year="${y}"></div>
         <div class="season-summary" id="summary-${y}"></div>
         <div class="tournaments" id="tournaments-${y}"></div>
@@ -6137,7 +6149,7 @@ const PORTFOLIO_DATA = {
     // being half-painted onto the page edge.
     const MAX_RECENT       = 7;
 
-    // Up to N best finishes from each season, formatted "YYYY: Place — Name".
+    // Up to N best finishes from each season, formatted "2025-26: Place — Name".
     // Sorted by place ASC (best first) within each season, then concatenated
     // newest-season-first so the most recent highlights lead.
     // Turn a raw place string ("8", "T5", "21") into resume-friendly
@@ -6178,7 +6190,7 @@ const PORTFOLIO_DATA = {
           .sort((a, b) => a.n - b.n)
           .slice(0, PER_SEASON)
           .map(({ t }) => {
-            // "2024:  8th Place at DGT Tarheel Junior Open  (235)"
+            // "2023-24:  8th Place at DGT Tarheel Junior Open  (235)"
             // reads as a proper resume line instead of the old
             // "2024:  8 — DGT Tarheel Junior Open  (235)" which
             // looked like a half-translated CSV cell.
@@ -6267,16 +6279,9 @@ const PORTFOLIO_DATA = {
     function collectData() {
       const p = (PORTFOLIO_DATA && PORTFOLIO_DATA.personal) || {};
       const g = (PORTFOLIO_DATA && PORTFOLIO_DATA.golf)     || {};
-      const years = [...new Set([
-        ...window.UserScores.SEASONS,
-        ...Object.keys(PORTFOLIO_DATA.seasons || {}),
-        ...Object.keys(PORTFOLIO_DATA.tourSeasons || {}),
-      ])].sort((a, b) => Number(b) - Number(a));
-      const seasons = years.map((year) => ({
-        year,
-        tournaments: typeof window.getMergedTournaments === "function"
-          ? window.getMergedTournaments(year)
-          : (PORTFOLIO_DATA.seasons[year] || []).slice(),
+      const seasons = window.getSeasons().map((season) => ({
+        year: window.UserScores.seasonLabel(season),
+        tournaments: window.getMergedTournaments(season),
       })).filter((s) => s.tournaments.length);
       const tourScoring = g.tourScoring && Object.keys(g.tourScoring).length ? g.tourScoring : null;
       return {
@@ -6623,8 +6628,8 @@ const PORTFOLIO_DATA = {
     }
 
     // Populate the Upcoming form's Month/Day/Year selects and wire the
-    // month/year → day dependency. Year options are UserScores.SEASONS
-    // (single source of truth) plus next year, which upcoming events can be in. The Season History
+    // month/year → day dependency. Year options are the calendar years of
+    // UserScores.SEASONS plus next year, which upcoming events can be in. The Season History
     // forms own their own per-year picker inside wireSeason() — two
     // scopes, two helpers, single responsibility each.
     populateUpcomingDateSelects();
@@ -6642,10 +6647,9 @@ const PORTFOLIO_DATA = {
     const yearSelect  = form.querySelector('select[name="year"]');
     if (!monthSelect || !daySelect || !yearSelect) return;
 
-    const seasons = (window.UserScores && window.UserScores.SEASONS) || [];
-    const years = seasons.map(Number).filter((n) => Number.isFinite(n)).sort((a, b) => a - b);
+    const years = [];
+    for (let y = +window.UserScores.SEASONS[0] + 1; y <= new Date().getFullYear() + 1; y++) years.push(y);
     if (years.length) {
-      years.push(years[years.length - 1] + 1);
       yearSelect.innerHTML = [
         '<option value="" disabled selected>Year</option>',
         ...years.map((y) => `<option value="${y}">${y}</option>`),

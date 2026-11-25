@@ -10,7 +10,7 @@
    Three tiny modules, one job each:
      Reveal   — staggered entrance for [data-reveal] nodes
      CountUp  — odometer roll on hero stat numbers
-     ChartTip — hover readout for the season chart
+     ChartTip — hover readout for the event charts
    ====================================================================== */
 (function () {
   "use strict";
@@ -121,7 +121,7 @@
   };
 
   /* ================================================================
-     ChartTip — hover readout over the season chart.
+     ChartTip — hover readout over an event chart.
 
      Reads its data straight off the <g class="hc-pt-g"> nodes that
      drawHeroChart() emits (data-label / data-value / data-vx / data-vy).
@@ -196,9 +196,9 @@
     var stats = hero.querySelector(".quick-stats");
     if (stats) CountUp.init(stats);
 
-    var wrap = document.querySelector(".hero-chart-wrap");
-    var svg = document.getElementById("hero-chart");
-    if (wrap && svg) ChartTip.init(wrap, svg);
+    document.querySelectorAll(".hero-chart-wrap").forEach(function (wrap) {
+      ChartTip.init(wrap, wrap.querySelector(".hero-chart"));
+    });
   }
 
   if (document.readyState === "loading") {

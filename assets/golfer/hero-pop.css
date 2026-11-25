@@ -13,12 +13,12 @@
      3. Identity        — avatar, name, meta chips
      4. Stat cards      — the old .quick-stats, promoted to real cards
      5. Analytics panel — chart + tiles + recent-form leaderboard
-                          (shown in the Golf Bio tab)
+                          (shown in the Personal and Golf Bio tabs)
      6. Motion / a11y   — reveal animation + reduced-motion opt-out
    ====================================================================== */
 
 /* ---------- 1. Tokens ----------
-   .hero-analytics too: that panel lives in the Golf Bio tab, not the hero. */
+   .hero-analytics too: those panels live in the tabs, not the hero. */
 .hero,
 .hero-analytics {
   /* Derived once, consumed everywhere below. Change a token, change the
@@ -376,8 +376,7 @@
 /* SVG skin. The gradient/glow <defs> are injected by drawHeroChart(). */
 .hero-chart .hc-grid        { stroke: rgba(255, 255, 255, 0.09); stroke-dasharray: 3 5; }
 .hero-chart .hc-axis-label  { fill: var(--h-ink-faint); font-size: 9.5px; font-weight: 600; }
-.hero-chart .hc-line        { stroke: url(#hc-stroke); stroke-width: 3.25; filter: url(#hc-glow); }
-.hero-chart .hc-area        { fill: url(#hc-fill); }
+.hero-chart .hc-line        { stroke-width: 3.25; }  /* stroke, glow: set by drawHeroChart() */
 .hero-chart .hc-point       { fill: #fff; stroke: var(--sand); stroke-width: 3; }
 .hero-chart .hc-point-halo  { fill: color-mix(in srgb, var(--sand) 30%, transparent); }
 .hero-chart .hc-point-label {
