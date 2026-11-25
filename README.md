@@ -1,434 +1,256 @@
-# Drip Golf - Recruiting Page Demo
+# Drip Golf Recruiting
 
-A clickable prototype of two things:
+The web app behind [dripgolfrecruiting.com](https://dripgolfrecruiting.com).
+It helps junior golfers and their parents build a recruiting page and share it
+with college coaches as one link.
 
-1. **One golfer's recruiting page** - Luke's bio, season history and results,
-   live at <https://lukethomasselzer.com>. That is a *separate deployment* with
-   its own repo ([ProspectPageOfficial/LukeThomasSelzer.com][repo]); this app
-   links to it, previews it and **reads from it**, and never renders or edits a
-   copy of it.
-2. **College Best Fit** - a transparent 0-100 fit score against every program in
-   the database, bucketed into Likely / Target / Reach.
+One repo serves everything:
 
-This is a *personal* recruiting site, not a platform - yet. There is one
-golfer, one account, one page. **Create account** on the sign-in page demos
-onboarding a second golfer: a survey (`#/signup`) asking every Personal Bio
-question plus team and JGS rank, then a mock dashboard (`#/welcome`,
-`#/welcome/fit`) built from the answers. No account is created; the answers
-(minus the password) live in `sessionStorage` for that tab only.
-
-No build step. No `npm install`. No backend. Open it and click.
-
----
-
-## Run it
-
-It uses ES modules, so it needs a server - `file://` will not work.
-
-```
-cd dripgolf-demo
-python serve.py
-```
-
-Then open <http://127.0.0.1:8080>.
-
-`serve.py` is `http.server` with `Cache-Control: no-store` bolted on. Use it
-rather than `python -m http.server`: with no build step and no cache headers, a
-browser will happily keep serving ES modules from before your last edit, and you
-end up debugging code that is not running.
-
-**Demo login** ("See a live example" on the home page signs in with it):
-
-| Account | Password | Why it exists |
+| Part | Address | What it is |
 |---|---|---|
-| `luke@dripgolf.demo` | `dripgolf2026` | **Luke's real published stats.** Age 13, no GPA/SAT -> exercises projected, athletic-only scoring. |
+| Marketing site | `/` | Landing page, FAQ, terms, privacy |
+| Accounts | `/#/signup`, `/#/login`, `/#/my` | Sign-up survey, sign-in, password reset, dashboard, account deletion |
+| College Best Fit | `/#/my/fit` | A 0-100 fit score against 887 college golf programs |
+| Golfer pages | `/<name>`, e.g. `/ava-reed` | A golfer's public page: bio, results, rankings, swing videos, downloadable resume |
 
-Coaches never sign in at all - the public page is a different site entirely.
+Coaches and visitors never sign in. Accounts belong to a parent or guardian,
+who must confirm that at sign-up.
 
-[repo]: https://github.com/ProspectPageOfficial/LukeThomasSelzer.com
+## Status
 
-Wedged the data? Run `resetDripGolfDemo()` in the browser console.
+| Feature | State |
+|---|---|
+| Accounts, golfer pages, page editing, resume | Built |
+| College Best Fit | Built. Roster ranks are estimates, see [below](#where-the-data-comes-from) |
+| Real sign-ups | Off unless `SIGNUPS_ENABLED=true` is set in Netlify |
+| Payments | **Not built.** The checkout step is a mockup |
+| Buying a custom domain | **Not built.** The domain step is a mockup |
+| Serving a golfer on their own domain | The API supports it (`golfers.domain`); the domain itself is set up by hand |
 
-### Tests
+When sign-ups are on, the survey skips the two mockup steps and creates a real
+account. When they are off, or there is no API (as with `serve.py`), it runs as
+a demo: no account is made and the answers stay in that browser tab.
 
-```
-node tests/fit.test.mjs      # if you have Node
-```
+## Run it locally
 
-No Node on this machine, so there is also a browser runner at
-<http://127.0.0.1:8080/tests/runner.html> - **39 cases, same file, both green.**
-
-There is also a Playwright smoke test asserting that every "my page" link
-actually leaves for the real site rather than rendering a look-alike:
-
-```
-python _ref/smoke_public_link.py    # 14 checks - links leave for the real site
-python _ref/smoke_live_data.py      #  9 checks - the profile is READ, not stored
-```
-
-The first intercepts requests to `lukethomasselzer.com` instead of loading it,
-so it tests this app's linking rather than a third party's uptime. The second
-stubs `/api/personal` to prove the website really is the source of truth: rename
-Luke there and the dashboard renames too.
-
----
-
-## Where the data comes from
-
-There is no profile editor, and no stored golfer record. There used to be both,
-and they were a second copy of facts the website already owned - a copy the app
-could change but never publish, so every "save" widened the gap between what
-this app believed and what a coach would actually see.
-
-| Field | Source | How |
-|---|---|---|
-| name, hometown, class year, age, photo, bio | `/api/personal` | **fetched live** every page load |
-| 29 tournaments, 56 rounds | `PORTFOLIO_DATA` on the live page | generated by `_ref/gen_luke.py` |
-| scoring average, JGS / TUGR / Drip ranks, differential | `PORTFOLIO_DATA` | generated, never hand-typed |
-| GPA, SAT/ACT | `/api/personal` | **fetched live**; free-form strings parsed into numeric GPA + SAT-equivalent (ACT concorded). Empty for Luke, on purpose - he is 13. Publish them on the site and Academic Fit lights up automatically. |
+You need Node 22 or newer.
 
 ```
-npm run sync    # == python _ref/gen_luke.py - re-reads the LIVE site
+npm ci
+npm run pages
 ```
 
-### Does editing the website change College Best Fit?
+Open <http://localhost:8888>. This runs the app, golfer pages and API together,
+using a local file database in `.dev-data/` (git-ignored) with sign-ups on.
+Create an account through the survey to get a golfer page to work with. No
+email is sent locally: password-reset links are written to the `outbox` list in
+`.dev-data/db.json`.
 
-Partly, and it is worth knowing which half. Measured with
-`python _ref/what_propagates.py`, which edits one field at a time and reports
-what the dashboard then recommends:
+> If `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set in your
+> environment, `npm run pages` uses that **real** Supabase project instead.
 
-| Edited on the website | Reaches Best Fit? | Observed effect |
-|---|---|---|
-| name, photo, bio, height/weight | instantly | cosmetic - greeting changes, score does not |
-| hometown | instantly | none; region is a filter, not an input |
-| **class year** | **instantly** | 2031 -> 2029 moved the top fit **89 -> 62** |
-| **GPA, SAT/ACT** | **instantly** | switches Academic Fit on; free-form strings parsed into numeric GPA + SAT (ACT concorded) |
-| scoring average, JGS / TUGR / Drip ranks | **only after `npm run sync`** | these drive everything |
-| tournament results | **only after `npm run sync`** | they derive the average |
-
-Class year is the one live field with real weight: it sets how many years of
-improvement the projection is allowed to assume. Push it inside the recruiting
-window (Class of 2027) and the engine **stops projecting entirely** and scores
-today's numbers against today's rosters - the top fit drops to 3 and the panel's
-assumption line disappears. That is the intended behaviour, not a bug: juniors
-and seniors get judged on what they actually shoot.
-
-`gen_luke.py` merges **both** places tournaments live - the scraped
-`PORTFOLIO_DATA` history and the owner-added `/api/tournaments` blob - because
-the site itself renders the union of the two. Reading only the scrape missed
-four real events.
-
-**Why some of it is a snapshot rather than a live read:** `/api/personal` sends
-`Access-Control-Allow-Origin: *`, so a browser can read it. The portfolio HTML
-that carries `PORTFOLIO_DATA` sends no CORS header at all, and `/api/tournaments`
-returns four events with empty `rounds` arrays. Until the site exposes those --
-a few lines in its `netlify.toml`, or a small `/api/stats` function -- a
-regenerated snapshot is the honest ceiling, and `#/data` says so on screen.
-
-**The self-consistency check.** The site publishes `"Scoring Average": "81.12"`
-and, separately, the 29 results behind it. `lib/trend.js` recomputes the average
-from those results and a test asserts the two agree. If the site's headline
-number ever stops matching its own rounds, that surfaces as a failing test
-rather than a quietly wrong recommendation.
-
-That check found something real: the exact mean is **81.125**, and JGS
-*truncates* to 81.12 rather than rounding up to 81.13. Averaging all 55 rounds
-instead of the 8-event ranking window gives 80.65 - close enough to look right,
-wrong enough to be a different metric wearing the same name.
-
----
-
-## The problem this solves
-
-The current `LukeThomasSelzer.com` backend is **single-tenant**:
-
-```js
-// netlify/functions/auth.mjs
-const expected = process.env.OWNER_PASSWORD_HASH;
-return sha256(password) === expected;
-```
-
-```js
-// netlify/functions/personal.mjs
-const BLOB_KEY = "personal-overrides";   // <-- ONE key, for ONE golfer
-```
-
-One password shared by everyone who edits the site, and no way to tell who
-changed what. Single-*tenant* is the right shape here - it is Luke's site. Single
-*password* is not.
-
-The fix is not clever, it is just correct: **give the owner a real account, and
-key the record by their user id.** Ownership becomes a property of the *data*
-rather than a secret passed around in a group chat.
-
-| | Today | This demo |
-|---|---|---|
-| Identity | one shared password | a real owner account |
-| Data key | `"personal-overrides"` | `golfer` row keyed by `auth.uid()` |
-| Editing | anyone with the password | only the signed-in owner |
-| Public page | the whole site | a separate deployment, read-only to everyone |
-
----
-
-## Layout
+To work on the front end only, without Node or the API:
 
 ```
-index.html              entry point
-css/
-  tokens.css            brand values - the ONLY place hex codes live
-  app.css               everything else
+python serve.py          # http://127.0.0.1:8080
+```
+
+Use `serve.py` rather than `python -m http.server`. It turns caching off, so
+the browser never runs an old copy of a module you just edited. Opening the
+files directly (`file://`) does not work because the app uses ES modules.
+
+## Tests
+
+```
+npm test
+```
+
+This runs the app tests (scoring, data and views) and then the API tests, which
+include checks that one golfer's owner cannot change another golfer's page.
+GitHub Actions runs the same command on every pull request and every push to
+`main`.
+
+Without Node, start `serve.py` and open
+<http://127.0.0.1:8080/tests/runner.html> to run the scoring, data and view
+cases in the browser. It does not cover the API or the data-scraping tools.
+
+## How it is built
+
+- **Front end:** plain JavaScript ES modules, HTML and CSS. No framework and no
+  build step.
+- **API:** Netlify Functions, one file per endpoint.
+- **Accounts, database and file storage:** Supabase.
+- **Hosting:** Netlify publishes the repo root. `netlify.toml` sets cache and
+  security headers and 404s files that should not be public.
+
+```
+index.html              the app's entry point
+golfer.html             template for every golfer page
+css/                    tokens.css (brand colors), app.css (everything else)
+assets/golfer/          golfer page scripts and styles
 js/
-  config.js             demo constants (future env vars)
-  main.js               hash router + auth guard
-  auth/store.js         auth adapter, shaped exactly like Supabase Auth
-  data/
-    colleges.js         program database: 27 hand-set rows + the generated list
-    colleges-ncaa.js    GENERATED - every NCAA D1-D3 golf program (tools/gen-colleges.mjs)
-    dripgolf.js         sign-up name lookup against the Drip Golf Tour standings
-    dripgolf-history.js GENERATED - every past tour season's golfers (tools/gen-dripgolf-history.mjs)
-    golfer.js           the golfer, assembled from the site. No writes.
-    live.js             reads lukethomasselzer.com/api/personal
-    luke-season.js      GENERATED - Luke's 29 real tournaments
-  lib/
-    fit.js              THE SCORING ENGINE - pure, no DOM, no storage
-    trend.js            measures a golfer's real season-over-season trend
-    components.js       dial, meter, tier pills, empty state
-    thumbs.js           monogram tiles + the live preview of the real site
-    dom.js              auto-escaping html`` template + safe external links
-    shell.js            nav / footer chrome
-  views/                landing, auth, dashboard, fit, provenance
-tests/
-  cases.js              fit-engine cases, runner-agnostic
-  fit.test.mjs          Node runner
-  runner.html           browser runner
-_ref/                   scratch: cloned repos + throwaway scripts, not shipped
+  main.js               hash router and sign-in guard
+  config.js             app name, example page, demo account
+  auth/store.js         demo account sign-in only (browser-based)
+  data/                 college, coach, roster and tour data; account reads
+  lib/fit.js            the scoring engine: pure functions, no DOM or network
+  lib/                  shared UI and helpers
+  views/                one file per screen
+netlify/functions/      the API
+  _lib/tenant.mjs       which golfer a request is for, and is the caller the owner
+  _lib/db.mjs           data layer: Supabase in production, local file in dev
+supabase/schema.sql     database schema, access rules and storage buckets
+tools/                  data generators, golfer import, local server
+tests/                  app tests; tests/pages/ holds the API tests
+mockup.html             internal design study, not served
 ```
 
----
+### Golfer pages
 
-## How the Fit Score works
+Netlify sends any single-segment address, such as `/ava-reed`, to
+`golfer.html`. `assets/golfer/tenant.js` works out which golfer it is, adds an
+`X-Golfer` header (and the owner's token, when signed in) to every `/api/` call,
+and fills the page from `/api/golfer`.
 
-Everything lives in `js/lib/fit.js`, in named constants at the top of the file.
+`X-Golfer` only picks which page is being looked at. Every write also checks
+that the signed-in user owns that golfer.
+
+### API
+
+| Endpoint | Purpose |
+|---|---|
+| `/api/signup` | Create an account and its golfer page; says whether sign-ups are open |
+| `/api/login` | Sign in to one golfer's page |
+| `/api/my-page` | Sign in from the homepage and find the account's page |
+| `/api/password-reset`, `/api/password-update` | Forgot password |
+| `/api/delete-account` | Permanently delete an account, its pages and uploads |
+| `/api/golfer` | Public page data |
+| `/api/personal` | Personal bio fields |
+| `/api/golf-stats` | Rankings |
+| `/api/golf-scoring` | Scoring stats, typed in or linked to a Drip Golf Tour profile |
+| `/api/tournaments`, `/api/upcoming-tournaments` | Results and schedule |
+| `/api/swing-videos`, `/api/featured-swing` | Swing videos |
+| `/api/resume` | The owner's edits to the generated resume |
+| `/api/theme` | Page colors |
+| `/api/drip-golf` | Drip Golf Tour standings and player profiles |
+
+### Database and security
+
+Two tables: `golfers` (one row per page) and `golfer_docs` (one JSON document
+per golfer per key). Both have Row Level Security on with **no policies**, so
+the public key cannot read or write them. All access goes through the API,
+which uses the service role key and checks ownership.
+
+Photos and swing videos upload straight from the browser to two public Supabase
+Storage buckets. Anyone can view them, but owners can only upload into their
+own golfer's folder.
+
+The example account in `js/config.js` is a browser-only demo behind "See a live
+example". It is not a real account and protects nothing. Do not reuse
+`js/auth/store.js` for real sign-in.
+
+## Deploying
+
+1. Create a Supabase project and run `supabase/schema.sql` in its SQL Editor.
+   It is safe to re-run.
+2. In Supabase Auth, allow the site's address as a redirect URL. Confirmation
+   and password-reset links return to the homepage.
+3. Connect the repo to Netlify and set these environment variables:
+
+| Variable | Required | Purpose |
+|---|---|---|
+| `SUPABASE_URL` | Yes | Supabase project address |
+| `SUPABASE_PUBLISHABLE_KEY` | Yes | Public key the page uses for uploads |
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes | **Secret.** Server-side only, bypasses Row Level Security |
+| `SIGNUPS_ENABLED` | No | `true` lets the survey create real accounts |
+| `UPLOAD_MAX_MB` | No | Upload size limit, default 50. Match it to the Supabase plan |
+
+To move an existing single-golfer site onto this one, use
+`npm run import-golfer`. The options are at the top of
+`tools/import-golfer.mjs`.
+
+## How the fit score works
+
+Everything is in `js/lib/fit.js`, with the weights and cutoffs as named
+constants at the top.
 
 ```
-Athletic Fit  = your JGS national rank
-              /  the AVERAGE senior-year JGS rank of the current roster
-              -> mapped onto 100..0 across the ratio band [0.5 .. 3.0]
+Athletic Fit = the golfer's JGS national rank
+             / the average senior-year JGS rank of the current roster
+             -> a ratio of 0.5 scores 100, a ratio of 3.0 scores 0
 
-Academic Fit  = 0.55 * GPA vs school average
-              + 0.45 * SAT vs school average
+Academic Fit = 0.55 * GPA vs school average
+             + 0.45 * SAT vs school average (ACT is converted to SAT)
 
-Overall       = 0.62 * Athletic + 0.38 * Academic
+Overall      = 0.62 * Athletic + 0.38 * Academic
 
 Likely >= 78   Target >= 58   Reach < 58
 ```
 
-Five deliberate design decisions:
+JGS is Junior Golf Scoreboard. The rules behind the numbers:
 
-- **Every score ships with its reasoning.** A bare "87" is a horoscope. Expand
-  any school and you get a meter per input explaining what moved the number.
-- **The academic gate.** A scratch golfer with a 2.1 GPA does not get told
-  Stanford is "Likely". If academic fit drops below 30, overall is capped at 55.
-- **Preferences filter, they never score.** Wanting D1 does not make you fit D1.
-  Mixing "what I want" into "where I fit" gives a number that means neither.
-- **Academics are optional.** Luke is 13 and sits the SAT in about four years.
-  Missing inputs are dropped and their weight redistributed - never scored as
-  zero, never invented. `academic: null` means "not yet", not "bad".
-- **The athletic metric is age-normalized on purpose.** See below.
+- **Scores explain themselves.** Every school shows what moved its number.
+- **Rank, not scoring average.** Comparing a junior's scoring average with a
+  college team's punishes younger golfers. Comparing junior rank with junior
+  rank does not, and needs no projection.
+- **Missing inputs are never zero.** With no academics, the score is athletic
+  only, and the reverse. With neither, the school is not scored at all. No
+  program has an average GPA on file today, so academics currently run on SAT
+  wherever the school has one.
+- **The academic gate.** Academic fit below 30 caps the overall score at 55.
+- **Preferences filter, they never score.**
+- **Women's teams** use the girls' ranking list. Boys'-scale roster numbers are
+  converted by the size of the two lists.
+- **Roster outlook** (players graduating before the golfer enrolls) is shown
+  beside the score and is not part of it.
 
-### Why the metric is roster-rank, not scoring average
+## Where the data comes from
 
-The engine used to compare a golfer's 18-hole scoring average against each
-program's team average. That produced a category error for anyone years out
-from enrolling: a real 13-year-old landed 0/100 at 24 of 27 programs, because
-he was being scored against 22-year-olds on a per-stroke basis. The fix at the
-time was a projection layer with a hardcoded `strokesPerYear: 1.6` -- a number
-invented on vibes. When we finally measured Luke's 29 real events:
+| Data | Status | Source |
+|---|---|---|
+| 883 NCAA D1-D3 programs: name, division, conference, state, website, teams | Real | NCAA member directory |
+| 4 NAIA programs | Partial | Entered by hand; no academic data on file |
+| SAT, admission rate, tuition | Real where available | College Scorecard, US Dept. of Education |
+| Average GPA | None on file | No free public source |
+| **Average roster JGS rank** | **Estimated** | Modelled from conference tier, shown as "(est.)" |
+| Score weights, bands and tier cutoffs | Assumption | Chosen, not validated against recruiting outcomes |
+| Head coaches and contacts | Real, goes stale | School athletics sites. 26 men's programs checked by hand, the rest read automatically |
+| Roster class-year counts | Real, goes stale | School roster pages. Counts only, no names |
+| Golfer results, stats and rankings | From the family or the tour | Entered by the owner or read from the Drip Golf Tour |
 
-```
-2024   22 rounds   avg 79.27   stdev 4.53
-2025   27 rounds   avg 82.04   stdev 4.22    (+2.76 - he got WORSE)
-2026    6 rounds   avg 79.50   stdev 2.57    (-2.54 - he got better)
+The athletic score depends entirely on roster rank, so fit scores are a
+starting point for building a list, not a measurement. Real values would need
+historical JGS ranks joined to each roster, and JGS has no public export.
 
-mean year-over-year change: +0.11 strokes/yr
-```
+`js/data/provenance.js` is the in-app version of this table, shown at `/#/data`.
+If you add a data field, add it there too.
 
-His real trend is **flat**, and the round-to-round noise (~4.4 strokes) is
-larger than any annual signal. The invented constant was wrong by roughly its
-own entire magnitude and compounding over five years.
+### Refreshing the data
 
-The honest fix is to stop needing a projection at all. The engine now compares
-a golfer's **current JGS national rank** against **the AVERAGE senior-year JGS
-rank of the players currently on each roster**. That is rank-vs-rank between
-two populations of teenage golfers scored under the same system, so a
-13-year-old is not being measured against 22-year-olds. The engine reports
-`overall = null` when neither rank nor academics are on file rather than
-inventing a zero, and it drops unscorable rows from `rankSchools()` rather
-than sorting nulls.
+| Run | Updates | When |
+|---|---|---|
+| `node tools/gen-colleges.mjs <csv>` | `colleges-ncaa.js` | Yearly |
+| `node tools/gen-coaches.mjs` | `coaches-ncaa.js` | Before each fall season |
+| `node tools/gen-rosters.mjs` | `rosters-ncaa.js` | Each August, after coaches |
+| `node tools/gen-dripgolf-history.mjs` | `dripgolf-history.js` | When a tour season ends; add it to `PAST_SEASONS` first |
 
-`lib/trend.js` still measures the golfer's season-over-season trend and
-flags it **Noisy** when volatility exceeds the signal (which for juniors is
-most of the time). It is shown on the Fit page as **context**, not fed back
-into the score.
+- The CSV is "Most Recent Cohorts - Institution" from
+  <https://collegescorecard.ed.gov/data/>.
+- Coach and roster pages are cached in `tools/.cache/`. Add `--refresh` to
+  download them again.
+- Files marked GENERATED should not be edited by hand.
+- The 26 hand-checked coaches in `js/data/coaches.js` need a manual re-check
+  each season.
+- `JGS_POOL` in `js/lib/fit.js` holds the size of the boys' and girls' ranking
+  lists. Update it once a season.
+- The current tour season is read live by `/api/drip-golf`. It parses
+  dripgolftour.com's HTML, so a redesign there can break the lookup. Sign-up
+  still works if it does.
 
-**The data catch.** `avgRosterSeniorJgsRank` is the field the new engine
-leans on entirely, and every value in `js/data/colleges.js` is a placeholder.
-Real values require joining each roster's current players (name + grad year)
-against JGS historical rank snapshots as of end-of-HS-senior-year. There is no
-legitimate public export for this today; it requires a JGS data agreement or
-a manually seeded dataset per program. The Fit engine works the same either
-way -- that is the point of keeping it pure -- but the demo numbers must not
-be shown to a paying golfer as measurements.
+## Known issues
 
-### What is real and what is not
-
-| Data | Status |
-|---|---|
-| Luke's personal details, photo, rankings, 29 tournaments | **Real.** Pulled from `PORTFOLIO_DATA` in `ltselzer-portfolio.html` and the live `/api/personal` blob. Regenerate with `_ref/gen_luke.py`. |
-| The 27 original programs' stats | **Invented.** School names are real; the numbers are not. |
-| ~860 other NCAA D1-D3 golf programs | **Real** name, division, conference, state, website and which teams (men's / women's) they field, from the NCAA member directory. **Real** SAT, admission rate and tuition from the College Scorecard. No GPA (Scorecard does not publish it). |
-| Roster rank for those programs | **Estimated** from conference tier and shown as "(est.)". Not a measurement. |
-
-The college list is regenerated with:
-
-```
-node tools/gen-colleges.mjs path/to/Most-Recent-Cohorts-Institution.csv
-```
-
-The CSV is the "Most Recent Cohorts - Institution" download from
-<https://collegescorecard.ed.gov/data/>. NAIA programs are not in the NCAA
-directory and naia.org blocks scripted downloads, so only the four hand-set
-NAIA rows are included for now.
-
-The sign-up name lookup searches every Drip Golf Tour season. The current
-season is fetched live by `/api/drip-golf`; past seasons are a snapshot,
-regenerated with:
-
-```
-node tools/gen-dripgolf-history.mjs
-```
-
-When a season ends, add it to `PAST_SEASONS` in that script, bump `SEASON_ID`
-in `js/data/dripgolf.js`, and re-run it.
-
-Placeholder junk on the live site (`"Test Coach Name"`, instagram `"TEST"`,
-`"High School for really cool students"`) was deliberately **not** imported.
-
-Before this goes near a paying customer, source the college data properly:
-
-| Field | Source |
-|---|---|
-| `avgRosterSeniorJgsRank` | JGS historical rank snapshots joined against each program's current roster (name + grad year). No public export -- requires a JGS data agreement or manually seeded per program. |
-| `avgGPA`, `avgSAT`, `tuition` | IPEDS Common Data Set (free, public, citable) |
-
-The engine does not change when the data gets real - that is the whole point of
-keeping it pure.
-
----
-
-## Migrating to Supabase
-
-`js/auth/store.js` deliberately implements Supabase Auth's exact interface:
-`signInWithPassword`, `signOut`, `getUser`, `onAuthStateChange`, all returning
-`{ data, error }`. (No `signUp` - the owner account is provisioned, not
-self-served.) So the swap is:
-
-```js
-import { createClient } from "@supabase/supabase-js";
-export const auth = createClient(URL, ANON_KEY).auth;
-```
-
-No view file changes. That is Dependency Inversion earning its keep.
-
-Then the schema:
-
-```sql
-create table public.golfer (
-  id            uuid primary key references auth.users(id) on delete cascade,
-  name          text not null,
-  hometown      text,
-  class_year    text,
-  scoring_avg   numeric,
-  national_rank int,
-  gpa           numeric,
-  sat           int,
-  updated_at    timestamptz default now()
-);
-
-alter table public.golfer enable row level security;
-
-create policy "the page is publicly readable"
-  on public.golfer for select using (true);
-
-create policy "only the owner may edit"
-  on public.golfer for update using (auth.uid() = id);
-```
-
-No insert policy, because there is nothing to insert: the single row is seeded
-once alongside the owner account.
-
-### Three things that will bite you
-
-1. **RLS is not optional.** The anon key ships in your JS bundle - it is public
-   by design. Row Level Security is the only thing protecting the data. No
-   policies means your database is a public API.
-2. **Do not put app data in `user_metadata`.** It is user-writable. Anything
-   privileged (`is_admin`, `subscription_tier`, `verified`) belongs in a
-   `golfer` column guarded by RLS.
-3. **The demo's password hashing is deliberately wrong.** SHA-256 in the
-   browser, because it is a demo. Real auth needs bcrypt/argon2 on a server -
-   which is exactly what Supabase gives you for free. Do not port this file.
-
----
-
-## Two bugs worth remembering
-
-Both were found by switching from invented data to Luke's real numbers, which is
-the entire argument for testing against production data early.
-
-1. **`step="0.1"` silently ate every save.** Luke's real average is `81.12`,
-   which is not a multiple of `0.1`, so Chrome marked the field invalid and
-   **refused to fire the submit event at all** - no error, no message, a dead
-   button. The fake `74.6` was a valid multiple and hid it completely. Fixed
-   with `step="any"` plus `novalidate`, so a bad value produces a *message*
-   rather than silence.
-2. **A photo that 404s left an empty grey disc.** Initials are now always
-   rendered underneath and the `<img>` removes itself on error.
-
-## Not built (on purpose)
-
-Scoped to the two features requested. Obvious next steps: swing video upload,
-tournament results entry (currently seeded), resume PDF export, coach email
-templates, saved school list, payments.
-
-The existing `ltselzer-portfolio.html` already solves several of these - it is
-6,215 lines in a single file, so lifting those features out into modules is
-worth doing as part of the migration rather than after it.
-
----
-
-## Golfer pages (dripgolfrecruiting.com/&lt;name&gt;)
-
-Every golfer's public recruiting page is served by this same site from one
-template, `golfer.html` (Luke's page turned into a template), filled from
-Supabase by the functions in `netlify/functions/`. `/ava-reed` is Ava's page;
-the app stays at `/` with its hash routes.
-
-| Piece | Where |
-|---|---|
-| Page template + its scripts | `golfer.html`, `assets/golfer/` |
-| Which golfer, sign-in token on every request | `assets/golfer/tenant.js` |
-| API: golfer, login, signup, personal, tournaments, swing videos, theme... | `netlify/functions/*.mjs` |
-| Which golfer a request is for + is the caller its owner | `netlify/functions/_lib/tenant.mjs` |
-| Database schema (run once in Supabase's SQL Editor) | `supabase/schema.sql` |
-| Move an existing golfer site over | `tools/import-golfer.mjs` |
-
-Netlify environment variables: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`,
-`SUPABASE_SERVICE_ROLE_KEY` (secret), and `SIGNUPS_ENABLED=true` to let the
-"Create account" survey create real accounts. Without it, the survey falls
-back to the demo preview. Sign-up requires the parent/guardian confirmation.
-
-```
-npm run pages    # app + golfer pages + API locally, on a local test database
-npm test         # app tests + golfer-page API tests (incl. cross-golfer isolation)
-```
+- `npm run sync` does not work. It calls `_ref/gen_luke.py`, and `_ref/` is not
+  in the repo. It was used to regenerate the example golfer's results in
+  `js/data/luke-season.js`.
+- Some code comments still describe the original one-golfer demo, including
+  those in `js/main.js`, `js/config.js` and `js/auth/store.js`.
