@@ -1720,8 +1720,9 @@ body.is-owner .visitor-only { display: none !important; }
 /* Golf Bio: sub-headings with an owner-only Edit button beside them. */
 .golf-subhead { margin: 1.6rem 0 0.6rem; }
 .scoring-source { font-size: 0.85rem; margin: -0.2rem 0 0.6rem; }
-/* Nothing to show yet: visitors see no section; the owner sees the prompt. */
+/* No results at all: visitors see no section; the owner sees the prompt. */
 .analytics-section.is-empty { display: none; }
+#last5-section { margin-bottom: 1.6rem; }
 body.is-owner #analytics-section.is-empty { display: block; }
 
 /* Resume editor: a wider card, one block per resume section. */
@@ -1932,6 +1933,12 @@ body.is-owner #analytics-section.is-empty { display: block; }
       </div>
 
       <div id="personal-view">
+        <!-- The last 5 scored events, whichever season they fall in. Hidden
+             until there is one. Filled by renderHeroAnalytics(). -->
+        <div class="analytics-section is-empty" id="last5-section">
+          <div class="panel-header golf-subhead"><h3>Last 5 Events</h3></div>
+          <section class="hero-analytics" id="last5-analytics" aria-label="Last 5 events" hidden></section>
+        </div>
         <!-- Big, in-tab bio photo. Sources its src from data.personal.photo,
              same URL field the hero round avatar uses — one upload, two
              display slots (DRY). When the URL is empty the whole figure
@@ -1945,13 +1952,6 @@ body.is-owner #analytics-section.is-empty { display: block; }
         <!-- Populated by PersonalBio module from SOCIAL_PLATFORMS.
              Hidden via CSS :empty when there are no socials to show. -->
         <ul class="social-links" id="personal-socials" aria-label="Social media links"></ul>
-
-        <!-- The last 5 scored events, whichever season they fall in. Hidden
-             until there is one. Filled by renderHeroAnalytics(). -->
-        <div class="analytics-section is-empty" id="last5-section">
-          <div class="panel-header golf-subhead"><h3>Last 5 Events</h3></div>
-          <section class="hero-analytics" id="last5-analytics" aria-label="Last 5 events" hidden></section>
-        </div>
       </div>
 
       <form id="personal-edit-form" class="personal-edit-form" hidden>
@@ -2099,7 +2099,7 @@ body.is-owner #analytics-section.is-empty { display: block; }
            Filled by renderHeroAnalytics() (called by renderHero(), as it used
            to sit in the hero, hence the hero-* names), which reuses
            getMergedTournaments(): the same list Season History shows. With no
-           rounds to plot, visitors see no section and the owner sees the
+           scores yet this season it says so, and the owner also sees the
            prompt. The button opens ScoringEditor, where a Drip Golf Tour
            profile is linked. -->
       <div class="analytics-section is-empty" id="analytics-section">
@@ -2107,7 +2107,8 @@ body.is-owner #analytics-section.is-empty { display: block; }
           <h3 id="analytics-title">Season</h3>
           <button type="button" id="scoring-edit-btn" class="swing-ghost-btn owner-only">✏️ Tour Profile &amp; Stats</button>
         </div>
-        <p class="muted owner-only" id="analytics-empty" hidden>No results to graph yet. Add tournaments in Season History, or link your Drip Golf Tour profile to fill them in.</p>
+        <p class="muted" id="analytics-none-yet" hidden>No scores yet this season.</p>
+        <p class="muted owner-only" id="analytics-empty" hidden>Add scores in Season History, or link your Drip Golf Tour profile to fill them in.</p>
         <section class="hero-analytics" id="season-analytics" aria-label="This season's events" hidden></section>
       </div>
     </section>
@@ -2458,11 +2459,11 @@ const PORTFOLIO_DATA = {
   // see. Tournaments keep their real dates and are sorted into seasons here.
   const FIRST_MONTH = 9;
   const seasonStart = (d) => (d.getMonth() + 1 >= FIRST_MONTH ? d.getFullYear() : d.getFullYear() - 1);
-  const seasonLabel = (id) => id + "-" + String((+id + 1) % 100).padStart(2, "0");
+  const seasonLabel = (id) => id + "-" + (+id + 1);
   // The calendar year a month of that season falls in.
   const seasonYear = (id, month) => (month >= FIRST_MONTH ? +id : +id + 1);
 
-  // Every season the page has, oldest first: 2023-24 (the first one on file)
+  // Every season the page has, oldest first: 2023-2024 (the first on file)
   // through the current one, so a new season appears every September 1.
   // Single source of truth; everything else reads window.UserScores.SEASONS.
   const FIRST_SEASON = 2023;
@@ -2967,16 +2968,11 @@ const PORTFOLIO_DATA = {
     .map((t) => ({ tournament: t, roundScores: extractRoundScores(t) }))
     .filter((e) => e.roundScores.length > 0);
 
-  // The current Drip Golf season (September to August). Until its first
-  // scored event, the latest season that has one is shown instead, so the
-  // graph does not go blank every September.
+  // The current Drip Golf season (September to August), always: before its
+  // first scored event the section says so rather than showing an old season.
   function currentSeason() {
     const now = seasonStart(new Date());
-    for (let y = now; y >= +HERO_SEASONS[0]; y--) {
-      const events = scoredEvents(getMergedTournaments(y));
-      if (events.length) return { label: seasonLabel(y), newestFirst: events };
-    }
-    return { label: seasonLabel(now), newestFirst: [] };
+    return { label: seasonLabel(now), newestFirst: scoredEvents(getMergedTournaments(now)) };
   }
 
   function renderHeroAnalytics() {
@@ -2987,7 +2983,9 @@ const PORTFOLIO_DATA = {
 
     const { label, newestFirst } = currentSeason();
     $("#analytics-title").textContent = `${label} Season`;
-    $("#analytics-section").classList.toggle("is-empty", !newestFirst.length);
+    // A golfer with no results at all has no section (the owner sees a prompt).
+    $("#analytics-section").classList.toggle("is-empty", !last5.length && !newestFirst.length);
+    $("#analytics-none-yet").hidden = newestFirst.length > 0;
     $("#analytics-empty").hidden = newestFirst.length > 0;
     renderAnalyticsPanel($("#season-analytics"), newestFirst,
       "Season Avg", `Line chart of scoring average at each ${label} event`);
@@ -3566,7 +3564,9 @@ const PORTFOLIO_DATA = {
   // Every tournament from every source, each with its season.
   // A linked Drip Golf Tour profile's tournaments (PORTFOLIO_DATA.tourSeasons)
   // join in too, except any on a date the page already has one for, so an
-  // event the owner typed in before linking is not shown twice.
+  // event the owner typed in before linking is not shown twice. An entry
+  // with no result yet (an upcoming event that has now been played) gives
+  // way to the tour's result for that date.
   function allTournaments() {
     const filed = (byYear) => Object.entries(byYear || {})
       .flatMap(([year, list]) => (list || []).map((t) => ({ t, season: seasonOf(t, year) })));
@@ -3574,9 +3574,12 @@ const PORTFOLIO_DATA = {
       .map((t) => ({ t, season: seasonOf(t, t.year) }));
     const scraped = filed(PORTFOLIO_DATA.seasons);
     const day = ({ t }) => parseTournamentDate(t.date).toDateString();
-    const taken = new Set([...scraped, ...user].map(day));
-    const tour = filed(PORTFOLIO_DATA.tourSeasons).filter((e) => !taken.has(day(e)));
-    return [...user, ...scraped, ...tour];
+    const hasResult = ({ t }) => extractRoundScores(t).length > 0 || !!(t.total || t.place || "").trim();
+    const fromTour = filed(PORTFOLIO_DATA.tourSeasons);
+    const tourResults = new Set(fromTour.filter(hasResult).map(day));
+    const own = [...user, ...scraped].filter((e) => hasResult(e) || !tourResults.has(day(e)));
+    const taken = new Set(own.map(day));
+    return [...own, ...fromTour.filter((e) => !taken.has(day(e)))];
   }
 
   // One season's tournaments, newest first.
@@ -6149,7 +6152,7 @@ const PORTFOLIO_DATA = {
     // being half-painted onto the page edge.
     const MAX_RECENT       = 7;
 
-    // Up to N best finishes from each season, formatted "2025-26: Place — Name".
+    // Up to N best finishes from each season, formatted "2025-2026: Place — Name".
     // Sorted by place ASC (best first) within each season, then concatenated
     // newest-season-first so the most recent highlights lead.
     // Turn a raw place string ("8", "T5", "21") into resume-friendly
@@ -6190,7 +6193,7 @@ const PORTFOLIO_DATA = {
           .sort((a, b) => a.n - b.n)
           .slice(0, PER_SEASON)
           .map(({ t }) => {
-            // "2023-24:  8th Place at DGT Tarheel Junior Open  (235)"
+            // "2023-2024:  8th Place at DGT Tarheel Junior Open  (235)"
             // reads as a proper resume line instead of the old
             // "2024:  8 — DGT Tarheel Junior Open  (235)" which
             // looked like a half-translated CSV cell.
