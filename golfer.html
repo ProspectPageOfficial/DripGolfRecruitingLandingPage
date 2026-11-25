@@ -2135,32 +2135,9 @@ body.is-owner #analytics-section.is-empty { display: block; }
       <h2>Season History</h2>
       <p class="muted scoring-source" id="season-tour-note" hidden>Drip Golf Tour results fill in automatically after each event.</p>
 
-      <div class="year-selector" role="tablist" aria-label="Season">
-        <button class="year-btn active" type="button" role="tab" data-year="2024" aria-selected="true">2024</button>
-        <button class="year-btn" type="button" role="tab" data-year="2025" aria-selected="false">2025</button>
-        <button class="year-btn" type="button" role="tab" data-year="2026" aria-selected="false">2026</button>
-      </div>
-
-      <div class="year-panel active" data-year-panel="2024" role="tabpanel">
-        <h3>2024 Season</h3>
-        <div class="user-controls owner-only" data-year="2024"></div>
-        <div class="season-summary" id="summary-2024"></div>
-        <div class="tournaments" id="tournaments-2024"></div>
-      </div>
-
-      <div class="year-panel" data-year-panel="2025" role="tabpanel">
-        <h3>2025 Season</h3>
-        <div class="user-controls owner-only" data-year="2025"></div>
-        <div class="season-summary" id="summary-2025"></div>
-        <div class="tournaments" id="tournaments-2025"></div>
-      </div>
-
-      <div class="year-panel" data-year-panel="2026" role="tabpanel">
-        <h3>2026 Season</h3>
-        <div class="user-controls owner-only" data-year="2026"></div>
-        <div class="season-summary" id="summary-2026"></div>
-        <div class="tournaments" id="tournaments-2026"></div>
-      </div>
+      <!-- One tab and one panel per season, built by buildYearPanels(). -->
+      <div class="year-selector" id="year-selector" role="tablist" aria-label="Season"></div>
+      <div id="year-panels"></div>
     </section>
 
     <!-- ===== Upcoming Tournaments =====
@@ -2197,7 +2174,7 @@ body.is-owner #analytics-section.is-empty { display: block; }
             <!-- Three-select date picker matching the Season History add
                  form. Unlike that one, Upcoming has no year-tab context,
                  so we surface a Year select here populated from
-                 UserScores.SEASONS. populateUpcomingDateSelects() wires
+                 UserScores.SEASONS + next year. populateUpcomingDateSelects() wires
                  the month/year → day dependency at boot (leap-year math
                  delegated to UserScores.daysInMonth — single source). -->
             <div class="date-md">
@@ -2495,7 +2472,12 @@ const PORTFOLIO_DATA = {
   // ⚠️ The PW_KEY must match the one used in OwnerGate (kept duplicated to
   // avoid a cross-module dependency between two IIFEs that load in order).
   const PW_KEY  = "ltselzer_owner_pw";
-  const SEASONS = ["2024", "2025", "2026"];
+  // Every season the page has, oldest first: 2024 (the first one on file)
+  // through this calendar year, so a new season appears every January 1.
+  // Single source of truth; everything else reads window.UserScores.SEASONS.
+  const FIRST_SEASON = 2024;
+  const SEASONS = [];
+  for (let y = FIRST_SEASON; y <= Math.max(FIRST_SEASON, new Date().getFullYear()); y++) SEASONS.push(String(y));
   const API     = "/api/tournaments";
 
   // ---------- In-memory cache ----------
@@ -2869,10 +2851,9 @@ const PORTFOLIO_DATA = {
   }
 
   // ---------- Hero ----------
-  // Season IDs we know about. Duplicated here rather than reaching into
-  // UserScores.SEASONS because UserScores may not be initialized yet the
-  // first time renderHero() runs — and we still want the hero to work.
-  const HERO_SEASONS = ["2024", "2025", "2026"];
+  // Season IDs we know about. Set as soon as the UserScores script above
+  // runs, so it is safe to read before UserScores.init() has fetched anything.
+  const HERO_SEASONS = window.UserScores.SEASONS;
 
   // Pull round scores out of a tournament's rounds[]. Score strings look
   // like "77 (+5)" — we only need the leading integer for averaging.
@@ -3754,6 +3735,19 @@ const PORTFOLIO_DATA = {
   }
 
   // ---------- Year selector (inside History tab) ----------
+  // Season History's tabs and panels, one per season. The oldest is open first.
+  function buildYearPanels() {
+    $("#year-selector").innerHTML = HERO_SEASONS.map((y, i) => `
+      <button class="year-btn${i ? "" : " active"}" type="button" role="tab" data-year="${y}" aria-selected="${!i}">${y}</button>`).join("");
+    $("#year-panels").innerHTML = HERO_SEASONS.map((y, i) => `
+      <div class="year-panel${i ? "" : " active"}" data-year-panel="${y}" role="tabpanel">
+        <h3>${y} Season</h3>
+        <div class="user-controls owner-only" data-year="${y}"></div>
+        <div class="season-summary" id="summary-${y}"></div>
+        <div class="tournaments" id="tournaments-${y}"></div>
+      </div>`).join("");
+  }
+
   function wireYearSelector() {
     const btns = document.querySelectorAll(".year-btn");
     const panels = document.querySelectorAll(".year-panel");
@@ -5239,7 +5233,7 @@ const PORTFOLIO_DATA = {
     /** Season History, hero and Golf Bio all read tour data: refresh them together. */
     function rerenderTour() {
       if (window.rerenderGolf) window.rerenderGolf();
-      ["2024", "2025", "2026"].forEach((y) => window.rerenderSeason && window.rerenderSeason(y));
+      HERO_SEASONS.forEach((y) => window.rerenderSeason && window.rerenderSeason(y));
       if (window.rerenderHero) window.rerenderHero();
       if (window.UpcomingTournaments) window.UpcomingTournaments.render();
       const note = byId("season-tour-note");
@@ -6274,7 +6268,7 @@ const PORTFOLIO_DATA = {
       const p = (PORTFOLIO_DATA && PORTFOLIO_DATA.personal) || {};
       const g = (PORTFOLIO_DATA && PORTFOLIO_DATA.golf)     || {};
       const years = [...new Set([
-        "2024", "2025", "2026",
+        ...window.UserScores.SEASONS,
         ...Object.keys(PORTFOLIO_DATA.seasons || {}),
         ...Object.keys(PORTFOLIO_DATA.tourSeasons || {}),
       ])].sort((a, b) => Number(b) - Number(a));
@@ -6560,6 +6554,7 @@ const PORTFOLIO_DATA = {
         '<p><a href="/">Go to Drip Golf Recruiting</a></p></main>';
       return;
     }
+    buildYearPanels();
     // Gate first so the body.is-owner class is set before edit UI renders.
     OwnerGate.init();
     RankEditor.init();
@@ -6600,7 +6595,7 @@ const PORTFOLIO_DATA = {
         window.rerenderGolf && window.rerenderGolf();
       });
     }
-    ["2024", "2025", "2026"].forEach((y) => window.rerenderSeason(y));
+    HERO_SEASONS.forEach((y) => window.rerenderSeason(y));
     // Recompute hero + Golf Bio now that user-added tournaments are
     // folded into the merged list. Safe to call unconditionally.
     window.rerenderHero && window.rerenderHero();
@@ -6628,8 +6623,8 @@ const PORTFOLIO_DATA = {
     }
 
     // Populate the Upcoming form's Month/Day/Year selects and wire the
-    // month/year → day dependency. Year options come from
-    // UserScores.SEASONS (single source of truth). The Season History
+    // month/year → day dependency. Year options are UserScores.SEASONS
+    // (single source of truth) plus next year, which upcoming events can be in. The Season History
     // forms own their own per-year picker inside wireSeason() — two
     // scopes, two helpers, single responsibility each.
     populateUpcomingDateSelects();
@@ -6650,6 +6645,7 @@ const PORTFOLIO_DATA = {
     const seasons = (window.UserScores && window.UserScores.SEASONS) || [];
     const years = seasons.map(Number).filter((n) => Number.isFinite(n)).sort((a, b) => a - b);
     if (years.length) {
+      years.push(years[years.length - 1] + 1);
       yearSelect.innerHTML = [
         '<option value="" disabled selected>Year</option>',
         ...years.map((y) => `<option value="${y}">${y}</option>`),
