@@ -10,7 +10,7 @@
    Three tiny modules, one job each:
      Reveal   — staggered entrance for [data-reveal] nodes
      CountUp  — odometer roll on hero stat numbers
-     ChartTip — hover readout for the Last-5 chart
+     ChartTip — hover readout for the season chart
    ====================================================================== */
 (function () {
   "use strict";
@@ -121,15 +121,13 @@
   };
 
   /* ================================================================
-     ChartTip — hover readout over the Last-5 chart.
+     ChartTip — hover readout over the season chart.
 
      Reads its data straight off the <g class="hc-pt-g"> nodes that
      drawHeroChart() emits (data-label / data-value / data-vx / data-vy).
      The SVG is the single source of truth; this module owns no copy.
      ================================================================ */
   var ChartTip = {
-    VB_W: 600, VB_H: 200,   // must match the SVG's viewBox
-
     init: function (wrap, svg) {
       var tip = document.createElement("div");
       tip.className = "hc-tip";
@@ -146,8 +144,9 @@
       if (!groups.length) { tip.hidden = true; return; }
 
       var box = svg.getBoundingClientRect();
-      var scaleX = box.width / this.VB_W;
-      var scaleY = box.height / this.VB_H;
+      var vb = svg.viewBox.baseVal;         // set by drawHeroChart()
+      var scaleX = box.width / vb.width;
+      var scaleY = box.height / vb.height;
       var mouseX = e.clientX - box.left;
 
       // Nearest point on the x-axis wins — matches how every real
