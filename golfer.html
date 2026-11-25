@@ -2591,7 +2591,7 @@ const PORTFOLIO_DATA = {
           </label>
           <label>
             <span>Total Score</span>
-            <input type="text" name="total" placeholder="e.g. 151 (+7)" />
+            <input type="text" name="total" placeholder="Adds up from rounds" autocomplete="off" />
           </label>
         </div>
 
@@ -2605,7 +2605,7 @@ const PORTFOLIO_DATA = {
           <button type="button" class="btn btn-ghost"   data-action="cancel-form">Cancel</button>
           <button type="submit" class="btn btn-primary">Save Tournament</button>
         </div>
-        <p class="form-hint muted">* required. Score format like <code>75 (+3)</code> keeps the over/under-par pill colored correctly.</p>
+        <p class="form-hint muted">* required. Type each round like <code>75 (+3)</code>, or just <code>75</code>. The total adds up by itself; you can type over it.</p>
       </form>
 
     `;
@@ -2655,9 +2655,23 @@ const PORTFOLIO_DATA = {
       form.hidden    = true;
       if (toolbar) toolbar.hidden = false;
       form.reset();
+      typedTotal = false;
       roundRows.innerHTML = "";
       addRound();
     };
+
+    // Total Score adds up from the rounds as they are typed, unless the owner
+    // types a total of their own. Emptying the box hands it back.
+    const totalInput = form.elements.total;
+    let typedTotal = false;
+    const tally = () => {
+      if (typedTotal) return;
+      totalInput.value = tallyRounds(
+        [...roundRows.querySelectorAll('[name="round-score"]')].map((i) => i.value));
+    };
+    roundRows.addEventListener("input", tally);
+    totalInput.addEventListener("input", () => { typedTotal = totalInput.value.trim() !== ""; });
+    totalInput.addEventListener("change", tally);
 
     function addRound() {
       const next = roundRows.children.length + 1;
@@ -2677,6 +2691,7 @@ const PORTFOLIO_DATA = {
         case "add-round":   addRound(); break;
         case "remove-round":
           if (roundRows.children.length > 1) btn.closest(".round-row").remove();
+          tally();
           break;
       }
     });
@@ -2701,6 +2716,19 @@ const PORTFOLIO_DATA = {
         submitBtn.textContent = originalText;
       }
     });
+  }
+
+  // ["75 (+3)", "79 (+7)"] -> "154 (+10)". Par is left off unless every round
+  // gives it, and anything that is not a score ("WD") means no total at all:
+  // a sum of only some of the rounds would be wrong.
+  function tallyRounds(scores) {
+    const rounds = scores.map((v) => v.trim().replace(/[\u2212\u2013]/g, "-")).filter(Boolean)
+      .map((v) => /^(\d{2,3})(?:\s*\(?\s*(E|[+-]?\d{1,2})\s*\)?)?$/i.exec(v));
+    if (!rounds.length || rounds.includes(null)) return "";
+    const total = rounds.reduce((sum, m) => sum + Number(m[1]), 0);
+    if (!rounds.every((m) => m[2])) return String(total);
+    const par = rounds.reduce((sum, m) => sum + (/^E$/i.test(m[2]) ? 0 : Number(m[2])), 0);
+    return `${total} (${par === 0 ? "E" : par > 0 ? "+" + par : par})`;
   }
 
   // Gregorian leap-year rule. Used by populateDayOptions to size Feb.
@@ -2812,7 +2840,10 @@ const PORTFOLIO_DATA = {
   // ---------- Total parsing ----------
   // "151 (+7)" → { score: 151, diff: "+7", diffNum: 7 }
   // "144 (E)"  → { score: 144, diff: "E",  diffNum: 0 }
+  // "151"      → { score: 151, diff: "",   diffNum: null }
   function parseTotal(total) {
+    const plain = /^(\d+)\s*$/.exec(total || "");
+    if (plain) return { score: parseInt(plain[1], 10), diff: "", diffNum: null };
     const m = /^(\d+)\s*\(([^)]+)\)/.exec(total || "");
     if (!m) return { score: null, diff: "", diffNum: null };
     const diffStr = m[2].trim();
