@@ -1388,6 +1388,7 @@ input[type="date"]:focus::-webkit-datetime-edit  { color: var(--charcoal); }
    toggling `.is-owner` in devtools gains nothing but disappointment. */
 .owner-only { display: none !important; }
 body.is-owner .owner-only { display: revert !important; }
+body.is-owner .user-badge.owner-only { display: inline-block !important; }
 /* ...unless the page has hidden it on purpose. Without this, the !important
    above beat [hidden], so in owner mode "Gallery is full" showed with no
    videos and the upload form never hid at the limit. */
@@ -2358,6 +2359,10 @@ body.is-owner #analytics-section.is-empty { display: block; }
             Link your tour profile and your tournament history, your event
             graphs and your resume's scoring stats fill in from your official
             Drip Golf tournaments, updating after every event.
+          </p>
+          <p class="theme-modal-help" id="scoring-auto-note" hidden>
+            We linked this profile automatically because its details match this
+            page. To turn it off, clear the box and save.
           </p>
           <div id="scoring-tour-suggest" class="scoring-suggest"></div>
           <label class="scoring-field-wide"><span>Tour profile link or player ID</span>
@@ -3668,7 +3673,7 @@ const PORTFOLIO_DATA = {
     const nameLine = el("div", "tnmt-name");
     nameLine.textContent = t.name;
     if (t._userAdded) {
-      const badge = el("span", "user-badge", "yours");
+      const badge = el("span", "user-badge owner-only", "yours");
       nameLine.appendChild(document.createTextNode(" "));
       nameLine.appendChild(badge);
     }
@@ -5220,6 +5225,18 @@ const PORTFOLIO_DATA = {
     };
     const fold = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
     let previewTimer;
+    let openedWith = "";   // the profile the pop-up opened with
+
+    // The tour player this page is linked to automatically, if any: used when
+    // the owner has not linked a profile and has not turned the link off.
+    let autoPlayer = null;
+    async function findPlayer() {
+      const p = PORTFOLIO_DATA.personal || {};
+      try {
+        const { findAutoMatch } = await import("/js/data/dripgolf.js");
+        return await findAutoMatch({ name: p.name, hometown: p.hometown, classYear: p.class_year });
+      } catch { return null; }
+    }
 
     /** { scoring, tournaments } from a tour profile, or null if unreachable. */
     async function tourProfile(id) {
@@ -5231,13 +5248,15 @@ const PORTFOLIO_DATA = {
     }
 
     /**
-     * From the linked profile, if any: scoring stats for the resume
+     * From the linked (or automatically matched) profile, if any: scoring stats for the resume
      * (PORTFOLIO_DATA.golf.tourScoring) and tournaments for Season History,
      * by year (PORTFOLIO_DATA.tourSeasons). getMergedTournaments folds those
      * in, skipping any the owner has already entered for the same date.
      */
     async function loadTour() {
-      const id = PORTFOLIO_DATA.golf.tourPlayerId;
+      const golf = PORTFOLIO_DATA.golf;
+      if (!golf.tourPlayerId) autoPlayer = golf.tourOff ? null : await findPlayer();
+      const id = golf.tourPlayerId || (autoPlayer && autoPlayer.id);
       const tour = id ? await tourProfile(id) : null;
       PORTFOLIO_DATA.golf.tourScoring = tour ? tour.scoring : null;
       const seasons = {};
@@ -5308,9 +5327,12 @@ const PORTFOLIO_DATA = {
       try {
         const res = await fetch(API, { cache: "no-store" });
         const saved = res.ok ? await res.json() : {};
-        form.elements.tourPlayerId.value = saved.tourPlayerId || "";
+        const auto = !saved.tourPlayerId && autoPlayer ? autoPlayer.id : "";
+        form.elements.tourPlayerId.value = saved.tourPlayerId || auto;
+        openedWith = form.elements.tourPlayerId.value;
+        byId("scoring-auto-note").hidden = !auto;
         for (const f of FIELDS) form.elements[f].value = (saved.manual && saved.manual[f]) || "";
-        if (saved.tourPlayerId) preview();
+        if (openedWith) preview();
         else suggest();
       } catch {
         byId("scoring-status").textContent = "Couldn't load your saved stats. Check your connection.";
@@ -5331,7 +5353,12 @@ const PORTFOLIO_DATA = {
         const res = await fetch(API, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ tourPlayerId: form.elements.tourPlayerId.value.trim(), manual }),
+          body: JSON.stringify({
+            tourPlayerId: form.elements.tourPlayerId.value.trim(),
+            // Emptied a filled-in box: the owner is turning the link off.
+            tourOff: !!openedWith && !form.elements.tourPlayerId.value.trim(),
+            manual,
+          }),
         });
         if (res.status === 401) {
           status.textContent = "Please sign in again to save.";
@@ -5344,6 +5371,7 @@ const PORTFOLIO_DATA = {
         if (fresh && fresh.portfolio && fresh.portfolio.golf) {
           PORTFOLIO_DATA.golf.scoring = fresh.portfolio.golf.scoring || {};
           PORTFOLIO_DATA.golf.tourPlayerId = fresh.portfolio.golf.tourPlayerId || null;
+          PORTFOLIO_DATA.golf.tourOff = !!fresh.portfolio.golf.tourOff;
         }
         await loadTour();
         rerenderTour();

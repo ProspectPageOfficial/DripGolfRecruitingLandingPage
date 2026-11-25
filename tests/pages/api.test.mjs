@@ -329,6 +329,22 @@ test("a member links their Drip Golf Tour profile by link or ID, and can unlink"
   assert.equal((await call(golfer, "golfer", { golfer: "ava-reed" })).body.portfolio.golf.tourPlayerId, null);
 });
 
+test("removing a tour link keeps it off, and linking again turns it back on", async () => {
+  await ready;
+  const save = (body) => call(golfScoring, "golf-scoring", { method: "PUT", golfer: "luke-selzer", token: luke.session.access_token, body });
+  const shown = async () => (await call(golfer, "golfer", { golfer: "luke-selzer" })).body.portfolio.golf;
+
+  assert.equal((await shown()).tourOff, false);
+  await save({ tourPlayerId: "", manual: {} });
+  assert.equal((await shown()).tourOff, false, "saving with no link is not turning one off");
+  await save({ tourPlayerId: "", tourOff: true });
+  assert.equal((await shown()).tourOff, true, "removing an automatic link");
+  await save({ tourPlayerId: "42" });
+  assert.deepEqual([(await shown()).tourPlayerId, (await shown()).tourOff], ["42", false]);
+  await save({ tourPlayerId: "" });
+  assert.deepEqual([(await shown()).tourPlayerId, (await shown()).tourOff], [null, true], "removing a chosen link");
+});
+
 test("scoring stats are owner-only and must be real numbers", async () => {
   await ready;
   const anon = await call(golfScoring, "golf-scoring", { method: "PUT", golfer: "ava-reed", body: { tourPlayerId: "1" } });

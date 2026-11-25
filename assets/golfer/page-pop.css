@@ -337,6 +337,8 @@ body::after {
   background: rgba(255, 255, 255, 0.04);
   color: var(--pg-ink);
 }
+.tab-panel .round-label { color: var(--sand); }
+.tab-panel .round-course { color: var(--pg-ink-dim); }
 
 /* ---------- 5h. Panel headers + edit buttons ----------
    The pencil-edit ghost buttons on Personal/Coach were designed for

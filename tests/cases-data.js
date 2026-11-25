@@ -10,7 +10,7 @@
  * If those ever diverge, every fit score is built on the disagreement.
  */
 import {
-  parseStandings, parseProfile, parseScoring, parseTournaments, parseUpcoming, matchPlayers, splitName, mergeRosters, isGirlsDivision, PLAYER_ID,
+  parseStandings, parseProfile, parseScoring, parseTournaments, parseUpcoming, matchPlayers, autoMatch, splitName, mergeRosters, isGirlsDivision, PLAYER_ID,
 } from "../js/data/dripgolf.js";
 import { DRIP_HISTORY } from "../js/data/dripgolf-history.js";
 import { hasAcademics, graduationYear, scoreSchool } from "../js/lib/fit.js";
@@ -467,6 +467,32 @@ export const dataCases = [
       assert.deepEqual(parseProfile(page), { age: 15, jgsRank: 1929, tugrRank: 658 });
       assert.deepEqual(parseProfile("<p>redesigned</p>"),
         { age: undefined, jgsRank: undefined, tugrRank: undefined });
+    },
+  },
+  {
+    name: "a golfer page is linked to a tour player only when the match is certain",
+    run: (assert) => {
+      const ava = { id: "1", name: "Ava Reed", hometown: "Charlotte, NC", classYear: "2029" };
+      const other = { id: "2", name: "Ava Reed", hometown: "Dallas, TX", classYear: "2027" };
+      const id = (players, golfer) => autoMatch(players, golfer)?.id ?? null;
+      const page = { name: "Ava Reed", hometown: "Charlotte, NC", classYear: "Class of 2029" };
+
+      assert.equal(id([ava], page), "1");
+      assert.equal(id([ava, other], page), "1", "same name, told apart by hometown and class year");
+      assert.equal(id([ava, { ...ava }], page), "1", "one player listed twice is still one player");
+      assert.equal(id([ava], { ...page, name: " ava  REED ", hometown: "charlotte, nc" }), "1");
+      assert.equal(id([{ ...ava, name: "Zoë O'Neil" }], { ...page, name: "Zoe ONeil" }), "1");
+      assert.equal(id([ava], { ...page, hometown: "" }), "1", "class year alone is enough when the page has no hometown");
+      assert.equal(id([ava], { ...page, classYear: "" }), "1", "and the other way around");
+
+      assert.equal(id([ava], { name: "Ava Reed" }), null, "a name alone is never enough");
+      assert.equal(id([other], page), null, "same name, different golfer");
+      assert.equal(id([ava], { ...page, classYear: "Class of 2028" }), null, "one disagreeing fact is a no");
+      assert.equal(id([ava], { ...page, hometown: "Charlotte, MI" }), null, "same city, different state");
+      assert.equal(id([ava], { ...page, name: "Ava Reede" }), null);
+      assert.equal(id([ava, { ...ava, id: "3" }], page), null, "two players fit, so neither is linked");
+      assert.equal(id([ava], {}), null);
+      assert.equal(id([], page), null);
     },
   },
   {

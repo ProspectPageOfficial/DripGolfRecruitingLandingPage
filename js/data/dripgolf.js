@@ -205,6 +205,44 @@ export function matchPlayers(players, first, last, limit = 6) {
     .slice(0, limit);
 }
 
+const plain = (s) => fold(s).replace(/[^a-z0-9 ]/g, "").replace(/\s+/g, " ").trim();
+const yearOf = (s) => String(s ?? "").match(/\b20\d\d\b/)?.[0] ?? "";
+
+/** "Charlotte, NC" vs "charlotte, nc": same town; states compared when both give one. */
+function sameTown(a, b) {
+  const [cityA, stateA = ""] = String(a).split(",").map(plain);
+  const [cityB, stateB = ""] = String(b).split(",").map(plain);
+  const bothShort = stateA.length === 2 && stateB.length === 2;
+  return !!cityA && cityA === cityB && (!bothShort || stateA === stateB);
+}
+
+/**
+ * The one tour player a golfer page can safely be linked to without anyone
+ * choosing, or null. Around twenty names on the tour belong to more than one
+ * golfer, and a wrong link puts another child's results on a public page, so:
+ *   - the full name must match exactly (ignoring case, accents, punctuation)
+ *   - hometown and class year must not disagree, and at least one must agree
+ *   - exactly one player may fit
+ */
+export function autoMatch(players, { name, hometown, classYear } = {}) {
+  const who = plain(name);
+  if (!who) return null;
+  const year = yearOf(classYear);
+  const fits = players.filter((p) => {
+    if (plain(p.name) !== who) return false;
+    const checks = [];
+    if (year && yearOf(p.classYear)) checks.push(year === yearOf(p.classYear));
+    if (plain(hometown) && plain(p.hometown)) checks.push(sameTown(hometown, p.hometown));
+    return checks.length > 0 && checks.every(Boolean);
+  });
+  return new Set(fits.map((p) => p.id)).size === 1 ? fits[0] : null;
+}
+
+/** autoMatch over this season's and past seasons' players; null if unsure or offline. */
+export async function findAutoMatch(golfer) {
+  return autoMatch(await loadRoster(), golfer);
+}
+
 /**
  * One row per golfer: everyone this season, then anyone from a past season not
  * already listed. A golfer who still plays keeps this season's row -- their

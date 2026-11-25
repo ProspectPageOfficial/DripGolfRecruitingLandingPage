@@ -9,9 +9,14 @@
  *   - Everyone else types them in (`manual`). A linked tour profile's stats
  *     are used instead of these whenever the tour has any.
  *
- * GET → public. { tourPlayerId?, manual? }
+ * A page with no linked profile is matched to the tour automatically
+ * (autoMatch in js/data/dripgolf.js). `tourOff` is the owner's "don't": it is
+ * set when they remove a link and cleared when they add one.
+ *
+ * GET → public. { tourPlayerId?, tourOff?, manual? }
  * PUT → owner only. Body: any of
  *         tourPlayerId: a tour player ID, a link to the tour profile, or "" to unlink
+ *         tourOff: true, with tourPlayerId "", when removing an automatic link
  *         manual: { "Par 3's": "3.25", Birdies: "12", ... }, "" drops a value
  *
  * Storage: one JSON document per golfer (golfer_docs, key "golf-scoring").
@@ -75,8 +80,13 @@ export default async function handler(req) {
     if ("tourPlayerId" in body) {
       const { value, error } = cleanTourId(body.tourPlayerId);
       if (error) return json(400, { error });
-      if (value) next.tourPlayerId = value;
-      else delete next.tourPlayerId;
+      if (value) {
+        next.tourPlayerId = value;
+        delete next.tourOff;
+      } else {
+        if (next.tourPlayerId || body.tourOff === true) next.tourOff = true;
+        delete next.tourPlayerId;
+      }
     }
     if ("manual" in body) {
       const { value, error } = cleanScoring(body.manual);

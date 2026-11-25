@@ -243,6 +243,9 @@ If you add a data field, add it there too.
   each season.
 - `JGS_POOL` in `js/lib/fit.js` holds the size of the boys' and girls' ranking
   lists. Update it once a season.
+- A golfer page with no linked tour profile is matched to one automatically,
+  and only when the match is certain (`autoMatch` in `js/data/dripgolf.js`).
+  Owners can turn it off.
 - The current tour season is read live by `/api/drip-golf`. It parses
   dripgolftour.com's HTML, so a redesign there can break the lookup. Sign-up
   still works if it does.

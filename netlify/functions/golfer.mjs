@@ -45,6 +45,7 @@ export default async function handler(req) {
   // A linked Drip Golf Tour profile is read live by the page itself.
   portfolio.golf.scoring = { ...(portfolio.golf.scoring || {}), ...(scoring?.manual || {}) };
   portfolio.golf.tourPlayerId = scoring?.tourPlayerId || null;
+  portfolio.golf.tourOff = !!scoring?.tourOff; // the owner removed the link: do not match one
   return json(200, {
     id: golfer.id,
     slug: golfer.slug,
