@@ -127,7 +127,7 @@ that the signed-in user owns that golfer.
 | `/api/golfer` | Public page data |
 | `/api/personal` | Personal bio fields |
 | `/api/golf-stats` | Rankings |
-| `/api/golf-scoring` | Scoring stats, typed in or linked to a Drip Golf Tour profile |
+| `/api/golf-scoring` | Linked Drip Golf Tour profile, and the scoring stats shown on the resume |
 | `/api/tournaments`, `/api/upcoming-tournaments` | Results and schedule |
 | `/api/swing-videos`, `/api/featured-swing` | Swing videos |
 | `/api/resume` | The owner's edits to the generated resume |

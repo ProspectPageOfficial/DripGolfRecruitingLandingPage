@@ -4,7 +4,7 @@
  *   GET /api/drip-golf             -> { players: [...] } from the current season's standings
  *   GET /api/drip-golf?player=123  -> { age, jgsRank, tugrRank, scoring, tournaments, upcoming }
  *                                     from one profile; `scoring` and `tournaments`
- *                                     feed a linked golfer page's Golf Bio and
+ *                                     feed a linked golfer page's resume, graph and
  *                                     Season History
  *
  * dripgolftour.com sends no CORS headers, so the browser cannot read it

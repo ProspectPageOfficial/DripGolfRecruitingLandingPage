@@ -197,7 +197,7 @@
     var stats = hero.querySelector(".quick-stats");
     if (stats) CountUp.init(stats);
 
-    var wrap = hero.querySelector(".hero-chart-wrap");
+    var wrap = document.querySelector(".hero-chart-wrap");
     var svg = document.getElementById("hero-chart");
     if (wrap && svg) ChartTip.init(wrap, svg);
   }

@@ -1,12 +1,13 @@
 /**
- * /api/golf-scoring — the Golf Bio "Scoring Profile" and "Scoring Types".
+ * /api/golf-scoring — the linked Drip Golf Tour profile, and the scoring
+ * stats (per-hole averages, scoring types) shown on the resume.
  *
  * Two ways to fill them, so the page works for every family:
  *   - Drip Golf Tour members link their tour profile (`tourPlayerId`). The
  *     page then reads the stats from the tour through /api/drip-golf, so they
  *     update after every event with nothing to type.
  *   - Everyone else types them in (`manual`). A linked tour profile's stats
- *     are shown instead of these whenever the tour has any.
+ *     are used instead of these whenever the tour has any.
  *
  * GET → public. { tourPlayerId?, manual? }
  * PUT → owner only. Body: any of

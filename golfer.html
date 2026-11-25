@@ -249,10 +249,8 @@ h1 {
 .stat-num   { font-size: 1.9rem; font-weight: 800; color: var(--sand); }
 .stat-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.15em; opacity: 0.85; }
 
-/* ---------- Hero Analytics ----------
-   Frosted-glass panel that sits inside the hero, below quick-stats.
-   Uses the same sand/green/ivory palette as everything else so it
-   reads as "part of the header" rather than a bolted-on widget.
+/* ---------- Analytics (Last 5 Events) ----------
+   Frosted-glass panel in the Golf Bio tab, skinned by hero-pop.css.
    Hidden by default via [hidden]; renderHeroAnalytics() flips it on
    the moment there's actually data worth showing. */
 .hero-analytics {
@@ -267,28 +265,6 @@ h1 {
   text-align: left;
 }
 .hero-analytics[hidden] { display: none; }
-
-.hero-analytics-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.8rem;
-  margin-bottom: 0.7rem;
-}
-.hero-analytics-eyebrow {
-  text-transform: uppercase;
-  letter-spacing: 0.22em;
-  font-size: 0.68rem;
-  color: var(--sand);
-  font-weight: 700;
-}
-.hero-analytics-title {
-  margin: 0;
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: #fff;
-  letter-spacing: 0.02em;
-}
 
 .hero-analytics-body {
   display: grid;
@@ -1743,11 +1719,10 @@ body.is-owner .visitor-only { display: none !important; }
 
 /* Golf Bio: sub-headings with an owner-only Edit button beside them. */
 .golf-subhead { margin: 1.6rem 0 0.6rem; }
-#scoring-types-heading { margin-top: 1.4rem; }
 .scoring-source { font-size: 0.85rem; margin: -0.2rem 0 0.6rem; }
 /* Nothing to show yet: visitors see no section; the owner sees the prompt. */
-#scoring-section.is-empty { display: none; }
-body.is-owner #scoring-section.is-empty { display: block; }
+#analytics-section.is-empty { display: none; }
+body.is-owner #analytics-section.is-empty { display: block; }
 
 /* Resume editor: a wider card, one block per resume section. */
 .resume-modal-card { max-width: 760px; }
@@ -1938,45 +1913,6 @@ body.is-owner #scoring-section.is-empty { display: block; }
         <div class="stat" data-reveal><span class="stat-num" id="stat-tugr-rank">—</span><span class="stat-label">TUGR Rank</span></div>
         <div class="stat" data-reveal><span class="stat-num" id="stat-cga-rank">—</span><span class="stat-label">CGA Rank</span></div>
       </div>
-
-      <!-- ===== Hero Analytics =====
-           Live-computed rollups so the header actually reacts when the
-           owner adds a tournament. Fed by renderHeroAnalytics() which
-           reuses getMergedTournaments() — single source of truth for
-           "which tournaments count", DRY across hero + Season History.
-           Hidden by default; the renderer flips it on once there's at
-           least one round to plot (avoids an empty box on first paint). -->
-      <section class="hero-analytics" id="hero-analytics" aria-label="Recent performance analytics" data-reveal hidden>
-        <header class="hero-analytics-header">
-          <span class="hero-analytics-eyebrow">Analytics</span>
-          <h2 class="hero-analytics-title">Last 5 Events</h2>
-        </header>
-        <div class="hero-analytics-body">
-          <div class="hero-chart-wrap">
-            <!-- Chart is redrawn on every render. viewBox is fixed so
-                 the SVG scales fluidly with its container width. -->
-            <svg id="hero-chart" class="hero-chart" viewBox="0 0 600 200"
-                 preserveAspectRatio="none" role="img"
-                 aria-label="Line chart of scoring average across the last 5 events"></svg>
-          </div>
-          <ul class="hero-analytics-tiles" id="hero-analytics-tiles"></ul>
-        </div>
-
-        <!-- ===== Recent Form =====
-             A real leaderboard board: same five events as the chart, but
-             read as rows (finish / event / rounds / total / to par). The
-             chart shows the shape of the trend; this shows the receipts.
-             Populated by renderRecentForm() from the SAME events array
-             the chart uses — one query, two views. -->
-        <div class="hero-form" id="hero-form" hidden>
-          <div class="fs-head" aria-hidden="true">
-            <span>Pos</span><span>Event</span><span>Rounds</span>
-            <span style="text-align:right">Total</span>
-            <span style="text-align:center">To Par</span>
-          </div>
-          <ol class="fs-rows" id="hero-form-rows"></ol>
-        </div>
-      </section>
     </div>
   </header>
 
@@ -2152,19 +2088,47 @@ body.is-owner #scoring-section.is-empty { display: block; }
       </div>
       <ul class="profile-list" id="rankings-list"></ul>
 
-      <!-- Scoring stats: from a linked Drip Golf Tour profile (members), or
-           typed in by the owner (everyone else). Hidden from visitors until
-           there is something to show. -->
-      <div id="scoring-section">
+      <!-- ===== Last 5 Events =====
+           Live-computed rollups, so the graph reacts when the owner adds a
+           tournament. Fed by renderHeroAnalytics() (called by renderHero(),
+           as it used to sit in the hero, hence the hero-* names), which
+           reuses getMergedTournaments(): the same list Season History shows.
+           With no rounds to plot, visitors see no section and the owner sees
+           the prompt. The button opens ScoringEditor, where a Drip Golf Tour
+           profile is linked. -->
+      <div id="analytics-section" class="is-empty">
         <div class="panel-header golf-subhead">
-          <h3>Scoring Profile (Per-Hole Averages)</h3>
-          <button type="button" id="scoring-edit-btn" class="swing-ghost-btn owner-only">✏️ Edit</button>
+          <h3>Last 5 Events</h3>
+          <button type="button" id="scoring-edit-btn" class="swing-ghost-btn owner-only">✏️ Tour Profile &amp; Stats</button>
         </div>
-        <p class="muted scoring-source" id="scoring-source" hidden>From official Drip Golf Tour tournaments. Updates after each event.</p>
-        <p class="muted owner-only" id="scoring-empty" hidden>No scoring stats yet. Drip Golf Tour members can link their tour profile; anyone can add their own. Click Edit to start.</p>
-        <ul class="profile-list" id="par-list"></ul>
-        <h3 id="scoring-types-heading">Scoring Types</h3>
-        <ul class="profile-list" id="scoring-list"></ul>
+        <p class="muted owner-only" id="analytics-empty" hidden>No results to graph yet. Add tournaments in Season History, or link your Drip Golf Tour profile to fill them in.</p>
+        <section class="hero-analytics" id="hero-analytics" aria-label="Recent performance analytics" hidden>
+          <div class="hero-analytics-body">
+            <div class="hero-chart-wrap">
+              <!-- Chart is redrawn on every render. viewBox is fixed so
+                   the SVG scales fluidly with its container width. -->
+              <svg id="hero-chart" class="hero-chart" viewBox="0 0 600 200"
+                   preserveAspectRatio="none" role="img"
+                   aria-label="Line chart of scoring average across the last 5 events"></svg>
+            </div>
+            <ul class="hero-analytics-tiles" id="hero-analytics-tiles"></ul>
+          </div>
+
+          <!-- ===== Recent Form =====
+               A real leaderboard board: same five events as the chart, but
+               read as rows (finish / event / rounds / total / to par). The
+               chart shows the shape of the trend; this shows the receipts.
+               Populated by renderRecentForm() from the SAME events array
+               the chart uses — one query, two views. -->
+          <div class="hero-form" id="hero-form" hidden>
+            <div class="fs-head" aria-hidden="true">
+              <span>Pos</span><span>Event</span><span>Rounds</span>
+              <span style="text-align:right">Total</span>
+              <span style="text-align:center">To Par</span>
+            </div>
+            <ol class="fs-rows" id="hero-form-rows"></ol>
+          </div>
+        </section>
       </div>
     </section>
 
@@ -2429,14 +2393,14 @@ body.is-owner #scoring-section.is-empty { display: block; }
        aria-labelledby="scoring-modal-title" aria-modal="true">
     <div class="theme-modal-backdrop" data-scoring-close></div>
     <div class="theme-modal-card scoring-modal-card" role="document">
-      <h3 id="scoring-modal-title">✏️ Scoring Stats</h3>
+      <h3 id="scoring-modal-title">✏️ Tour Profile &amp; Stats</h3>
       <form id="scoring-form" novalidate>
         <fieldset class="scoring-group">
           <legend>Drip Golf Tour member?</legend>
           <p class="theme-modal-help">
-            Link your tour profile and your scoring stats and tournament
-            history fill in from your official Drip Golf tournaments, updating
-            after every event.
+            Link your tour profile and your tournament history, your Last 5
+            Events graph and your resume's scoring stats fill in from your
+            official Drip Golf tournaments, updating after every event.
           </p>
           <div id="scoring-tour-suggest" class="scoring-suggest"></div>
           <label class="scoring-field-wide"><span>Tour profile link or player ID</span>
@@ -2447,8 +2411,8 @@ body.is-owner #scoring-section.is-empty { display: block; }
         <fieldset class="scoring-group">
           <legend>Not on the tour, or adding your own?</legend>
           <p class="theme-modal-help">
-            Type your stats here. Leave a box blank to hide it. If a tour profile
-            is linked, its stats are shown instead.
+            Type your stats here to show them on your resume. Leave a box blank
+            to hide it. If a tour profile is linked, its stats are used instead.
           </p>
           <p class="scoring-subtitle">Per-hole averages</p>
           <label class="theme-field"><span>Par 3</span>
@@ -3046,8 +3010,11 @@ const PORTFOLIO_DATA = {
       .filter((e) => e.roundScores.length > 0)
       .slice(0, 5);
 
-    if (!newestFirst.length) { panel.hidden = true; return; }
-    panel.hidden = false;
+    const isEmpty = !newestFirst.length;
+    panel.hidden = isEmpty;
+    $("#analytics-section").classList.toggle("is-empty", isEmpty);
+    $("#analytics-empty").hidden = !isEmpty;
+    if (isEmpty) return;
 
     const events = newestFirst.slice().reverse(); // oldest → newest, left → right
     const points = events.map((e) => ({
@@ -3201,9 +3168,11 @@ const PORTFOLIO_DATA = {
       const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"} ${xFor(i)} ${yFor(p.value)}`).join(" ");
       const line = make("path", { class: "hc-line", d: linePath });
       svg.appendChild(line);
-      // Hand the real path length to CSS so the draw-in dash animation
-      // works for any number of points without hardcoded magic numbers.
-      line.style.setProperty("--hc-len", line.getTotalLength());
+      // Normalise the path length to 1 so the draw-in dash animation works
+      // for any number of points. Not getTotalLength(): the Golf Bio tab is
+      // display:none at first render, and browsers disagree on measuring then.
+      line.setAttribute("pathLength", "1");
+      line.style.setProperty("--hc-len", 1);
     }
 
     // Points + inline value labels + x-axis event labels. Each point is
@@ -3523,32 +3492,6 @@ const PORTFOLIO_DATA = {
       ["TUGR Rank",      data.golf.stats["TUGR Rank"]],
       ["CGA Rank",       data.golf.stats["CGA Rank"]],
     ]);
-
-    // A linked Drip Golf Tour profile wins whenever the tour has stats;
-    // otherwise the owner's own (or imported) numbers.
-    const tour = data.golf.tourScoring && Object.keys(data.golf.tourScoring).length
-      ? data.golf.tourScoring : null;
-    const s = tour || data.golf.scoring || {};
-    fillList("#par-list", [
-      ["Par 3 Avg", s["Par 3's"]],
-      ["Par 4 Avg", s["Par 4's"]],
-      ["Par 5 Avg", s["Par 5's"]],
-    ]);
-
-    // Typed-in counts get the same "(13.89%)" share the tour shows, once all
-    // six are filled in. Tour values already carry it.
-    const TYPES = ["Eagles", "Birdies", "Pars", "Bogeys", "Doubles", "Others"];
-    const counts = TYPES.map((k) => (/^\d+$/.test(String(s[k] ?? "")) ? Number(s[k]) : null));
-    const total = counts.every((c) => c !== null) ? counts.reduce((a, b) => a + b, 0) : 0;
-    fillList("#scoring-list", TYPES.map((k, i) => [k,
-      total > 0 ? `${s[k]} (${((counts[i] / total) * 100).toFixed(2)}%)` : s[k]]));
-
-    const hasPar = $("#par-list").children.length > 0;
-    const hasTypes = $("#scoring-list").children.length > 0;
-    $("#scoring-section").classList.toggle("is-empty", !hasPar && !hasTypes);
-    $("#scoring-empty").hidden = hasPar || hasTypes;
-    $("#scoring-types-heading").hidden = !hasTypes;
-    $("#scoring-source").hidden = !tour;
   }
 
   // ---------- Date helpers ----------
@@ -5203,7 +5146,7 @@ const PORTFOLIO_DATA = {
   })();
   window.RankEditor = RankEditor;
 
-  // ---------- ScoringEditor: Golf Bio scoring stats ----------
+  // ---------- ScoringEditor: tour profile link + resume scoring stats ----------
   // Drip Golf Tour members link their tour profile and the stats are read
   // from the tour (/api/drip-golf, cached by Netlify for an hour). Everyone
   // else types them in. Both save to /api/golf-scoring (owner only).
@@ -5228,7 +5171,7 @@ const PORTFOLIO_DATA = {
     }
 
     /**
-     * From the linked profile, if any: scoring stats for Golf Bio
+     * From the linked profile, if any: scoring stats for the resume
      * (PORTFOLIO_DATA.golf.tourScoring) and tournaments for Season History,
      * by year (PORTFOLIO_DATA.tourSeasons). getMergedTournaments folds those
      * in, skipping any the owner has already entered for the same date.
@@ -5265,7 +5208,7 @@ const PORTFOLIO_DATA = {
       const events = tour ? tour.tournaments.length : 0;
       if (!tour) status.textContent = "Couldn't reach that tour profile. Check the link and try again.";
       else if (!events && !Object.keys(tour.scoring).length) status.textContent = "Linked profile found. Its stats and tournaments will appear after your first Drip Golf event.";
-      else status.textContent = "Found it: " + events + (events === 1 ? " tournament" : " tournaments") + " and your scoring stats from Drip Golf. Save to show them.";
+      else status.textContent = "Found it: " + events + (events === 1 ? " tournament" : " tournaments") + " and your scoring stats from Drip Golf. Save to use them.";
     }
 
     async function suggest() {
@@ -6204,7 +6147,7 @@ const PORTFOLIO_DATA = {
       return out.slice(0, MAX_ACHIEVEMENTS);
     }
 
-    // Golf Bio's scoring stats as two or three resume lines. Empty when the
+    // The golfer's scoring stats as two or three resume lines. Empty when the
     // golfer has none, so the section disappears instead of showing blanks.
     function computeScoring(data) {
       const s = data.scoring || {};
