@@ -1389,6 +1389,11 @@ input[type="date"]:focus::-webkit-datetime-edit  { color: var(--charcoal); }
 .owner-only { display: none !important; }
 body.is-owner .owner-only { display: revert !important; }
 body.is-owner .user-badge.owner-only { display: inline-block !important; }
+body:not(.is-owner) #schedule { display: none; }
+
+.under-construction { text-align: center; padding: 2.5rem 1rem; }
+.under-construction-icon { font-size: 2.8rem; }
+.under-construction-title { font-size: 1.3rem; font-weight: 700; margin: 0.6rem 0 0.3rem; }
 /* ...unless the page has hidden it on purpose. Without this, the !important
    above beat [hidden], so in owner mode "Gallery is full" showed with no
    videos and the upload form never hid at the limit. */
@@ -1924,6 +1929,7 @@ body.is-owner #analytics-section.is-empty { display: block; }
       <button class="tab" role="tab" data-tab="history" aria-selected="false">Season History</button>
       <button class="tab" role="tab" data-tab="upcoming" aria-selected="false">Upcoming Tournaments</button>
       <button class="tab" role="tab" data-tab="swing" aria-selected="false">Swing Video</button>
+      <button class="tab owner-only" role="tab" data-tab="schedule" aria-selected="false">Build a Schedule</button>
     </nav>
 
     <section class="tab-panel active" id="personal" role="tabpanel">
@@ -2120,6 +2126,17 @@ body.is-owner #analytics-section.is-empty { display: block; }
       <!-- One tab and one panel per season, built by buildYearPanels(). -->
       <div class="year-selector" id="year-selector" role="tablist" aria-label="Season"></div>
       <div id="year-panels"></div>
+    </section>
+
+    <!-- Owner-only, by its tab. Not .owner-only itself: that class would show
+         the panel under every tab. See #schedule in the CSS. -->
+    <section class="tab-panel" id="schedule" role="tabpanel">
+      <h2>Build a Schedule</h2>
+      <div class="under-construction">
+        <span class="under-construction-icon" aria-hidden="true">🚧</span>
+        <p class="under-construction-title">Under construction</p>
+        <p class="muted">We're working on this. Check back soon.</p>
+      </div>
     </section>
 
     <!-- ===== Upcoming Tournaments =====
@@ -5461,6 +5478,10 @@ const PORTFOLIO_DATA = {
     function setMode(role) {
       const isOwner = role === "owner";
       document.body.classList.toggle("is-owner", isOwner);
+      // Leaving owner mode on an owner-only tab: go to one visitors have.
+      if (!isOwner && document.querySelector(".tab.owner-only.active")) {
+        document.querySelector('.tab[data-tab="personal"]').click();
+      }
       sessionStorage.setItem(SS_KEY, role);
       updatePill(role);
     }
