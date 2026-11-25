@@ -1333,10 +1333,9 @@ input[type="date"]:focus::-webkit-datetime-edit  { color: var(--charcoal); }
   margin-left: 0.3rem;
 }
 
+/* Right side of a tournament card: owner's Delete button, then the finish. */
+.tnmt-side { display: flex; align-items: center; gap: 0.8rem; }
 .btn-delete {
-  position: absolute;
-  top: 0.7rem;
-  right: 0.8rem;
   background: transparent;
   border: 1px solid rgba(138, 42, 48, 0.3);
   color: #8a2a30;
@@ -3687,11 +3686,13 @@ const PORTFOLIO_DATA = {
     const placeEl = el("div", "tnmt-place", t.place || "—");
 
     header.appendChild(titleBlock);
-    header.appendChild(placeEl);
+    const side = el("div", "tnmt-side");
+    side.appendChild(placeEl);
+    header.appendChild(side);
     card.appendChild(header);
 
     if (t._userAdded && window.UserScores) {
-      const del = el("button", "btn-delete", "Delete");
+      const del = el("button", "btn-delete owner-only", "Delete");
       del.type = "button";
       // deleteTournament is async — it only prunes the cache AFTER the
       // network DELETE resolves. The previous fire-and-forget version
@@ -3713,7 +3714,7 @@ const PORTFOLIO_DATA = {
           del.textContent = originalLabel;
         }
       });
-      card.appendChild(del);
+      side.prepend(del);
     }
 
     if (t.rounds && t.rounds.length) {

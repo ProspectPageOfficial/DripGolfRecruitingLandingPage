@@ -320,6 +320,17 @@ body::after {
   border-color: var(--pg-edge-hot);
 }
 
+/* Delete: the base sheet's dark red was for a white card. */
+.tab-panel .btn-delete {
+  color: #ffb3b3;
+  border-color: rgba(255, 143, 143, 0.5);
+  opacity: 1;
+}
+.tab-panel .btn-delete:hover {
+  color: #fff;
+  background: rgba(255, 143, 143, 0.25);
+}
+
 /* Round line-items: base sheet hardcoded #fff. Rebind to glass so
    they don't punch bright holes in the card. */
 .tab-panel .rounds-list li {
