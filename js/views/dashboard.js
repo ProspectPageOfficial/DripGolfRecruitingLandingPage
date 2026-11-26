@@ -66,8 +66,6 @@ export function dashboardView(profile, liveOk = true, mock = null) {
         ${raw(collegePanel(highlight, academics, profile, mock?.fitHref))}
       </div>
 
-      ${raw(schedulePanel())}
-
       ${raw(mock || academics || !isScorable(profile) ? "" : academicsNotice())}
 
       ${raw(mock?.canDelete ? deleteAccountPanel(profile) : "")}
@@ -174,18 +172,6 @@ const topPick = ({ school, fit }, profile, fitHref) => {
     </div>
   `;
 };
-
-/** Third section: a placeholder until schedule building is built. */
-const schedulePanel = () => html`
-  <div class="card stack-sm">
-    <span class="eyebrow">Build a schedule</span>
-    <div class="empty">
-      <span class="under-construction-icon" aria-hidden="true">🚧</span>
-      <b class="under-construction-title">Under construction</b>
-      We're working on this. Check back soon.
-    </div>
-  </div>
-`;
 
 /**
  * The site now owns GPA and SAT/ACT fields, so the notice points at the

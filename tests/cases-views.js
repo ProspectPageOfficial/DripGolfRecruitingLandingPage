@@ -218,14 +218,6 @@ export const viewCases = [
     },
   },
   {
-    name: "dashboard has a Build a schedule section, marked under construction",
-    run: (assert) => {
-      const out = dashboardView(luke, true);
-      assert.ok(out.includes("Build a schedule"), "the section is there");
-      assert.ok(out.includes("Under construction"), "and says it is not built yet");
-    },
-  },
-  {
     name: "dashboard renders for a golfer with full academics",
     run: (assert) => {
       rendersFine(assert, "dashboardView(withAcademics)",
